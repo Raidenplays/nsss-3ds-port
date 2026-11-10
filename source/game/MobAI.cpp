@@ -1185,7 +1185,7 @@ void Mobs::tick(World& w, Player& p, ItemEntities& items, bool editWorld, bool p
             }
             sl.squish *= 0.6f;
         }
-        if (editWorld && i < mobs.size() && !mobs[i].dead) Redstone::entityTouching(w, mobs[i].box, true); // pressure plates
+        if (editWorld && i < mobs.size() && !mobs[i].dead) Redstone::entityTouching(w, mobs[i].box); // pressure plates
     }
     // Entity.updateRidden: a rider sits on its mount (EntitySpider.getMountedYOffset: 0.75 of its
     // height less half a block), whatever its own legs did this tick
@@ -1720,3 +1720,18 @@ void Mobs::dismount(Player& p) {
     p.setPosition(m->x, m->box.minY + double(m->height) + 1.62, m->z);
     p.motionX = p.motionY = p.motionZ = 0;
 }
+
+void Mobs::spawnAt(int kind, double x, double y, double z, float yaw) {
+    Mob m;
+    m.kind = Kind(kind);
+    m.x = m.px = x;
+    m.y = m.py = y;
+    m.z = m.pz = z;
+    m.yaw = m.prevYaw = m.renderYaw = m.prevRenderYaw = yaw;
+    m.pitch = 0;
+    if (kind == SLIME) m.slimeSize = 1;
+    initMob(m);
+    m.health = m.prevHealth = kind == SLIME ? m.slimeSize * m.slimeSize : STATS[kind].health;
+    mobs.push_back(std::move(m));
+}
+

@@ -2,6 +2,7 @@
 // usage: blocksim <seed> <emptyDir> <script> <out>   (script format: see BlockSimDump.java)
 #include "world/World.h"
 #include "world/Blocks.h"
+#include "world/Redstone.h"
 #include "world/BlockProps.h"
 #include "render/ChunkMesh.h"
 #include <cstdint>
@@ -49,6 +50,8 @@ int main(int argc, char** argv) {
                             int id = w.blockAt(x, y, z);
                             if (id > 0 && BP[id].tickOnLoad) Blocks::updateTick(w, x, y, z, id, w.rand);
                         }
+        } else if (!strcmp(cmd, "use")) {
+            Redstone::blockActivated(w, v[0], v[1], v[2]);
         } else if (!strcmp(cmd, "sub")) {
             w.skylightSubtracted = v[0];
         } else if (!strcmp(cmd, "render")) {

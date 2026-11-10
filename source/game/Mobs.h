@@ -41,6 +41,8 @@ public:
     void tick(World& w, Player& p, ItemEntities& items, bool editWorld, bool peaceful);
     // PlayerControllerSP.updateController: SpawnerMonsters and SpawnerAnimals (once a tick)
     void spawn(World& w, const Player& p, bool monsters, bool animals);
+    // a mob of this kind put into the world (setLocationAndAngles + entityJoinedWorld)
+    void spawnAt(int kind, double x, double y, double z, float yaw);
     void render(const World& w, Renderer& r, float partial, float camX, float camY, float camZ, float maxDist);
 
     // The mob the crosshair is on within reach (EntityRenderer.getMouseOver), or -1. dist: how far.

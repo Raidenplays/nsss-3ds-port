@@ -53,94 +53,106 @@ void offset(int side, int& x, int& y, int& z) {
 
 int yawQuarter(const Player& p) { return fl(double(p.rotationYaw * 4.0f / 360.0f) + 0.5) & 3; }
 
-// World.canBlockBePlacedAt: the spot is empty (or water, lava, fire, a snow layer), the block
-// accepts it, and nobody is standing in it
+// World.func_695_a (canBlockBePlacedAt): nobody standing where a solid block would go; then a liquid,
+// fire or a snow layer is simply replaced, anything else needs an empty spot the block accepts
+// (Block.canPlace) - except ice beside hot burnt cloth, which always asks
 bool canPlaceAt(World& w, const Player& p, int id, int x, int y, int z) {
-    if (y < 0 || y >= 255 || !w.isChunkLoaded(x >> 4, z >> 4)) return false;
+    // getCollisionBoundingBoxFromPool: the blocks with one, taken as the whole cube
+    bool collides = matSolid(BP[id].mat) && BP[id].cls != BC::PressurePlate && BP[id].cls != BC::Sign;
+    if (collides && AABB{double(x), double(y), double(z), x + 1.0, y + 1.0, z + 1.0}.intersects(p.boundingBox)) return false;
     int cur = w.getBlockId(x, y, z);
-    if (!(cur == 0 || (cur >= 8 && cur <= 11) || cur == 51 || cur == 78)) return false;
-    if (!Blocks::canPlaceBlockAt(w, id, x, y, z)) return false;
-    bool solid = (BLOCKS[id].flags & BF_EXISTS) && matSolid(BP[id].mat) && BP[id].cls != BC::Torch &&
-                 BP[id].cls != BC::RedstoneTorch && BP[id].cls != BC::LapisTorch && BP[id].cls != BC::Ladder &&
-                 BP[id].cls != BC::Button && BP[id].cls != BC::Lever && BP[id].cls != BC::PressurePlate;
-    if (solid && AABB{double(x), double(y), double(z), x + 1.0, y + 1.0, z + 1.0}.intersects(p.boundingBox)) return false;
+    bool replaceable = (cur >= 8 && cur <= 11) || cur == 51 || cur == 78;
+    if (!replaceable || (id == 79 && Blocks::hotClothNearby(w, x, y, z)))
+        return id > 0 && cur == 0 && Blocks::canPlace(w, id, x, y, z);
     return true;
 }
 
-// Block.onBlockPlaced (the side clicked) and onBlockPlacedBy (the way the player faces)
-void placed(World& w, const Player& p, int id, int x, int y, int z, int side, bool upper) {
-    auto opaque = [&](int a, int b, int c) { return BP[w.getBlockId(a, b, c)].opaqueCube; };
+// Block.onBlockPlaced (the side clicked) then onBlockPlacedBy (the way the player faces)
+void placed(World& w, Player& p, int id, int x, int y, int z, int side) {
+    auto cube = [&](int a, int b, int c) { return w.isBlockOpaqueCube(a, b, c); }; // isBlockNormalCube
+    auto slab = [&](int a, int b, int c, int m) { return w.getBlockId(a, b, c) == 44 && w.getBlockMetadata(a, b, c) == m; };
     int meta = w.getBlockMetadata(x, y, z);
     switch (BP[id].cls) {
-    case BC::Torch: case BC::RedstoneTorch: case BC::LapisTorch: {
-        if (side == 1 && opaque(x, y - 1, z)) meta = 5;
-        if (side == 2 && opaque(x, y, z + 1)) meta = 4;
-        if (side == 3 && opaque(x, y, z - 1)) meta = 3;
-        if (side == 4 && opaque(x + 1, y, z)) meta = 2;
-        if (side == 5 && opaque(x - 1, y, z)) meta = 1;
+    case BC::Torch: case BC::RedstoneTorch: // BlockTorch (the slab tests ignore the side clicked, as in the jar)
+        if (side == 1 && (cube(x, y - 1, z) || w.getBlockId(x, y - 1, z) == 85 || slab(x, y - 1, z, 1))) meta = 5;
+        if ((side == 2 && cube(x, y, z + 1)) || slab(x, y, z + 1, 3)) meta = 4;
+        if ((side == 3 && cube(x, y, z - 1)) || slab(x, y, z - 1, 2)) meta = 3;
+        if ((side == 4 && cube(x + 1, y, z)) || slab(x + 1, y, z, 5)) meta = 2;
+        if ((side == 5 && cube(x - 1, y, z)) || slab(x - 1, y, z, 4)) meta = 1;
         w.setBlockMetadataWithNotify(x, y, z, meta);
         break;
-    }
     case BC::Ladder:
-        if ((meta == 0 || side == 2) && opaque(x, y, z + 1)) meta = 2;
-        if ((meta == 0 || side == 3) && opaque(x, y, z - 1)) meta = 3;
-        if ((meta == 0 || side == 4) && opaque(x + 1, y, z)) meta = 4;
-        if ((meta == 0 || side == 5) && opaque(x - 1, y, z)) meta = 5;
+        if ((meta == 0 || side == 2) && cube(x, y, z + 1)) meta = 2;
+        if ((meta == 0 || side == 3) && cube(x, y, z - 1)) meta = 3;
+        if ((meta == 0 || side == 4) && cube(x + 1, y, z)) meta = 4;
+        if ((meta == 0 || side == 5) && cube(x - 1, y, z)) meta = 5;
         w.setBlockMetadataWithNotify(x, y, z, meta);
         break;
-    case BC::Button: case BC::Lever: {
+    case BC::Button: { // a side only; the pressed bit stays
         int hi = meta & 8;
         meta &= 7;
-        if (BP[id].cls == BC::Lever && side == 1 && opaque(x, y - 1, z)) meta = 5 + w.rand.nextInt(2);
-        if (side == 2 && opaque(x, y, z + 1)) meta = 4;
-        if (side == 3 && opaque(x, y, z - 1)) meta = 3;
-        if (side == 4 && opaque(x + 1, y, z)) meta = 2;
-        if (side == 5 && opaque(x - 1, y, z)) meta = 1;
+        if (side == 2 && cube(x, y, z + 1)) meta = 4;
+        if (side == 3 && cube(x, y, z - 1)) meta = 3;
+        if (side == 4 && cube(x + 1, y, z)) meta = 2;
+        if (side == 5 && cube(x - 1, y, z)) meta = 1;
         w.setBlockMetadataWithNotify(x, y, z, meta + hi);
         break;
     }
-    case BC::Icicle: {
-        bool rising = side == 1 ? true : side == 0 ? false : !(w.getBlockId(x, y + 1, z) != 0 && opaque(x, y + 1, z));
-        w.setBlockMetadataWithNotify(x, y, z, rising ? 1 : 0);
+    case BC::Lever: { // a floor lever turns one of two ways at random; no solid block behind the side: it drops
+        int hi = meta & 8, m = -1;
+        if (side == 1 && cube(x, y - 1, z)) m = 5 + w.rand.nextInt(2);
+        if (side == 2 && cube(x, y, z + 1)) m = 4;
+        if (side == 3 && cube(x, y, z - 1)) m = 3;
+        if (side == 4 && cube(x + 1, y, z)) m = 2;
+        if (side == 5 && cube(x - 1, y, z)) m = 1;
+        if (m == -1) {
+            Blocks::dropBlockAsItem(w, x, y, z, id, w.getBlockMetadata(x, y, z));
+            w.setBlockWithNotify(x, y, z, 0);
+        } else {
+            w.setBlockMetadataWithNotify(x, y, z, m + hi);
+        }
         break;
     }
-    case BC::Hopper:
-        w.setBlockMetadataWithNotify(x, y, z, side == 2 ? 3 : side == 3 ? 2 : side == 4 ? 5 : side == 5 ? 4 : 0);
+    case BC::Step: // the side clicked; sneaking: the bottom half, running: the top
+        meta = side == 1 ? 0 : side == 0 ? 1 : side;
+        if (p.isSneaking()) meta = 0;
+        if (p.isRunning()) meta = 1;
+        w.setBlockMetadataWithNotify(x, y, z, meta);
         break;
-    case BC::Dispenser: case BC::Furnace: {
+    case BC::Furnace: {
         static const int F[4] = {2, 5, 3, 4};
         w.setBlockMetadataWithNotify(x, y, z, F[yawQuarter(p)]);
         break;
     }
-    case BC::Pumpkin:
-        w.setBlockMetadataWithNotify(x, y, z, yawQuarter(p));
-        break;
-    case BC::PistonBase:
-        Redstone::pistonPlaced(w, x, y, z, p.posX, p.posY, p.posZ, p.rotationYaw);
-        break;
-    case BC::PowerRepeater: // onBlockPlacedBy, then check()
-        w.setBlockMetadataWithNotify(x, y, z, yawQuarter(p));
-        Blocks::onNeighborBlockChange(w, x, y, z, id, 0);
-        break;
     case BC::Stairs: {
-        int d = yawQuarter(p);
-        int m = d == 0 ? 2 : d == 1 ? 1 : d == 2 ? 3 : 0;
-        if (upper) m |= 4; // Axeolon: upside-down stairs
-        w.setBlockMetadataWithNotify(x, y, z, m);
+        static const int S[4] = {2, 1, 3, 0};
+        w.setBlockMetadataWithNotify(x, y, z, S[yawQuarter(p)]);
         break;
     }
     default: break;
     }
 }
 
-// ItemBlock.onItemUse
-bool placeBlock(World& w, Player& p, Inventory& inv, int id, int meta, int x, int y, int z, int side, float hitY, bool creative) {
-    bool upper = side == 0 ? true : side == 1 ? false : hitY > 0.5f; // computeUpperHalf
-    if (w.getBlockId(x, y, z) == 78) side = 0; // a snow layer is replaced
+// ItemBlock.onItemUse: a slab on a slab facing it makes a double slab; otherwise the block goes in the
+// spot beside the side clicked (a snow layer is replaced). The item's damage is never the metadata.
+bool placeBlock(World& w, Player& p, Inventory& inv, int id, int x, int y, int z, int side, bool creative) {
+    bool alreadyPlaced = false;
+    if (id == 44 && w.getBlockId(x, y, z) == 44 && !p.isSneaking()) {
+        int o = w.getBlockMetadata(x, y, z);
+        if ((side == 0 && o == 1) || (side == 1 && o == 0) || (side > 1 && o > 0 && side == o)) {
+            if (w.setBlockWithNotify(x, y, z, 43)) {
+                placed(w, p, 43, x, y, z, side);
+                stepSound(43, x, y, z);
+                consume(inv, creative);
+                alreadyPlaced = true;
+            }
+        }
+    }
+    if (w.getBlockId(x, y, z) == 78) side = 0;
     else offset(side, x, y, z);
-    if (!canPlaceAt(w, p, id, x, y, z)) return true;
-    if (w.setBlockAndMetadataWithNotify(x, y, z, id, meta)) {
-        placed(w, p, id, x, y, z, side, upper);
+    if (inv.held().empty()) return false;
+    if (canPlaceAt(w, p, id, x, y, z) && !alreadyPlaced && w.setBlockWithNotify(x, y, z, id)) {
+        placed(w, p, id, x, y, z, side);
         stepSound(id, x, y, z);
         consume(inv, creative);
     }
@@ -166,7 +178,7 @@ bool useOnBlock(World& w, Player& p, Inventory& inv, const RayHit& hit, float hi
 
     if (id < 256) {
         if (!(BLOCKS[id].flags & BF_EXISTS)) return false;
-        return placeBlock(w, p, inv, id, h.damage & 15, x, y, z, side, hitY, creative);
+        return placeBlock(w, p, inv, id, x, y, z, side, creative);
     }
     switch (id) {
     case 290: case 291: case 292: case 293: case 294: { // ItemHoe
@@ -192,11 +204,11 @@ bool useOnBlock(World& w, Player& p, Inventory& inv, const RayHit& hit, float hi
         }
         return false;
     case 338: // ItemReed: sugar cane
-        return placeBlock(w, p, inv, 83, 0, x, y, z, side, hitY, creative);
+        return placeBlock(w, p, inv, 83, x, y, z, side, creative);
     case 331: // ItemRedstone
-        return placeBlock(w, p, inv, 55, 0, x, y, z, side, hitY, creative);
+        return placeBlock(w, p, inv, 55, x, y, z, side, creative);
     case 354: // ItemReed: a cake
-        return placeBlock(w, p, inv, 92, 0, x, y, z, side, hitY, creative);
+        return false; // (no cake in NSSS)
     case 324: case 330: { // ItemDoor
         if (side != 1) return false;
         ++y;

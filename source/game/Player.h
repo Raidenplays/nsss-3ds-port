@@ -91,6 +91,8 @@ public:
     void tick(const World& w, const PlayerInput& in);
 
     bool isSneaking() const { return sneaking; }
+    bool isRunning() const { return running; } // Entity.isRunning (EntityPlayerSP: sprinting and not exhausted)
+    bool running = false;
 
 private:
     bool sneaking = false;

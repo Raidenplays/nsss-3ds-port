@@ -1546,7 +1546,7 @@ set 28 101 29 10 0
 set 26 102 30 9 0
 set 18 101 30 79 0
 set 19 101 30 9 0
-tick 60
+tick 20
 sub 0
 render 0 6 0
 render 0 6 1

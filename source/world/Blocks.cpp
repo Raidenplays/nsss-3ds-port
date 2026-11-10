@@ -1,8 +1,10 @@
+// Block behaviour, as the NSSS jar's Block classes have it: onBlockAdded / onBlockRemoval /
+// onNeighborBlockChange / updateTick / canPlace / canBlockStay, ported as one dispatcher (redstone
+// lives in Redstone.cpp, rails in Rails.cpp). Blocks with nothing of their own act like the jar's
+// plain Block (all no-ops). tools/nsss/sims runs scripts of block changes on both, byte for byte.
 #include "Blocks.h"
 #include "gen/ChunkGenerator.h"
 #include "Rails.h"
-#include <cstdio>
-#include <cstdlib>
 #include "BlockProps.h"
 #include "World.h"
 #include "Redstone.h"
@@ -10,26 +12,21 @@
 
 namespace Blocks {
 bool sandFallInstantly = false;
-bool flowerGenerating = false;
-bool iceCollecting = false;
 void (*onTntIgnited)(int x, int y, int z) = nullptr;
-bool quietRemoval = false;
+void (*onPyramidionBroken)(int x, int y, int z) = nullptr;
 
 namespace {
-// block ids (MCP names in Beta: waterStill = 8 flowing, waterMoving = 9 still, same for lava)
+// block ids (waterMoving = 8 flowing, waterStill = 9, the same for lava)
 enum : int {
     STONE = 1, GRASS = 2, DIRT = 3, COBBLE = 4, SAPLING = 6, WATER = 8, WATER_STILL = 9, LAVA = 10,
-    LAVA_STILL = 11, SAND = 12, GRAVEL = 13, LOG = 17, LEAVES = 18, TALLGRASS = 31, DEADBUSH = 32,
-    FLOWER_Y = 37, FLOWER_R = 38, MUSH_B = 39, MUSH_R = 40, OBSIDIAN = 49, FIRE = 51, SIGN = 63,
-    LADDER = 65, TILLED = 60, SNOW = 78, ICE = 79, CACTUS = 81, REED = 83, SLOWSAND = 88, BLOODSTONE = 87,
-    CHARRED_COBBLE = 101, CHARRED_STONE = 102, CHARRED_SMOOTH = 103, CHARRED_MOSSY = 109,
-    DOUBLE_PLANT = 113, MANABLOOM = 114, WISP_LILY = 115, AX_FLOWERS = 116, CHARRED_SAPLING = 119,
-    DUSKPETAL_OPEN = 134, DOUBLE_GLOW = 135, DOUBLE_PLANT2 = 136, CATTAIL = 141, ICICLE = 144,
-    COMPACTED_ICE = 156, BONE_PILE = 170, STONE_TYPES = 171, PORTAL = 90,
+    LAVA_STILL = 11, SAND = 12, GRAVEL = 13, LOG = 17, LEAVES = 18, OBSIDIAN = 49, FIRE = 51, SIGN = 63,
+    LADDER = 65, TILLED = 60, SNOW = 78, ICE = 79, CACTUS = 81, REED = 83, BRICK_MOSSY = 93,
 };
 
-inline bool isDoor(int id) { return BP[id].cls == BC::Door; }
-inline bool opaque(int id) { return BP[id].opaqueLookup; } // Block.opaqueCubeLookup
+inline bool isDoor(int id) { return id == 64 || id == 71; }
+bool normalCube(World& w, int x, int y, int z) { return w.isBlockOpaqueCube(x, y, z); } // World.isBlockNormalCube
+// the season, when the world's seasons turn (World.season == cycle) - -1 when they don't
+int cycleSeason(World& w) { return w.season == World::CYCLE ? w.currentSeason() : -1; }
 
 // ---------------------------------------------------------------- liquids (BlockFluids)
 
@@ -323,12 +320,11 @@ void lightBulbNeighbourChange(World& w, int i, int j, int k, int neighbour) { //
     w.setBlock(i, j, k, redPowerAround(w, i, j, k, neighbour) ? 98 : 97);
 }
 
-// ---------------------------------------------------------------- attached blocks (NSSS / Alpha)
-// Alpha torches and buttons turn to face a solid neighbour whenever they're added; NSSS torches
-// can also hang off its sideways slabs (stepSingle with metadata 1..5).
+// ---------------------------------------------------------------- attached blocks
+// Torches turn to face a solid neighbour whenever they're added, and can also hang off NSSS's
+// sideways slabs (stepSingle with metadata 1..5).
 
 constexpr int STEP_SINGLE = 44, FENCE_ID = 85, GLASS_ID = 20;
-bool normalCube(World& w, int x, int y, int z) { return w.isBlockOpaqueCube(x, y, z); } // World.isBlockNormalCube
 bool slabFacing(World& w, int x, int y, int z, int m) { return w.blockAt(x, y, z) == STEP_SINGLE && w.metaAt(x, y, z) == m; }
 
 bool torchCanPlace(World& w, int x, int y, int z) { // BlockTorch.canPlace
@@ -421,75 +417,26 @@ void tryToFall(World& w, int x, int y, int z, int id) {
     if (y > 0) w.setBlockWithNotify(x, y, z, id);
 }
 
-// ---------------------------------------------------------------- plants (BlockFlower family)
+// ---------------------------------------------------------------- plants (BlockFlower and its kin)
 
-bool isPlant(int id) {
+bool isPlant(int id) { // BlockFlower: flowers, mushrooms, saplings, crops
     switch (BP[id].cls) {
-    case BC::Flower: case BC::Mushroom: case BC::TallGrass: case BC::DeadBush: case BC::Sapling: case BC::Crops:
-    case BC::AxeolonFlower: case BC::DoublePlant: case BC::Cattail:
-        return true;
-    default:
-        return false;
+    case BC::Flower: case BC::Mushroom: case BC::Sapling: case BC::Crops: return true;
+    default: return false;
     }
 }
-
-bool normalSoil(int id) { return id == GRASS || id == DIRT || id == TILLED; }
-bool isCharred(int id) { return id == CHARRED_COBBLE || id == CHARRED_STONE || id == CHARRED_SMOOTH || id == CHARRED_MOSSY; }
-bool isCaveFloor(int id) { return id == STONE || id == COBBLE || id == GRAVEL || id == DIRT || id == GRASS; }
 
 bool growsOn(int plant, int below) { // canThisPlantGrowOnThisBlockID
     switch (BP[plant].cls) {
-    case BC::Mushroom: return BP[below].opaqueLookup; // NSSS: Block.opaqueCubeLookup
-    case BC::DeadBush: return below == SAND || below == GRASS || below == DIRT;
+    case BC::Mushroom: return BP[below].opaqueLookup; // Block.opaqueCubeLookup
     case BC::Crops: return below == TILLED;
-    case BC::AxeolonFlower: case BC::DoublePlant:
-        return normalSoil(below) || isCharred(below) || isCaveFloor(below) || below == BLOODSTONE || below == SLOWSAND;
-    default: return normalSoil(below);
+    default: return below == GRASS || below == DIRT || below == TILLED;
     }
 }
 
-bool flowerStay(World& w, int id, int x, int y, int z) { // BlockFlower.canBlockStay
-    return !needsLight(w, x, y, z) && growsOn(id, w.blockAt(x, y - 1, z));
-}
-
-bool cattailSpot(World& w, int x, int y, int z) {
-    return w.materialAt(x, y - 1, z) == Mat::water && matSolid(w.materialAt(x, y - 2, z));
-}
-
-bool plantStay(World& w, int id, int x, int y, int z) {
-    switch (BP[id].cls) {
-    case BC::Mushroom:
-        return w.getBlockLightValue(x, y, z) <= 13 && growsOn(id, w.blockAt(x, y - 1, z));
-    case BC::AxeolonFlower: {
-        int below = w.blockAt(x, y - 1, z);
-        bool lit = !needsLight(w, x, y, z);
-        if (id == WISP_LILY) return isCaveFloor(below);
-        if (id == MANABLOOM || id == DUSKPETAL_OPEN) return lit && normalSoil(below);
-        int meta = w.metaAt(x, y, z);
-        if (meta == 0) return isCharred(below);                          // ashcap
-        if (meta == 1) return below == BLOODSTONE || below == SLOWSAND; // ember bud
-        return lit && normalSoil(below);
-    }
-    case BC::DoublePlant: {
-        int meta = w.metaAt(x, y, z);
-        if (meta & 8) return w.blockAt(x, y - 1, z) == id && (w.metaAt(x, y - 1, z) & 8) == 0;
-        if (w.blockAt(x, y + 1, z) != id || (w.metaAt(x, y + 1, z) & 8) == 0) return false;
-        int type = meta & 7;
-        int set = id == DOUBLE_PLANT ? 0 : (id == DOUBLE_GLOW ? 1 : 2);
-        int below = w.blockAt(x, y - 1, z);
-        bool lit = !needsLight(w, x, y, z);
-        if (set == 0 && type == 5) return isCharred(below);
-        if (set == 0 && type == 6) return below == BLOODSTONE || below == SLOWSAND;
-        if (set == 1 && type == 1) return isCaveFloor(below);
-        if (set == 0 && (type == 0 || type == 1)) return flowerStay(w, id, x, y, z);
-        return lit && normalSoil(below);
-    }
-    case BC::Cattail:
-        if (w.metaAt(x, y, z) & 8) return w.blockAt(x, y - 1, z) == id && (w.metaAt(x, y - 1, z) & 8) == 0;
-        return cattailSpot(w, x, y, z) && w.blockAt(x, y + 1, z) == id && (w.metaAt(x, y + 1, z) & 8) != 0;
-    default:
-        return flowerStay(w, id, x, y, z);
-    }
+bool plantStay(World& w, int id, int x, int y, int z) { // canBlockStay
+    if (BP[id].cls == BC::Mushroom) return w.getBlockLightValue(x, y, z) <= 13 && growsOn(id, w.blockAt(x, y - 1, z));
+    return (w.getBlockLightValue(x, y, z) >= 8 || w.canBlockSeeTheSky(x, y, z)) && growsOn(id, w.blockAt(x, y - 1, z));
 }
 
 void checkPlant(World& w, int x, int y, int z, int id) { // func_268_h
@@ -501,7 +448,7 @@ void checkPlant(World& w, int x, int y, int z, int id) { // func_268_h
 
 // ---------------------------------------------------------------- others
 
-bool cactusStay(World& w, int x, int y, int z) {
+bool cactusStay(World& w, int x, int y, int z) { // BlockCactus.canBlockStay
     if (matSolid(w.materialAt(x - 1, y, z)) || matSolid(w.materialAt(x + 1, y, z)) || matSolid(w.materialAt(x, y, z - 1)) ||
         matSolid(w.materialAt(x, y, z + 1)))
         return false;
@@ -509,88 +456,67 @@ bool cactusStay(World& w, int x, int y, int z) {
     return b == CACTUS || b == SAND;
 }
 
-bool reedPlace(World& w, int x, int y, int z) {
+bool reedPlace(World& w, int x, int y, int z) { // BlockReed.canPlace (and canBlockStay)
     int b = w.blockAt(x, y - 1, z);
     if (b == REED) return true;
-    if (b != GRASS && b != DIRT) return false; // NSSS BlockReed.canPlace: grass or dirt, by water or ice
+    if (b != GRASS && b != DIRT) return false;
     auto wet = [&](int a, int c) { Mat m = w.materialAt(a, y - 1, c); return m == Mat::water || m == Mat::ice; };
     return wet(x - 1, z) || wet(x + 1, z) || wet(x, z - 1) || wet(x, z + 1);
 }
 
-bool snowPlace(World& w, int x, int y, int z) {
-    int b = w.blockAt(x, y - 1, z);
-    return b != 0 && BP[b].opaqueCube ? matSolid(w.materialAt(x, y - 1, z)) : false; // isOpaqueCube()
+// BlockBurntCloth.getSurroundHotBlock: hot burnt cloth within two blocks
+bool hotNearby(World& w, int x, int y, int z) {
+    for (int x1 = x - 2; x1 <= x + 2; ++x1)
+        for (int y1 = y - 2; y1 <= y + 2; ++y1)
+            for (int z1 = z - 2; z1 <= z + 2; ++z1)
+                if (w.blockAt(x1, y1, z1) == 106) return true;
+    return false;
 }
 
-bool icicleHolds(World& w, int x, int y, int z, bool rising) {
-    int id = w.blockAt(x, y, z);
-    if (id == ICICLE) return ((w.metaAt(x, y, z) & 1) == 1) == rising;
-    return w.isBlockOpaqueCube(x, y, z);
+bool snowPlace(World& w, int x, int y, int z) { // BlockSnow.canPlace: on an opaque block or leaves, not by hot cloth
+    int l = w.blockAt(x, y - 1, z);
+    if ((l == 0 || !BP[l].opaqueCube || hotNearby(w, x, y, z)) && l != LEAVES) return false;
+    return matSolid(w.materialAt(x, y - 1, z)); // blocksMovement
 }
 
-void leafDecayMark(World& w, int x, int y, int z, int r, bool onlyClear) {
-    int g = r + 1;
-    if (!w.checkChunksExist(x - g, y - g, z - g, x + g, y + g, z + g)) return;
-    for (int i = -r; i <= r; ++i)
-        for (int j = -r; j <= r; ++j)
-            for (int k = -r; k <= r; ++k) {
-                if (w.blockAt(x + i, y + j, z + k) != LEAVES) continue;
-                int m = w.metaAt(x + i, y + j, z + k);
-                if (onlyClear && (m & 4) != 0) continue;
-                w.setBlockMetadata(x + i, y + j, z + k, m | 4);
-            }
+// BlockChest.canPlace: not next to two chests, nor next to a double chest
+bool chestAt(World& w, int x, int y, int z) { return w.blockAt(x, y, z) == 54; }
+bool neighbourChest(World& w, int x, int y, int z) { // isThereANeighborChest
+    if (!chestAt(w, x, y, z)) return false;
+    return chestAt(w, x - 1, y, z) || chestAt(w, x + 1, y, z) || chestAt(w, x, y, z - 1) || chestAt(w, x, y, z + 1);
+}
+bool chestPlace(World& w, int x, int y, int z) {
+    int l = int(chestAt(w, x - 1, y, z)) + int(chestAt(w, x + 1, y, z)) + int(chestAt(w, x, y, z - 1)) + int(chestAt(w, x, y, z + 1));
+    if (l > 1) return false;
+    return !neighbourChest(w, x - 1, y, z) && !neighbourChest(w, x + 1, y, z) && !neighbourChest(w, x, y, z - 1) &&
+           !neighbourChest(w, x, y, z + 1);
 }
 
 const char* tileEntityId(int id) {
     switch (BP[id].cls) {
     case BC::Chest: return "Chest";
     case BC::Furnace: return "Furnace";
-    case BC::Dispenser: return "Trap";
     case BC::Sign: return "Sign";
     case BC::MobSpawner: return "MobSpawner";
-    case BC::Note: return "Music";
-    case BC::MixedSlab: return "AxeolonMixedSlab";
-    case BC::FlowerPot: return "AxeolonFlowerPot";
-    case BC::Crate: return "AxeolonCrate";
-    case BC::SpawnCrystal: return "AxeolonSpawnCrystal";
-    case BC::Hopper: return "AxeolonHopper";
-    case BC::Gear: return "Gear";   // NSSS TileEntityGear
-    case BC::Motor: return "Motor"; // NSSS TileEntityMotor (motor and generator)
+    case BC::Gear: return "Gear";   // TileEntityGear
+    case BC::Motor: return "Motor"; // TileEntityMotor (motor and generator)
     default: return nullptr;
     }
-}
-
-void freezeNeighbours(World& w, int x, int y, int z) {
-    static const int D[6][3] = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
-    for (auto& d : D)
-        if (w.materialAt(x + d[0], y + d[1], z + d[2]) == Mat::water) w.setBlockWithNotify(x + d[0], y + d[1], z + d[2], ICE);
 }
 } // namespace
 
 void dropBlockAsItem(World& w, int x, int y, int z, int id, int meta) {
     // Block.dropBlockAsItemWithChance(chance 1): quantityDropped(rand), then per item a roll,
-    // idDropped(meta, rand) and three floats for the spot. The table is the mod's own answers;
-    // the random ones (-2) are written out here.
+    // idDropped(meta, rand) and three floats for the spot. The table is the jar's own answers; the
+    // random ones (-2) are written out here.
     JavaRandom& r = w.rand;
     const survival::Drop& d = survival::DROPS[id & 255][meta & 15];
     int qty = d.quantity;
-    if (BP[id].cls == BC::Ice) qty = iceCollecting ? 1 : 0;
-    else if (qty == -2) {
-        switch (id) {
-        case LEAVES: qty = r.nextInt(16) == 0 ? 1 : 0; break;
-        case 21: case 222: qty = 4 + r.nextInt(5); break;            // lapis
-        case 73: case 74: case 220: case 223: qty = 4 + r.nextInt(2); break; // redstone
-        case BONE_PILE: qty = 1 + r.nextInt(3); break;
-        default: qty = 1; break;
-        }
-    }
+    if (qty == -2) qty = 4 + r.nextInt(2); // BlockRedOre
     for (int i = 0; i < qty; ++i) {
         if (!(r.nextFloat() <= 1.0f)) continue;
         int drop = d.id;
-        if (drop == -2) {
-            if (id == GRAVEL) drop = r.nextInt(10) == 0 ? 318 : GRAVEL;
-            else drop = r.nextInt(8) == 0 ? 295 : -1; // tall grass, double grass and ferns: seeds
-        }
+        if (drop == -2) drop = r.nextInt(10) == 0 ? 318 : GRAVEL; // BlockGravel: flint, 1 in 10
         if (drop <= 0) continue;
         float sp = 0.7f;
         double ox = double(r.nextFloat() * sp) + double(1.0f - sp) * 0.5;
@@ -600,34 +526,20 @@ void dropBlockAsItem(World& w, int x, int y, int z, int id, int meta) {
     }
 }
 
-bool needsLight(World& w, int x, int y, int z) { // NSSS BlockFlower.canBlockStay: always checked
-    return w.getBlockLightValue(x, y, z) < 8 && !w.canBlockSeeTheSky(x, y, z);
-}
-
-bool isNaturalStone(int id) { return id >= STONE_TYPES && id <= STONE_TYPES + 6; }
-
-int oreKind(int id) {
-    switch (id) {
-    case 16: return 0;
-    case 15: return 1;
-    case 14: return 2;
-    case 73: case 74: return 3;
-    case 56: return 4;
-    case 21: return 5;
-    default: return -1;
+void dropBlockGoldTouch(World& w, int x, int y, int z, int id, int meta) {
+    if (w.rand.nextFloat() > 1.0f) return;
+    // the block itself - but crops, sign posts, the wooden pressure plate's id (68, a sign), doors and
+    // a lit bulb drop as usual, and the pyramidion and TNT not at all
+    if (id == 59 || id == 63 || id == 68 || id == 64 || id == 71 || id == 98) {
+        dropBlockAsItem(w, x, y, z, id, meta);
+        return;
     }
-}
-
-bool placeCattail(World& w, int x, int y, int z, bool notify) {
-    if (!(w.blockAt(x, y, z) == 0 && w.blockAt(x, y + 1, z) == 0 && cattailSpot(w, x, y, z))) return false;
-    w.setBlockAndMetadataJ(x, y, z, CATTAIL, 0);
-    if (notify) {
-        w.setBlockAndMetadataWithNotify(x, y + 1, z, CATTAIL, 8);
-        w.markBlockNeedsUpdate(x, y, z);
-    } else {
-        w.setBlockAndMetadataJ(x, y + 1, z, CATTAIL, 8);
-    }
-    return true;
+    if (id <= 0 || id == 99 || id == 46) return;
+    float sp = 0.7f;
+    double ox = double(w.rand.nextFloat() * sp) + double(1.0f - sp) * 0.5;
+    double oy = double(w.rand.nextFloat() * sp) + double(1.0f - sp) * 0.5;
+    double oz = double(w.rand.nextFloat() * sp) + double(1.0f - sp) * 0.5;
+    w.drops.push_back(World::Drop{double(x) + ox, double(y) + oy, double(z) + oz, id, 1, survival::DROPS[id & 255][meta & 15].damage});
 }
 
 // ---- BlockFire
@@ -666,15 +578,14 @@ int fireNeighbourChance(World& w, int x, int y, int z) { // getChanceOfNeighbors
     return c;
 }
 void fireTick(World& w, int x, int y, int z, JavaRandom& r) { // BlockFire.updateTick
-    const bool eternal = false; // (Axeolon's bloodstone; NSSS has no eternal fire)
     int meta = w.metaAt(x, y, z);
     if (meta < 15) {
         w.setBlockMetadataWithNotify(x, y, z, meta + 1);
         w.scheduleBlockUpdate(x, y, z, FIRE);
     }
-    if (!eternal && !fireNextToFuel(w, x, y, z)) {
+    if (!fireNextToFuel(w, x, y, z)) {
         if (!w.isBlockOpaqueCube(x, y - 1, z) || meta > 3) w.setBlockWithNotify(x, y, z, 0);
-    } else if (!eternal && fireEncourage(w.blockAt(x, y - 1, z)) == 0 && meta == 15 && r.nextInt(4) == 0) {
+    } else if (fireEncourage(w.blockAt(x, y - 1, z)) == 0 && meta == 15 && r.nextInt(4) == 0) {
         w.setBlockWithNotify(x, y, z, 0);
     } else if (meta % 2 == 0 && meta > 2) {
         fireTryCatch(w, x + 1, y, z, 300, r);
@@ -693,54 +604,6 @@ void fireTick(World& w, int x, int y, int z, JavaRandom& r) { // BlockFire.updat
                     if (ch > 0 && r.nextInt(odds) <= ch) w.setBlockWithNotify(a, b, c, FIRE);
                 }
     }
-}
-
-// ---------------------------------------------------------------- Nether portal (BlockPortal)
-
-namespace {
-void portalNeighborChange(World& w, int x, int y, int z) { // BlockPortal.onNeighborBlockChange
-    int dx = 0, dz = 1;
-    if (w.blockAt(x - 1, y, z) == PORTAL || w.blockAt(x + 1, y, z) == PORTAL) { dx = 1; dz = 0; }
-    int by = y;
-    while (w.blockAt(x, by - 1, z) == PORTAL) --by;
-    if (w.blockAt(x, by - 1, z) != OBSIDIAN) { w.setBlockWithNotify(x, y, z, 0); return; }
-    int h = 1;
-    while (h < 4 && w.blockAt(x, by + h, z) == PORTAL) ++h;
-    if (h == 3 && w.blockAt(x, by + h, z) == OBSIDIAN) {
-        bool alongX = w.blockAt(x - 1, y, z) == PORTAL || w.blockAt(x + 1, y, z) == PORTAL;
-        bool alongZ = w.blockAt(x, y, z - 1) == PORTAL || w.blockAt(x, y, z + 1) == PORTAL;
-        if (alongX && alongZ) w.setBlockWithNotify(x, y, z, 0);
-        else if ((w.blockAt(x + dx, y, z + dz) != OBSIDIAN || w.blockAt(x - dx, y, z - dz) != PORTAL) &&
-                 (w.blockAt(x - dx, y, z - dz) != OBSIDIAN || w.blockAt(x + dx, y, z + dz) != PORTAL))
-            w.setBlockWithNotify(x, y, z, 0);
-    } else {
-        w.setBlockWithNotify(x, y, z, 0);
-    }
-}
-} // namespace
-
-bool tryToCreatePortal(World& w, int x, int y, int z) {
-    int dx = 0, dz = 0;
-    if (w.blockAt(x - 1, y, z) == OBSIDIAN || w.blockAt(x + 1, y, z) == OBSIDIAN) dx = 1;
-    if (w.blockAt(x, y, z - 1) == OBSIDIAN || w.blockAt(x, y, z + 1) == OBSIDIAN) dz = 1;
-    if (dx == dz) return false;
-    if (w.blockAt(x - dx, y, z - dz) == 0) { x -= dx; z -= dz; }
-    for (int i = -1; i <= 2; ++i)
-        for (int j = -1; j <= 3; ++j) {
-            bool frame = i == -1 || i == 2 || j == -1 || j == 3;
-            if ((i == -1 || i == 2) && (j == -1 || j == 3)) continue; // the corners don't matter
-            int id = w.blockAt(x + dx * i, y + j, z + dz * i);
-            if (frame) {
-                if (id != OBSIDIAN) return false;
-            } else if (id != 0 && id != FIRE) {
-                return false;
-            }
-        }
-    w.editingBlocks = true;
-    for (int i = 0; i < 2; ++i)
-        for (int j = 0; j < 3; ++j) w.setBlockWithNotify(x + dx * i, y + j, z + dz * i, PORTAL);
-    w.editingBlocks = false;
-    return true;
 }
 
 void onBlockAdded(World& w, int x, int y, int z, int id) {
@@ -771,19 +634,14 @@ void onBlockAdded(World& w, int x, int y, int z, int id) {
             for (int j = y - 2; j <= y + 2; j++)
                 for (int k = z - 2; k <= z + 2; k++) {
                     int n = w.blockAt(i, j, k);
-                    if (n == 78 || n == 79) w.setBlockWithNotify(i, j, k, 0);
+                    if (n == SNOW || n == ICE) w.setBlockWithNotify(i, j, k, 0);
                 }
         break;
     case BC::SpongeInactive: wetSpongeAdded(w, x, y, z); break;
     case BC::Torch: torchAddedNsss(w, x, y, z, id); break;
     case BC::Sand: case BC::Gravel: w.scheduleBlockUpdate(x, y, z, id); break;
-    case BC::Frozen:
-        if (id == COMPACTED_ICE) w.scheduleBlockUpdate(x, y, z, id);
-        break;
-    case BC::MagicLight: w.scheduleBlockUpdate(x, y, z, id); break;
     case BC::MinecartTrack: rails::onBlockAdded(w, x, y, z); break;
-    case BC::Fire: // BlockFire.onBlockAdded: on obsidian it may light a portal
-        if (w.blockAt(x, y - 1, z) == OBSIDIAN && tryToCreatePortal(w, x, y, z)) break;
+    case BC::Fire: // BlockFire.onBlockAdded
         if (!w.isBlockOpaqueCube(x, y - 1, z) && !fireNextToFuel(w, x, y, z)) w.setBlockWithNotify(x, y, z, 0);
         else w.scheduleBlockUpdate(x, y, z, id);
         break;
@@ -793,10 +651,6 @@ void onBlockAdded(World& w, int x, int y, int z, int id) {
 
 void onBlockRemoval(World& w, int x, int y, int z, int id) {
     if (Redstone::handles(id)) Redstone::onBlockRemoval(w, x, y, z, id, w.metaAt(x, y, z));
-    if (quietRemoval) {
-        if (BP[id].container) w.removeTileEntity(x, y, z);
-        return;
-    }
     if (BP[id].container) {
         // BlockChest / BlockFurnace: what was inside spills out
         static JavaRandom spill(0xC4E57ULL); // the block's own Random in Java, not the world's
@@ -817,15 +671,9 @@ void onBlockRemoval(World& w, int x, int y, int z, int id) {
         w.removeTileEntity(x, y, z);
         return;
     }
-    switch (BP[id].cls) {
-    case BC::Leaves: case BC::Log: break; // NSSS (Alpha): leaves have no decay metadata
-    case BC::Ice: {
-        if (iceCollecting) break;
+    if (id == ICE) { // BlockIce.onBlockRemoval: water, if something holds it up
         Mat m = w.materialAt(x, y - 1, z);
         if (matSolid(m) || matLiquid(m)) w.setBlockWithNotify(x, y, z, WATER);
-        break;
-    }
-    default: break;
     }
 }
 
@@ -838,10 +686,14 @@ void onNeighborBlockChange(World& w, int x, int y, int z, int id, int neighbour)
         checkPlant(w, x, y, z, id);
         return;
     }
+    auto dropIf = [&](bool fall) {
+        if (!fall) return;
+        dropBlockAsItem(w, x, y, z, id, w.metaAt(x, y, z));
+        w.setBlockWithNotify(x, y, z, 0);
+    };
     switch (BP[id].cls) {
     case BC::Flowing: case BC::Stationary:
         checkForHarden(w, x, y, z, id);
-        if (w.blockAt(x, y + 1, z) == CATTAIL) onNeighborBlockChange(w, x, y + 1, z, CATTAIL, neighbour);
         if (BP[id].cls == BC::Stationary && w.blockAt(x, y, z) == id) stationaryToFlowing(w, x, y, z, id);
         break;
     case BC::Sand: case BC::Gravel: w.scheduleBlockUpdate(x, y, z, id); break;
@@ -863,62 +715,27 @@ void onNeighborBlockChange(World& w, int x, int y, int z, int id, int neighbour)
     case BC::SpongeInactive: // power gone: a dry sponge again
         if (!redPowerAround(w, x, y, z, neighbour)) w.setBlockWithNotify(x, y, z, SPONGE_ID);
         break;
-    case BC::Portal: portalNeighborChange(w, x, y, z); break;
     case BC::MinecartTrack: rails::onNeighborChange(w, x, y, z, neighbour); break;
-    case BC::Cake: // nothing under it: gone (it drops nothing)
-        if (!matSolid(w.materialAt(x, y - 1, z))) w.setBlockWithNotify(x, y, z, 0);
-        break;
     case BC::Fire: // BlockFire.onNeighborBlockChange
         if (!w.isBlockOpaqueCube(x, y - 1, z) && !fireNextToFuel(w, x, y, z)) w.setBlockWithNotify(x, y, z, 0);
         break;
-    case BC::Cactus:
-        if (!cactusStay(w, x, y, z)) {
-            dropBlockAsItem(w, x, y, z, id, w.metaAt(x, y, z));
-            w.setBlockWithNotify(x, y, z, 0);
-        }
-        break;
-    case BC::Reed:
-        if (!reedPlace(w, x, y, z)) {
-            dropBlockAsItem(w, x, y, z, id, w.metaAt(x, y, z));
-            w.setBlockWithNotify(x, y, z, 0);
-        }
-        break;
-    case BC::Snow:
-        if (!snowPlace(w, x, y, z)) {
-            dropBlockAsItem(w, x, y, z, id, w.metaAt(x, y, z));
-            w.setBlockWithNotify(x, y, z, 0);
-        }
-        break;
-    case BC::Frozen:
-        if (id == COMPACTED_ICE) w.scheduleBlockUpdate(x, y, z, id);
-        break;
-    case BC::BonePile:
-        if (!w.isBlockOpaqueCube(x, y - 1, z)) {
-            dropBlockAsItem(w, x, y, z, id, w.metaAt(x, y, z));
-            w.setBlockWithNotify(x, y, z, 0);
-        }
-        break;
-    case BC::Icicle: {
-        bool rising = (w.metaAt(x, y, z) & 1) == 1;
-        if (rising) {
-            if (!icicleHolds(w, x, y - 1, z, true)) {
-                dropBlockAsItem(w, x, y, z, id, w.metaAt(x, y, z));
-                w.setBlockWithNotify(x, y, z, 0);
-            }
-        } else if (!icicleHolds(w, x, y + 1, z, false)) {
-            w.setBlockWithNotify(x, y, z, 0); // BlockIcicle.fall: the falling icicle entity isn't ported yet
-        }
-        break;
-    }
+    case BC::Cactus: dropIf(!cactusStay(w, x, y, z)); break;
+    case BC::Reed: dropIf(!reedPlace(w, x, y, z)); break;
+    case BC::Snow: dropIf(!snowPlace(w, x, y, z)); break;
     default: break;
     }
 }
 
 namespace {
-// BlockLeaves.updateTick: a marked leaf with no log within 4 (through leaves) decays
-int leafScratch[32 * 32 * 32];
-// NSSS BlockLeaves.updateTick: no log (or mossy brick) within 4 blocks and the leaf goes, dropping a
-// sapling 1 in 40, an apple 1 in 128 and a golden apple 1 in 10000 (dropChance outside season cycles)
+// BlockLeaves.dropChance: 1 in this many leaves drop a sapling (0), an apple (1), a golden apple (2)
+int leafDropChance(World& w, int item) {
+    static const int BASE[3] = {40, 128, 10000};
+    static const int SEASON[4][3] = {{40, 256, 20000}, {60, 128, 10000}, {100, 512, 10000}, {30, 512, 10000}};
+    int s = cycleSeason(w);
+    return s < 0 ? BASE[item] : SEASON[s][item];
+}
+// BlockLeaves.updateTick: no log (or mossy brick) within 4 blocks and the leaf goes, maybe dropping
+// a sapling, an apple or a golden apple
 void nsssLeavesTick(World& w, int x, int y, int z, JavaRandom& r) {
     for (int x1 = x - 4; x1 <= x + 4; ++x1)
         for (int z1 = z - 4; z1 <= z + 4; ++z1)
@@ -927,42 +744,9 @@ void nsssLeavesTick(World& w, int x, int y, int z, JavaRandom& r) {
                 if (id == LOG || id == 93) return; // getConnectLog: wood or brickMossy
             }
     w.setBlockWithNotify(x, y, z, 0);
-    if (r.nextInt(40) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 6, 1, 0});
-    if (r.nextInt(128) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 260, 1, 0});
-    if (r.nextInt(10000) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 322, 1, 0});
-}
-
-void leavesTick(World& w, int x, int y, int z, int id) {
-    int meta = w.metaAt(x, y, z);
-    if ((meta & 4) == 0) return;
-    const int R = 4, S = 32, S2 = S * S, H = S / 2;
-    auto at = [&](int a, int b, int c) -> int& { return leafScratch[(a + H) * S2 + (b + H) * S + c + H]; };
-    if (w.checkChunksExist(x - R - 1, y - R - 1, z - R - 1, x + R + 1, y + R + 1, z + R + 1)) {
-        for (int a = -R; a <= R; ++a)
-            for (int b = -R; b <= R; ++b)
-                for (int c = -R; c <= R; ++c) {
-                    int n = w.blockAt(x + a, y + b, z + c);
-                    at(a, b, c) = n == LOG ? 0 : n == LEAVES ? -2 : -1;
-                }
-        for (int d = 1; d <= 4; ++d)
-            for (int a = -R; a <= R; ++a)
-                for (int b = -R; b <= R; ++b)
-                    for (int c = -R; c <= R; ++c)
-                        if (at(a, b, c) == d - 1) {
-                            if (at(a - 1, b, c) == -2) at(a - 1, b, c) = d;
-                            if (at(a + 1, b, c) == -2) at(a + 1, b, c) = d;
-                            if (at(a, b - 1, c) == -2) at(a, b - 1, c) = d;
-                            if (at(a, b + 1, c) == -2) at(a, b + 1, c) = d;
-                            if (at(a, b, c - 1) == -2) at(a, b, c - 1) = d;
-                            if (at(a, b, c + 1) == -2) at(a, b, c + 1) = d;
-                        }
-    }
-    if (at(0, 0, 0) >= 0) {
-        w.setBlockMetadataWithNotify(x, y, z, meta & ~4);
-    } else { // removeLeaves
-        dropBlockAsItem(w, x, y, z, id, w.metaAt(x, y, z));
-        w.setBlockWithNotify(x, y, z, 0);
-    }
+    if (r.nextInt(leafDropChance(w, 0)) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 6, 1, 0});
+    if (r.nextInt(leafDropChance(w, 1)) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 260, 1, 0});
+    if (r.nextInt(leafDropChance(w, 2)) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 322, 1, 0});
 }
 
 // BlockCrops.getGrowthRate
@@ -984,6 +768,12 @@ float cropGrowth(World& w, int x, int y, int z, int id) {
             rate += f;
         }
     if (diag || (rowX && rowZ)) rate /= 2.0f;
+    switch (cycleSeason(w)) {
+    case 1: rate /= 3.0f; break;  // fall
+    case 2: rate /= 10.0f; break; // winter
+    case 3: rate *= 3.0f; break;  // spring
+    default: break;
+    }
     return rate;
 }
 
@@ -1002,6 +792,7 @@ void growColumn(World& w, int x, int y, int z, int id) {
         }
     }
 }
+
 } // namespace
 
 void updateTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
@@ -1034,8 +825,10 @@ void updateTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
         checkPlant(w, x, y, z, id); // BlockFlower.updateTick
         if (w.blockAt(x, y, z) != id) return;
         switch (BP[id].cls) {
-        case BC::Sapling: // NSSS BlockSapling: 16 stages, 1 in 5 (growthChance outside season cycles)
-            if (w.getBlockLightValue(x, y + 1, z) >= 9 && r.nextInt(5) == 0) {
+        case BC::Sapling: { // BlockSapling: 16 stages, 1 in growthChance
+            int s = cycleSeason(w);
+            int chance = s == 1 ? 15 : s == 2 ? 50 : s == 3 ? 3 : 5;
+            if (w.getBlockLightValue(x, y + 1, z) >= 9 && r.nextInt(chance) == 0) {
                 int meta = w.metaAt(x, y, z);
                 if (meta < 15) {
                     w.setBlockMetadataWithNotify(x, y, z, meta + 1);
@@ -1045,6 +838,7 @@ void updateTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
                 }
             }
             break;
+        }
         case BC::Crops:
             if (w.getBlockLightValue(x, y + 1, z) >= 9) {
                 int m = w.metaAt(x, y, z);
@@ -1054,23 +848,18 @@ void updateTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
                 }
             }
             break;
-        case BC::AxeolonFlower: { // Duskpetals open at night and close by day
-            bool day = w.skylightSubtracted < 4;
-            int meta = w.metaAt(x, y, z);
-            if (id == AX_FLOWERS) {
-                if ((meta == 2 || meta == 3) && !day) w.setBlockAndMetadataWithNotify(x, y, z, DUSKPETAL_OPEN, 0);
-                else if (meta == 3 && day) w.setBlockMetadataWithNotify(x, y, z, 2);
-            } else if (id == DUSKPETAL_OPEN && day) {
-                w.setBlockAndMetadataWithNotify(x, y, z, AX_FLOWERS, 2);
-            }
-            break;
-        }
         default: break;
         }
         return;
     }
     switch (BP[id].cls) {
-    case BC::Grass:
+    case BC::Grass: {
+        // summer evenings in a world with seasons: a lightning bug over unlit grass
+        int64_t t = w.info.time % 24000;
+        if (cycleSeason(w) == 0 && t > 12000 && t < 16000 && w.getSavedLightValue(Sky::Block, x, y + 1, z) <= 7) {
+            double px = x + 0.5 + (r.nextFloat() - 0.5), py = y + double(1.0625f), pz = z + 0.5 + (r.nextFloat() - 0.5);
+            if (w.onParticle) w.onParticle(2, px, py, pz, 0, 0, 0); // "lightningbug"
+        }
         if (w.getBlockLightValue(x, y + 1, z) < 4 && matBlocksGrass(w.materialAt(x, y + 1, z))) {
             if (r.nextInt(4) != 0) return;
             w.setBlockWithNotify(x, y, z, DIRT);
@@ -1082,6 +871,7 @@ void updateTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
                 w.setBlockWithNotify(a, b, c, GRASS);
         }
         break;
+    }
     case BC::Soil:
         if (r.nextInt(5) == 0) {
             bool water = false;
@@ -1119,71 +909,78 @@ void updateTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
     case BC::Flowing: flowingTick(w, x, y, z, id, r); break;
     case BC::Stationary: stationaryTick(w, x, y, z, id, r); break;
     case BC::Sand: case BC::Gravel: tryToFall(w, x, y, z, id); break;
-    case BC::Frozen:
-        if (id == COMPACTED_ICE) freezeNeighbours(w, x, y, z);
-        break;
     case BC::Fire: fireTick(w, x, y, z, r); break;
-    case BC::MagicLight: { // BlockMagicLight: ages every 30 s (and on random ticks), gone at 15
-        int age = w.metaAt(x, y, z) + 1;
-        if (age >= 15) w.setBlockWithNotify(x, y, z, 0);
-        else {
-            w.setBlockMetadataWithNotify(x, y, z, age);
-            w.scheduleBlockUpdate(x, y, z, id);
-        }
-        break;
-    }
     default: break;
     }
 }
 
-bool canPlaceBlockAt(World& w, int id, int x, int y, int z) {
+// Block.canPlace and its overrides (World.func_695_a asks it)
+bool canPlace(World& w, int id, int x, int y, int z) {
+    auto free = [&](int a, int b, int c) { // Block.canPlace: air, or a liquid
+        int l = w.blockAt(a, b, c);
+        return l == 0 || matLiquid(BP[l].mat);
+    };
+    auto sides = [&] { // a solid block beside it
+        return normalCube(w, x - 1, y, z) || normalCube(w, x + 1, y, z) || normalCube(w, x, y, z - 1) || normalCube(w, x, y, z + 1);
+    };
+    if (isPlant(id)) return growsOn(id, w.blockAt(x, y - 1, z)); // BlockFlower.canPlace
     switch (BP[id].cls) {
-    case BC::Cactus: {
-        int cur = w.blockAt(x, y, z);
-        if (!(cur == 0 || matLiquid(BP[cur].mat))) return false;
-        return cactusStay(w, x, y, z);
-    }
+    case BC::Cactus: return free(x, y, z) && cactusStay(w, x, y, z);
+    case BC::Door: return y < 127 && normalCube(w, x, y - 1, z) && free(x, y, z) && free(x, y + 1, z);
+    case BC::Fire: return normalCube(w, x, y - 1, z) || fireNextToFuel(w, x, y, z);
+    case BC::PressurePlate: return w.blockAt(x, y - 1, z) == 85 || normalCube(w, x, y - 1, z);
+    case BC::RedstoneWire: case BC::MinecartTrack: return normalCube(w, x, y - 1, z);
+    case BC::Stairs: return free(x, y, z); // its modelBlock's
+    case BC::Button: case BC::Gear: case BC::Ladder: return sides();
+    case BC::Chest: return chestPlace(w, x, y, z);
+    case BC::Ice: return !hotNearby(w, x, y, z) && free(x, y, z);
     case BC::Reed: return reedPlace(w, x, y, z);
     case BC::Snow: return snowPlace(w, x, y, z);
-    case BC::Pumpkin: {
-        int cur = w.blockAt(x, y, z);
-        return (cur == 0 || matLiquid(BP[cur].mat)) && w.isBlockOpaqueCube(x, y - 1, z);
-    }
-    case BC::Cattail: return w.blockAt(x, y, z) == 0 && w.blockAt(x, y + 1, z) == 0 && cattailSpot(w, x, y, z);
-    case BC::Torch: case BC::RedstoneTorch: case BC::LapisTorch: case BC::Lever: // a solid side or floor
-        return w.isBlockOpaqueCube(x - 1, y, z) || w.isBlockOpaqueCube(x + 1, y, z) || w.isBlockOpaqueCube(x, y, z - 1) ||
-               w.isBlockOpaqueCube(x, y, z + 1) || w.isBlockOpaqueCube(x, y - 1, z);
-    case BC::Ladder: case BC::Button: // a solid side
-        return w.isBlockOpaqueCube(x - 1, y, z) || w.isBlockOpaqueCube(x + 1, y, z) || w.isBlockOpaqueCube(x, y, z - 1) ||
-               w.isBlockOpaqueCube(x, y, z + 1);
-    case BC::PressurePlate: case BC::RedstoneWire: case BC::LapisWire:
-        return w.isBlockOpaqueCube(x, y - 1, z);
-    case BC::MinecartTrack: return rails::canPlace(w, x, y, z);
-    case BC::Cake: { // BlockCake: on something solid
-        int cur = w.blockAt(x, y, z);
-        return (cur == 0 || matLiquid(BP[cur].mat)) && matSolid(w.materialAt(x, y - 1, z));
-    }
-    default:
-        if (isPlant(id)) return growsOn(id, w.blockAt(x, y - 1, z)); // BlockFlower.canPlaceBlockAt
-        {
-            int cur = w.blockAt(x, y, z);
-            return cur == 0 || matLiquid(BP[cur].mat);
-        }
+    case BC::Torch: case BC::RedstoneTorch: return torchCanPlace(w, x, y, z);
+    default: return free(x, y, z);
     }
 }
-
-void torchAdded(World& w, int i, int j, int k, int id) { torchAddedNsss(w, i, j, k, id); }
 
 bool canBlockStay(World& w, int id, int x, int y, int z) {
     if (isPlant(id)) return plantStay(w, id, x, y, z);
     switch (BP[id].cls) {
     case BC::Cactus: return cactusStay(w, x, y, z);
     case BC::Reed: return reedPlace(w, x, y, z);
-    case BC::Icicle: {
-        bool rising = (w.metaAt(x, y, z) & 1) == 1;
-        return rising ? icicleHolds(w, x, y - 1, z, true) : icicleHolds(w, x, y + 1, z, false);
-    }
     default: return true;
     }
 }
+
+void onBlockDestroyedByPlayer(World& w, int x, int y, int z, int id, int meta) {
+    switch (id) {
+    case 46: // BlockTNT: primed, with its fuse
+        if (onTntIgnited) onTntIgnited(x, y, z);
+        break;
+    case SPONGE_ID: spongeDestroyed(w, x, y, z); break; // the water held back runs again
+    case 59: // BlockCrops: up to three seeds, likelier the riper it was
+        for (int i = 0; i < 3; ++i)
+            if (w.rand.nextInt(15) <= meta) {
+                const float f = 0.7f;
+                float f1 = w.rand.nextFloat() * f + (1.0f - f) * 0.5f;
+                float f2 = w.rand.nextFloat() * f + (1.0f - f) * 0.5f;
+                float f3 = w.rand.nextFloat() * f + (1.0f - f) * 0.5f;
+                w.drops.push_back(World::Drop{x + double(f1), y + double(f2), z + double(f3), 295, 1, 0});
+            }
+        break;
+    case LEAVES: { // BlockLeaves: a sapling, an apple, a golden apple (its own new Random)
+        static JavaRandom leafRand(0x1EAF5EEDLL);
+        if (leafRand.nextInt(leafDropChance(w, 0)) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 6, 1, 0});
+        if (leafRand.nextInt(leafDropChance(w, 1)) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 260, 1, 0});
+        if (leafRand.nextInt(leafDropChance(w, 2)) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 322, 1, 0});
+        break;
+    }
+    case 99: // BlockPyramidion: a giant (and on peaceful the block comes back)
+        if (onPyramidionBroken) onPyramidionBroken(x, y, z);
+        break;
+    default: break;
+    }
+}
+
+void torchAdded(World& w, int i, int j, int k, int id) { torchAddedNsss(w, i, j, k, id); }
+bool hotClothNearby(World& w, int x, int y, int z) { return hotNearby(w, x, y, z); }
+void torchNeighbourChanged(World& w, int x, int y, int z, int id) { torchNeighbourChange(w, x, y, z, id); }
 } // namespace Blocks

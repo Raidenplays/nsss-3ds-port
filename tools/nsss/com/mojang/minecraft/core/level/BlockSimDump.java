@@ -6,7 +6,7 @@ import java.util.*;
 // java BlockSimDump <seed> <tmpdir> <script> <out>
 // Script lines: "load cx cz R" (ring-load chunks), "set x y z id meta" (setBlockAndMetadataWithNotify),
 // "tick n" (n x: worldTime++, tickUpdates(false)), "dump x0 y0 z0 x1 y1 z1" (id+meta, x then z then y),
-// "sub n" (skyLightSubtracted), "render cx sy cz" (WorldRenderer.updateRenderer on that 16x16x16
+// "use x y z" (Block.blockActivated, no player), "sub n" (skyLightSubtracted), "render cx sy cz" (WorldRenderer.updateRenderer on that 16x16x16
 // section: the quads RenderBlocks makes, through tools/nsss/shadow's Tessellator - so that has to come
 // before the jar on the classpath).
 // Same script runs on tools/host/blocksim.cpp; the outputs must be identical.
@@ -43,6 +43,11 @@ public class BlockSimDump {
               }
             break;
           case "sub": w.skyLightSubtracted = v[0]; break;
+          case "use": {
+            int id = w.getBlockId(v[0], v[1], v[2]);
+            if (id > 0) com.mojang.minecraft.core.level.tile.Block.allBlocks[id].blockActivated(w, v[0], v[1], v[2], null);
+            break;
+          }
           case "render": {
             com.mojang.minecraft.client.render.Tessellator t = com.mojang.minecraft.client.render.Tessellator.instance;
             com.mojang.minecraft.client.render.Tessellator.out = o;

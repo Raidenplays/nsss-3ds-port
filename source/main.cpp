@@ -266,31 +266,12 @@ void drawCrosshair() {
     C2D_DrawRectSolid(cx - 0.5f, cy - 5, 0.5f, 1, 10, light);
 }
 
-bool isDoorId(int id) { return id == 64 || id == 71; }
 
 // Right-click on a block (Block.blockActivated).
 // Returns true if the block took the click (nothing gets placed).
 
-bool useBlock(World& w, int x, int y, int z, bool emptyHand) {
-    int id = w.getBlockId(x, y, z);
-    int meta = w.getBlockMetadata(x, y, z);
-    if (isDoorId(id)) {
-        if (id == 71) return true; // iron: redstone only
-        if (meta & 8) {
-            if (w.getBlockId(x, y - 1, z) == id) return useBlock(w, x, y - 1, z, emptyHand);
-            return true;
-        }
-        sound::play(w.rand.nextFloat() < 0.5f ? "random.door_open" : "random.door_close", x + 0.5, y + 0.5, z + 0.5, 1.0f,
-                    w.rand.nextFloat() * 0.1f + 0.9f);
-        if (w.getBlockId(x, y + 1, z) == id) w.setBlockAndMetadata(x, y + 1, z, uint8_t(id), (meta ^ 4) + 8);
-        w.setBlockAndMetadata(x, y, z, uint8_t(id), meta ^ 4);
-        rebuild.markBlock(x, y, z);
-        rebuild.markBlock(x, y + 1, z);
-        return true;
-    }
-    // levers and buttons (they power things, so they live with redstone)
-    if (Redstone::blockActivated(w, x, y, z, emptyHand)) return true;
-    return false;
+bool useBlock(World& w, int x, int y, int z) {
+    return Redstone::blockActivated(w, x, y, z); // levers, buttons and wooden doors
 }
 } // namespace
 
@@ -539,13 +520,26 @@ int main() {
     plateMobs = &mobs;
     plateItems = &itemEntities;
     platePlayer = &player;
-    Redstone::anythingOn = [](const AABB& box, bool livingOnly) { // BlockPressurePlate: who's on it
+    Redstone::anythingOn = [](const AABB& box, int kind) { // BlockPressurePlate: who's on it (any, living, players)
         if (!platePlayer->dead() && platePlayer->boundingBox.intersects(box)) return true;
+        if (kind == 2) return false;
         if (plateMobs->anyIn(box)) return true;
-        return !livingOnly && plateItems->anyIn(box);
+        return kind == 0 && plateItems->anyIn(box);
     };
     static Mobs* tntMobs;
     tntMobs = &mobs;
+    static World* pyrWorld;
+    static Hud* pyrHud;
+    pyrWorld = &world;
+    pyrHud = &hud;
+    Blocks::onPyramidionBroken = [](int x, int y, int z) { // BlockPyramidion.onBlockDestroyedByPlayer
+        if (gOptions.difficulty == 0) {
+            pyrWorld->setBlock(x, y, z, 99);
+            pyrHud->addChat("No."); // displayInfoGUI
+        }
+        static JavaRandom giantRand(0x61A47LL); // new Random()
+        tntMobs->spawnAt(Mobs::GIANT, x, y, z, giantRand.nextFloat() * 360.0f);
+    };
     Blocks::onTntIgnited = [](int x, int y, int z) { // fire reached TNT
         tntMobs->primeTnt(x, y, z, false);
         sound::play("random.fuse", x + 0.5, y + 0.5, z + 0.5, 1.0f, 1.0f);
@@ -564,47 +558,39 @@ int main() {
         disc.count = 1;
         itemEntities.spawn(x + ox, y + oy, z + oz, disc, 10);
     };
+    // PlayerControllerSP.doDigBlock: PlayerController's (the block goes, its sound, onBlockDestroyedByPlayer),
+    // then the held tool wears, and a gold tool takes the block itself (dropBlockGoldTouch), anything
+    // that can harvest it gets its drops (harvestBlock)
     auto breakBlock = [&](int x, int y, int z) {
         int id = world.getBlockId(x, y, z);
-        if (id == 0 || id == 7) return; // bedrock
+        if (id == 0 || (id == 7 && creative)) return; // (bedrock never breaks in survival: strength 0)
         if (id == 84) ejectRecord(x, y, z); // a jukebox gives up its record as it breaks
         int meta = world.getBlockMetadata(x, y, z);
-        ItemStack& h = inv.held();
-        int heldId = h.empty() ? 0 : h.id;
-        bool harvest = survival::canHarvest(heldId, id);
-        particles.blockBroken(world, x, y, z, id, meta);
-        // BlockIce.collecting: a pickaxe takes the ice whole instead of leaving water
-        bool pickaxe = heldId == 257 || heldId == 270 || heldId == 274 || heldId == 278 || heldId == 285;
-        Blocks::iceCollecting = id == 79 && pickaxe && !creative;
-        world.setBlockAndMetadata(x, y, z, 0, 0);
-        Blocks::iceCollecting = false;
-        if (id == 46) { // BlockTNT.onBlockDestroyedByPlayer: lit, not dropped
-            mobs.primeTnt(x, y, z, false);
-            sound::play("random.fuse", x + 0.5, y + 0.5, z + 0.5, 1.0f, 1.0f);
-            return;
-        }
-        sound::play(BS[id].brk, x + 0.5, y + 0.5, z + 0.5, (BS[id].volume + 1.0f) / 2.0f, BS[id].pitch * 0.8f);
-        if (isDoorId(id)) { // the other half goes too
-            int oy = (meta & 8) ? y - 1 : y + 1;
-            if (world.getBlockId(x, oy, z) == id) world.setBlockAndMetadata(x, oy, z, 0, 0);
-            rebuild.markBlock(x, oy, z);
-            if (meta & 8) meta = world.getBlockMetadata(x, oy, z); // drop from the bottom half
+        particles.blockBroken(world, x, y, z, id, meta); // addBlockDestroyEffects
+        bool flag = world.setBlockAndMetadata(x, y, z, 0, 0);
+        if (flag) {
+            sound::play(BS[id].brk, x + 0.5, y + 0.5, z + 0.5, (BS[id].volume + 1.0f) / 2.0f, BS[id].pitch * 0.8f);
+            Blocks::onBlockDestroyedByPlayer(world, x, y, z, id, meta);
         }
         if (!creative) {
-            // PlayerControllerSP.doDigBlock -> ItemStack.onDestroyBlock: ItemSword wears 2, ItemTool 1
-            if (heldId >= 256 && survival::mineWear(heldId) > 0) {
+            ItemStack& h = inv.held();
+            int heldId = h.empty() ? 0 : h.id;
+            bool harvest = survival::canHarvest(heldId, id);         // checkBreakBlock
+            bool gold = heldId >= 283 && heldId <= 286;               // checkGoldTouch: ItemStack.isGold
+            if (heldId >= 256 && survival::mineWear(heldId) > 0) {    // ItemStack.onDestroyBlock -> damageItem
                 h.damage += survival::mineWear(heldId);
-                if (h.damage > survival::maxDamage(heldId)) { // ItemStack.damageItem: one used up
-                    h.clear();
-                    sound::play("random.break", player.posX, player.posY - 1.62, player.posZ, 0.8f,
-                                0.8f + world.rand.nextFloat() * 0.4f);
-                }
+                if (h.damage > survival::maxDamage(heldId)) h.clear(); // used up (Alpha: no sound)
             }
-            if (id == 79 && pickaxe) // PlayerControllerSP: pickaxes collect ice
-                world.drops.push_back(World::Drop{x + 0.5, y + 0.5, z + 0.5, 79, 1, 0});
-            if (harvest) {
-                if (id == 78) { // BlockSnow.harvestBlock: one snowball
-                    world.drops.push_back(World::Drop{x + 0.5, y + 0.5, z + 0.5, 332, 1, 0});
+            if (flag && gold) {
+                Blocks::dropBlockGoldTouch(world, x, y, z, id, meta);
+            } else if (flag && harvest) {
+                if (id == 78) { // BlockSnow.harvestBlock: a snowball
+                    const float f = 0.7f;
+                    double dx = double(world.rand.nextFloat() * f) + double(1.0f - f) * 0.5;
+                    double dy = double(world.rand.nextFloat() * f) + double(1.0f - f) * 0.5;
+                    double dz = double(world.rand.nextFloat() * f) + double(1.0f - f) * 0.5;
+                    world.drops.push_back(World::Drop{x + dx, y + dy, z + dz, 332, 1, 0});
+                    world.setBlockWithNotify(x, y, z, 0);
                 } else {
                     Blocks::dropBlockAsItem(world, x, y, z, id, meta);
                 }
@@ -917,7 +903,7 @@ int main() {
                 world.tickUpdates(false);
                 world.tickBlocks(player.posX, player.posY, player.posZ);
             }
-            if (!player.dead() && !flying) Redstone::entityTouching(world, player.boundingBox, true); // pressure plates
+            if (!player.dead() && !flying) Redstone::entityTouching(world, player.boundingBox); // pressure plates
             if (!flying && world.isChunkLoaded(int(std::floor(player.posX)) >> 4, int(std::floor(player.posZ)) >> 4)) {
                 // EntityPlayerSP input: Circle Pad forward/back and sideways (left is +strafe)
                 auto clamp1 = [](float v) { return v > 1.0f ? 1.0f : v < -1.0f ? -1.0f : v; };
@@ -1269,7 +1255,7 @@ int main() {
                     // PlayerControllerSP.clickBlock: start digging (instantly if strong enough)
                     dig = Dig{};
                     dig.x = hit.x; dig.y = hit.y; dig.z = hit.z;
-                    Redstone::blockClicked(world, hit.x, hit.y, hit.z); // Block.onBlockClicked: note blocks play
+                    Redstone::blockActivated(world, hit.x, hit.y, hit.z); // Block.onBlockClicked: levers, buttons and doors work by hitting too
                     dig.side = itemuse::sideOf(hit);
                     dig.id = world.getBlockId(hit.x, hit.y, hit.z);
                     dig.active = dig.id != 0;
@@ -1318,7 +1304,7 @@ int main() {
                     player.swingItem();
                     bottom.markDirty();
                     placeTimer = 0.3f;
-                } else if (useBlock(world, hit.x, hit.y, hit.z, inv.held().empty())) {
+                } else if (useBlock(world, hit.x, hit.y, hit.z)) {
                     placeTimer = 0.3f;
                 } else {
                     // where on the block the crosshair is (modern top/bottom stair placement)
@@ -1556,6 +1542,7 @@ int main() {
     rebuild = RebuildQueue();
     gParticles = nullptr;
     Blocks::onTntIgnited = nullptr;
+    Blocks::onPyramidionBroken = nullptr;
     Redstone::anythingOn = nullptr;
     world.onParticle = nullptr;
     world.onFallingBlock = nullptr;
