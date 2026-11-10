@@ -1,10 +1,10 @@
 #pragma once
-// Bottom (touch) screen: the hotbar is always visible along the bottom edge,
-// above it one of four tabs:
-//   Map      — the Almanac's map (explored-only, waypoints, zoom)
-//   Items    — inventory: armour, Axeolon charms, 2x2 crafting, backpack
-//   Almanac  — Achievements / The Hunt / Recipes
-//   Menu     — settings, stats, quit
+// Bottom (touch) screen, Pocket Edition style (PE 0.5.0's own textures, romfs:/textures/pe):
+//   Map (home) — the New 3DS Edition layout: PE hotbar along the top, the coordinates, the map on
+//                the left, and Inventory / Crafting / Pause buttons on the right
+//   Items      — inventory, chests, furnaces, crafting (MATTIS), under a PE header with Craft and X
+//   Menu       — the pause menu (options, save and quit), under a PE header with X
+//   (Almanac is Axeolon's and isn't reachable in NSSS)
 //
 // Old 3DS budget: only redrawn when something changes (markDirty), never
 // every frame. The bottom screen is single-buffered so the last image stays up.
@@ -61,6 +61,16 @@ private:
     Tex3DS_SubTexture tileSub[512];  // terrain.png + terrain2.png tiles in the 256x1024 atlas
     Tex3DS_SubTexture itemSub[256];  // gui/items.png
     C3D_Tex* itemsTex = nullptr;
+    C3D_Tex* peSheet = nullptr; // PE spritesheet.png (128x128)
+    C3D_Tex* peGui = nullptr;   // PE gui.png (256x256)
+    // a PE nine-patch: the (sx,sy,sw,sh) sprite with a 'border'-texel frame, at 2x
+    void ninePatch(C3D_Tex* tex, float tw, float th, int sx, int sy, int sw, int sh, int border, float x, float y,
+                   float w, float h, float scale = 2.0f);
+    void sprite(C3D_Tex* tex, float tw, float th, int sx, int sy, int sw, int sh, float x, float y, float scale);
+    void peButton(float x, float y, float w, float h, const char* label);
+    void drawPeHeader(const char* title, bool craftButton);
+    void drawHome();
+    void touchHome(int x, int y);
     C3D_Tex mapTex;
     Tex3DS_SubTexture mapSub;
     u32* mapStaging = nullptr;

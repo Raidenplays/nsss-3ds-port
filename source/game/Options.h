@@ -12,7 +12,7 @@ struct Options {
     int renderDistance = 0;          // blocks the renderer draws (0: leave as it is)
     bool showStats = false;          // fps and memory on the Menu tab
     int dynamicLights = 0;           // AxeolonVideo.dynamicLights: 0 off, 1 fast, 2 fancy
-    int craftStyle = 0;              // 0: the Java crafting grid, 1: Pocket Edition's recipe list (MATTIS)
+    int craftStyle = 1;              // 0: the Java crafting grid, 1: Pocket Edition's recipe list (MATTIS, NSSS 3DS default)
 
     void load();
     void save() const;

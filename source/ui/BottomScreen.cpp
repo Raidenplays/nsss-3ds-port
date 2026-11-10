@@ -28,7 +28,11 @@ constexpr int TSLOT = 24, TABLE_X = 120, TABLE_Y = 28; // crafting table grid (s
 constexpr int CSLOT = 20, CONT_X = 70; // chests: 9 columns of 20 px (a large chest needs 6 rows + yours)
 
 // Map tab
-constexpr int MAP_X = 72, MAP_Y = 26, MAP_PX = 176;
+constexpr int MAP_X = 8, MAP_Y = 68, MAP_PX = 168; // the home view's map (New 3DS Edition layout)
+constexpr float PE_HOTBAR_S = 1.75f;                 // PE gui.png's 182x22 hotbar at 1.75x: 318 px
+constexpr float PE_HOTBAR_X = 1.0f, PE_HOTBAR_Y = 2.0f;
+constexpr int HOME_BTN_X = 188, HOME_BTN_W = 124, HOME_BTN_H = 52, HOME_BTN_Y0 = 68, HOME_BTN_STEP = 58;
+constexpr int PE_X_BTN = 286; // the header's close button (spritesheet's 18x18 X at 1.75x)
 constexpr int MENU_Y0 = 25, MENU_ROW = 22, MENU_H = 20; // the Menu tab's rows
 // MATTIS: category buttons down the left, the recipe list, then the picked recipe
 constexpr int MT_CAT_X = 2, MT_CAT_W = 44, MT_CAT_H = 43, MT_CAT_STEP = 45;
@@ -74,6 +78,8 @@ bool BottomScreen::init(Renderer& r, Camera& c, Inventory& i, AlmanacMap& m) {
         itemSub[t] = {16, 16, tx / 16.0f, 1.0f - ty / 16.0f, (tx + 1) / 16.0f, 1.0f - (ty + 1) / 16.0f};
     }
     itemsTex = r.texture("romfs:/textures/gui/items.rgba");
+    peSheet = r.texture("romfs:/textures/pe/spritesheet.rgba");
+    peGui = r.texture("romfs:/textures/pe/gui.rgba");
 
     const int n = AlmanacMap::SIZE;
     if (!C3D_TexInit(&mapTex, n, n, GPU_RGBA8)) return false;
@@ -168,7 +174,14 @@ void BottomScreen::handleInput(u32 down, u32 held, const touchPosition& touch) {
     bool alt = (held & (KEY_L | KEY_R)) != 0;
     dirty = true;
 
-    if (y < TAB_H) { setTab(static_cast<Tab>(x / 80)); return; }
+    if (current == Tab::Map) { touchHome(x, y); return; }
+    if (y < TAB_H) { // the PE header: X closes back to the home view, Craft opens PE crafting
+        if (x >= PE_X_BTN) setTab(Tab::Map);
+        else if (current == Tab::Items && x < 74 && gOptions.craftStyle == 1 && inv->containerKind == Inventory::NONE)
+            openMattis(!mattisShowing());
+        sound::playUi("random.click", 1.0f, 1.0f);
+        return;
+    }
     if (touchHotbar(x, y, alt)) return;
 
     switch (current) {
@@ -442,7 +455,6 @@ void BottomScreen::drawHotbar() {
 }
 
 void BottomScreen::drawMapTab() {
-    C2D_DrawRectSolid(0, TAB_H, 0.5f, 320, HOTBAR_Y - 4 - TAB_H, rgb(0x6B5433)); // leather cover
     C2D_DrawRectSolid(MAP_X - 3, MAP_Y - 3, 0.5f, MAP_PX + 6, MAP_PX + 6, rgb(INK));
     C2D_Image img = {&mapTex, &mapSub};
     C2D_DrawImageAt(img, MAP_X, MAP_Y, 0.5f, nullptr, MAP_SCALE, MAP_SCALE);
@@ -474,25 +486,6 @@ void BottomScreen::drawMapTab() {
     pt(0, 6, x0, y0); pt(2.5f, 4, x1, y1); pt(-2.5f, 4, x2, y2);
     C2D_DrawTriangle(x0, y0, white, x1, y1, white, x2, y2, white, 0.5f);
 
-    // Left column: zoom
-    button(8, 40, 56, 28, "+");
-    button(8, 76, 56, 28, "-");
-    char buf[32];
-    snprintf(buf, sizeof buf, "1:%d", mapZoom);
-    text(buf, 36, 112, 0.5f, rgb(PARCH), C2D_AlignCenter);
-    text("N", 36, 140, 0.6f, rgb(PARCH), C2D_AlignCenter);
-    text("^", 36, 130, 0.6f, rgb(PARCH), C2D_AlignCenter);
-
-    // Right column: coordinates + waypoints
-    float rx = 256;
-    snprintf(buf, sizeof buf, "X %d", (int)std::floor(camera->x)); text(buf, rx, 34, 0.5f, rgb(PARCH));
-    snprintf(buf, sizeof buf, "Y %d", (int)std::floor(camera->y)); text(buf, rx, 52, 0.5f, rgb(PARCH));
-    snprintf(buf, sizeof buf, "Z %d", (int)std::floor(camera->z)); text(buf, rx, 70, 0.5f, rgb(PARCH));
-    snprintf(buf, sizeof buf, "%d/%d", (int)map->waypoints().size(), AlmanacMap::MAX_WAYPOINTS);
-    text("Waypoints", rx, 100, 0.42f, rgb(PARCH));
-    text(buf, rx, 114, 0.5f, rgb(PARCH));
-    text("Tap map to", rx, 150, 0.4f, rgb(0xB8A47C));
-    text("add/remove", rx, 162, 0.4f, rgb(0xB8A47C));
 }
 
 void BottomScreen::drawItemsTab() {
@@ -882,22 +875,149 @@ void BottomScreen::draw() {
     C2D_TargetClear(target, rgb(0x2A2A2A));
     C2D_SceneBegin(target);
 
-    switch (current) {
-    case Tab::Map: drawMapTab(); break;
-    case Tab::Items:
-        if (mattisShowing()) drawMattis();
-        else if (creativeShowing()) drawCreative();
-        else drawItemsTab();
-        break;
-    case Tab::Almanac: drawAlmanacTab(); break;
-    case Tab::Menu: drawMenuTab(); break;
+    if (current == Tab::Map) {
+        drawHome();
+        return;
     }
-    drawTabs();
+    const char* title = "Inventory";
+    switch (current) {
+    case Tab::Items:
+        if (mattisShowing()) { drawMattis(); title = "Craft"; }
+        else if (creativeShowing()) { drawCreative(); title = "Select blocks"; }
+        else {
+            drawItemsTab();
+            if (inv->containerKind == Inventory::CHEST) title = "Chest";
+            else if (inv->containerKind != Inventory::NONE) title = "Furnace";
+            else if (inv->tableOpen) title = "Crafting";
+        }
+        break;
+    case Tab::Almanac: drawAlmanacTab(); title = "Almanac"; break;
+    case Tab::Menu: drawMenuTab(); title = "Game Paused"; break;
+    default: break;
+    }
+    drawPeHeader(title, current == Tab::Items && gOptions.craftStyle == 1 && inv->containerKind == Inventory::NONE &&
+                            !mattisShowing());
     drawHotbar();
 
     // Stack being carried by the stylus
     if (current == Tab::Items && !inv->cursor.empty())
         itemIcon(inv->cursor, cursorX - SLOT_IN / 2, cursorY - SLOT_IN / 2);
+}
+
+// --------------------------------------------------------------------------
+// Pocket Edition pieces (PE 0.5.0's spritesheet.png and gui.png)
+// --------------------------------------------------------------------------
+
+namespace {
+Tex3DS_SubTexture peSub(float tw, float th, float x, float y, float w, float h) {
+    return {uint16_t(w), uint16_t(h), x / tw, 1.0f - y / th, (x + w) / tw, 1.0f - (y + h) / th};
+}
+} // namespace
+
+void BottomScreen::sprite(C3D_Tex* tex, float tw, float th, int sx, int sy, int sw, int sh, float x, float y,
+                          float scale) {
+    if (!tex) return;
+    Tex3DS_SubTexture t = peSub(tw, th, sx, sy, sw, sh);
+    C2D_DrawImageAt({tex, &t}, x, y, 0.5f, nullptr, scale, scale);
+}
+
+void BottomScreen::ninePatch(C3D_Tex* tex, float tw, float th, int sx, int sy, int sw, int sh, int b, float x,
+                             float y, float w, float h, float s) {
+    if (!tex) return;
+    float bb = b * s; // the frame on screen
+    float midW = w - 2 * bb, midH = h - 2 * bb;
+    int mw = sw - 2 * b, mh = sh - 2 * b;
+    auto piece = [&](int px, int py, int pw, int ph, float dx, float dy, float dw, float dh) {
+        if (pw <= 0 || ph <= 0 || dw <= 0 || dh <= 0) return;
+        Tex3DS_SubTexture t = peSub(tw, th, px, py, pw, ph);
+        C2D_DrawImageAt({tex, &t}, dx, dy, 0.5f, nullptr, dw / pw, dh / ph);
+    };
+    piece(sx, sy, b, b, x, y, bb, bb);
+    piece(sx + b, sy, mw, b, x + bb, y, midW, bb);
+    piece(sx + sw - b, sy, b, b, x + w - bb, y, bb, bb);
+    piece(sx, sy + b, b, mh, x, y + bb, bb, midH);
+    piece(sx + b, sy + b, mw, mh, x + bb, y + bb, midW, midH);
+    piece(sx + sw - b, sy + b, b, mh, x + w - bb, y + bb, bb, midH);
+    piece(sx, sy + sh - b, b, b, x, y + h - bb, bb, bb);
+    piece(sx + b, sy + sh - b, mw, b, x + bb, y + h - bb, midW, bb);
+    piece(sx + sw - b, sy + sh - b, b, b, x + w - bb, y + h - bb, bb, bb);
+}
+
+void BottomScreen::peButton(float x, float y, float w, float h, const char* label) {
+    // Touch::TButton: spritesheet (8,32) 8x8 with a 2-texel frame
+    ninePatch(peSheet, 128, 128, 8, 32, 8, 8, 2, x, y, w, h);
+    if (label && *label) {
+        text(label, x + w / 2 + 1, y + h / 2 - 7, 0.5f, rgb(0x3F3F3F), C2D_AlignCenter);
+        text(label, x + w / 2, y + h / 2 - 8, 0.5f, rgb(0xE0E0E0), C2D_AlignCenter);
+    }
+}
+
+void BottomScreen::drawPeHeader(const char* title, bool craftButton) {
+    // PE's screen header: a raised bar with the title, Craft on the left and the X on the right
+    ninePatch(peSheet, 128, 128, 0, 0, 16, 16, 4, 0, 0, 320, TAB_H, 1.0f);
+    if (craftButton) peButton(2, 1, 70, TAB_H - 2, "Craft");
+    if (mattisShowing() && inv->containerKind == Inventory::NONE && !inv->tableOpen && !inv->cutterOpen)
+        peButton(2, 1, 70, TAB_H - 2, "Back");
+    text(title, 161, 3, 0.55f, rgb(0x3F3F3F), C2D_AlignCenter);
+    text(title, 160, 2, 0.55f, rgb(0xFFFFFF), C2D_AlignCenter);
+    sprite(peSheet, 128, 128, 60, 0, 18, 18, PE_X_BTN + 2, 1, 1.12f); // the X
+}
+
+void BottomScreen::drawHome() {
+    // PE's dirt behind everything
+    C2D_DrawRectSolid(0, 0, 0.4f, 320, 240, rgb(0x3B2C20));
+    // the hotbar: PE gui.png (0,0,182,22) with the selection frame (0,22,24,24)
+    sprite(peGui, 256, 256, 0, 0, 182, 22, PE_HOTBAR_X, PE_HOTBAR_Y, PE_HOTBAR_S);
+    for (int i = 0; i < Inventory::HOTBAR; i++)
+        itemIcon(inv->main[i], PE_HOTBAR_X + (3 + 20 * i) * PE_HOTBAR_S - 3, PE_HOTBAR_Y + 3 * PE_HOTBAR_S - 3, PE_HOTBAR_S);
+    if (inv->currentItem < Inventory::HOTBAR)
+        sprite(peGui, 256, 256, 0, 22, 24, 24, PE_HOTBAR_X + (20 * inv->currentItem - 1) * PE_HOTBAR_S,
+               PE_HOTBAR_Y - PE_HOTBAR_S, PE_HOTBAR_S);
+    // the coordinates bar
+    C2D_DrawRectSolid(0, 44, 0.5f, 320, 20, rgb(0x2B2B2B));
+    char buf[64];
+    snprintf(buf, sizeof buf, "X: %d, Y: %d, Z: %d", (int)std::floor(camera->x), (int)std::floor(camera->y),
+             (int)std::floor(camera->z));
+    text(buf, 161, 47, 0.6f, rgb(0x3F3F3F), C2D_AlignCenter);
+    text(buf, 160, 46, 0.6f, rgb(0xFFFFFF), C2D_AlignCenter);
+    // the map (explored-only parchment, the player's arrow, waypoints)
+    drawMapTab();
+    // Inventory / Crafting / Pause
+    for (int b = 0; b < 3; b++) {
+        float y = HOME_BTN_Y0 + b * HOME_BTN_STEP;
+        peButton(HOME_BTN_X, y, HOME_BTN_W, HOME_BTN_H, "");
+        float cx = HOME_BTN_X + HOME_BTN_W / 2.0f, cy = y + HOME_BTN_H / 2.0f;
+        if (b == 2) {
+            sprite(peGui, 256, 256, 200, 64, 18, 18, cx - 18, cy - 18, 2.0f); // gui.png's pause button
+        } else {
+            ItemStack icon;
+            icon.id = b == 0 ? 54 : 58; // the chest, the workbench
+            icon.count = 1;
+            itemIcon(icon, cx - 16 - 3, cy - 16 - 3, 2.0f);
+        }
+    }
+}
+
+void BottomScreen::touchHome(int x, int y) {
+    if (y < 44) { // the hotbar
+        int i = int((x - PE_HOTBAR_X) / (20 * PE_HOTBAR_S));
+        if (i >= 0 && i < Inventory::HOTBAR) inv->currentItem = i;
+        return;
+    }
+    if (in(x, y, MAP_X, MAP_Y, MAP_PX, MAP_PX)) {
+        int wx = map->centreX() + (int)std::floor(((x - MAP_X) / MAP_SCALE - AlmanacMap::SIZE / 2) * map->zoom());
+        int wz = map->centreZ() + (int)std::floor(((y - MAP_Y) / MAP_SCALE - AlmanacMap::SIZE / 2) * map->zoom());
+        map->toggleWaypoint(wx, wz, 3 * map->zoom());
+        return;
+    }
+    for (int b = 0; b < 3; b++) {
+        if (!in(x, y, HOME_BTN_X, HOME_BTN_Y0 + b * HOME_BTN_STEP, HOME_BTN_W, HOME_BTN_H)) continue;
+        sound::playUi("random.click", 1.0f, 1.0f);
+        if (b == 0) setTab(Tab::Items);
+        if (b == 1) { setTab(Tab::Items); if (gOptions.craftStyle == 1) openMattis(true); }
+        if (b == 2) setTab(Tab::Menu);
+        return;
+    }
 }
 
 // --------------------------------------------------------------------------
