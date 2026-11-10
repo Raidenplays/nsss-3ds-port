@@ -63,13 +63,6 @@ jobs:
           prev=0; for t in 8 12 16 25 45 70 100; do sleep $((t - prev)); prev=$t; import -window root shots/shot_${t}s.png || true; done
           pkill -f AppRun || true
           find ~/.local/share -path "*sdmc*" -name log.txt -exec cp {} shots/game_log.txt \; || true
-          # and once more, started in the Nether
-          sleep 3
-          echo nether > ~/.local/share/azahar-emu/sdmc/3ds/nsss3ds/autotest.txt
-          ( "$bin" "$PWD/nsss3ds.3dsx" > shots/emulator_nether.log 2>&1 & )
-          prev=0; for t in 30 50 62; do sleep $((t - prev)); prev=$t; import -window root shots/nether_${t}s.png || true; done
-          pkill -f AppRun || true
-          find ~/.local/share -path "*sdmc*" -name log.txt -exec cp {} shots/game_log_nether.txt \; || true
           # and as an Old 3DS (64 MB): a fresh world, saved and quit and reloaded every 25 s
           sleep 3
           find ~/.local/share -path "*sdmc*" -type d -name World5 -exec rm -rf {} + || true

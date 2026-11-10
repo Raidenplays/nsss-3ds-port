@@ -30,7 +30,14 @@ public:
 
     std::string world() const { return chosen; }
     bool createdNew() const { return newWorld; }
-    int gameType() const { return chosenGameType; }
+    // GuiNameWorld's choices for a new world (season / weather in EnumSeason / EnumWeather order)
+    struct NewWorld {
+        std::string name; // empty: no name.data, the world shows as "World N"
+        int season = 4, weather = 3; // cycle, seasonal
+        bool commands = false;
+        int worldType = 0;
+    };
+    const NewWorld& newWorldSettings() const { return create; }
 
     // World creation needs the terrain generator; until it is ported the button is disabled
     static bool canCreateWorlds;
@@ -48,7 +55,7 @@ private:
         bool exists = false;
         bool unreadable = false;
         float mb = 0;
-        int gameType = 0;
+        std::string name; // name.data, or "World N"
     };
 
     Renderer* renderer = nullptr;
@@ -70,14 +77,14 @@ private:
     int selected = 0;
     Slot slots[5];
     int pendingSlot = 0;
-    int createGameType = 0;
+    NewWorld create;
     std::string chosen;
     bool newWorld = false;
-    int chosenGameType = 0;
 
     uint32_t rng = 0x2545F491;
 
     float randf();
+    void reopenCreate(); // the create screen again, with its buttons' new labels
     void open(Screen s);
     void nudge(const Button& b, int dir);
     void scanSlots();

@@ -141,7 +141,7 @@ struct Pathfinder {
         for (int a = 0; a < sx; ++a)
             for (int b = 0; b < sy; ++b)
                 for (int c = 0; c < sz; ++c) {
-                    Mat m = BP[y >= 0 && y < 256 ? w.getBlockId(x, y, z) : 0].mat;
+                    Mat m = BP[y >= 0 && y < Chunk::HEIGHT ? w.getBlockId(x, y, z) : 0].mat;
                     if (matSolid(m)) return 0;
                     if (m == Mat::water || m == Mat::lava) return -1;
                 }
@@ -315,7 +315,7 @@ void Mobs::moveEntity(const World& w, Mob& m, double dx, double dy, double dz) {
     // onEntityCollidedWithBlock: soul sand, cactus
     int bx0 = fl(m.box.minX), by0 = fl(m.box.minY), bz0 = fl(m.box.minZ);
     int bx1 = fl(m.box.maxX), by1 = fl(m.box.maxY), bz1 = fl(m.box.maxZ);
-    if (by0 >= 0 && by1 < 256)
+    if (by0 >= 0 && by1 < Chunk::HEIGHT)
         for (int x = bx0; x <= bx1; ++x)
             for (int y = by0; y <= by1; ++y)
                 for (int z = bz0; z <= bz1; ++z) {
@@ -329,7 +329,7 @@ void Mobs::moveEntity(const World& w, Mob& m, double dx, double dy, double dz) {
     for (int x = fl(m.box.minX); x < fl(m.box.maxX + 1.0) && !burning; ++x)
         for (int y = fl(m.box.minY); y < fl(m.box.maxY + 1.0) && !burning; ++y)
             for (int z = fl(m.box.minZ); z < fl(m.box.maxZ + 1.0); ++z) {
-                int id = (y >= 0 && y < 256) ? w.getBlockId(x, y, z) : 0;
+                int id = (y >= 0 && y < Chunk::HEIGHT) ? w.getBlockId(x, y, z) : 0;
                 if (id == 51 || id == 10 || id == 11) { burning = true; break; }
             }
     if (burning) {
@@ -780,11 +780,11 @@ void Mobs::livingUpdate(World& w, Mob& m, Player& p, ItemEntities& items, bool e
     }
     if (m.health > 0) { // suffocating
         int ex = fl(m.x), ey = fl(m.y + double(m.height * 0.85f)), ez = fl(m.z);
-        if (ey >= 0 && ey < 256 && BP[w.getBlockId(ex, ey, ez)].opaqueCube) hurt(m, 1, false, 0, 0, &items, &w);
+        if (ey >= 0 && ey < Chunk::HEIGHT && BP[w.getBlockId(ex, ey, ez)].opaqueCube) hurt(m, 1, false, 0, 0, &items, &w);
     }
     if (m.health > 0) { // drowning
         int ex = fl(m.x), ey = fl(m.y + double(m.height * 0.85f)), ez = fl(m.z);
-        int id = (ey >= 0 && ey < 256) ? w.getBlockId(ex, ey, ez) : 0;
+        int id = (ey >= 0 && ey < Chunk::HEIGHT) ? w.getBlockId(ex, ey, ez) : 0;
         bool under = false;
         if (id == 8 || id == 9) {
             int meta = w.getBlockMetadata(ex, ey, ez);
@@ -957,9 +957,9 @@ void Mobs::explodeAt(World& w, double ex, double ey, double ez, float size, bool
                     double x = ex, y = ey, z = ez;
                     for (const float step = 0.3f; power > 0.0f; power -= step * 0.75f) {
                         int bx = fl(x), by = fl(y), bz = fl(z);
-                        int id = (by >= 0 && by < 256) ? w.getBlockId(bx, by, bz) : 0;
+                        int id = (by >= 0 && by < Chunk::HEIGHT) ? w.getBlockId(bx, by, bz) : 0;
                         if (id > 0) power -= (BLOCK_RESISTANCE[id] + 0.3f) * step;
-                        if (power > 0.0f && by >= 0 && by < 256) {
+                        if (power > 0.0f && by >= 0 && by < Chunk::HEIGHT) {
                             int64_t kk = key(bx, by, bz);
                             if (std::find(hit.begin(), hit.end(), kk) == hit.end()) {
                                 hit.push_back(kk);

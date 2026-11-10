@@ -15,6 +15,11 @@ inline int opacity(int id) { return BP[id & 255].opacity; }
 
 World::World(SaveHandler* s, const LevelInfo& li, bool test) : info(li), save(s), testTerrain(test) {
     rand.setSeed(int64_t(li.seed) ^ 0x2B992DDFA23249D6LL);
+    season = li.season;
+    weather = li.weather;
+    snowCovered = li.snowCovered;
+    cheatsDisabled = li.cheatsDisabled;
+    worldType = li.worldType;
     if (!test) gen.reset(new ChunkGenerator(li.seed));
 }
 
@@ -92,6 +97,11 @@ Chunk* World::loadOrGenerate(int cx, int cz) {
             if (pregenerated && pregenerated(cx, cz, c->blocks)) (void)0;
             else gen->provideChunk(cx, cz, c->blocks);
             chunkGenerateSkylight(*c);
+            // ChunkProviderLoadOrGenerate: a new chunk counts as frozen in winter, snowy once the
+            // first snow has come (or winter with precipitation) - without freezing or snowing on it
+            bool winter = currentSeason() == WINTER;
+            c->frozen = winter;
+            c->snowy = info.experiencedFirstSnow || (winter && (weather == PRECIPITATION || weather == SEASONAL));
         }
     }
     chunks[key(cx, cz)].reset(c);
@@ -107,8 +117,6 @@ Chunk* World::provideChunk(int cx, int cz) {
     justLoaded.emplace_back(cx, cz);
     if (onChunkLoaded) onChunkLoaded(*c);
     yieldPoint();
-    chunkGenerateBlockLight(*c); // func_4143_d, on every chunk that comes in
-    yieldPoint();
     if (testTerrain) return c;
     auto populated = [&](int x, int z) { Chunk* n = provideChunk(x, z); return !n || n->terrainPopulated; };
     if (!c->terrainPopulated && chunkExists(cx + 1, cz + 1) && chunkExists(cx, cz + 1) && chunkExists(cx + 1, cz))
@@ -122,6 +130,14 @@ Chunk* World::provideChunk(int cx, int cz) {
     if (chunkExists(cx - 1, cz - 1) && !populated(cx - 1, cz - 1) && chunkExists(cx - 1, cz - 1) &&
         chunkExists(cx, cz - 1) && chunkExists(cx - 1, cz))
         populate(cx - 1, cz - 1);
+    // the season comes to the chunk: ice on still water in winter (gone after), and snow
+    if (Chunk* k = getChunk(cx, cz)) {
+        bool winter = currentSeason() == WINTER;
+        if (winter && !k->frozen) chunkSetFrozen(*k, true);
+        else if (!winter && k->frozen) chunkSetFrozen(*k, false);
+        if (winter && (info.experiencedFirstSnow || weather == PRECIPITATION || weather == SEASONAL) && !k->snowy) chunkSetSnowy(*k, true);
+        else if (!winter && k->snowy) chunkSetSnowy(*k, false);
+    }
     return getChunk(cx, cz);
 }
 
@@ -233,6 +249,11 @@ void World::saveAll() {
         if (beforeSave) beforeSave(*kv.second);
         if (kv.second->modified) save->saveChunk(*kv.second, info.time);
     }
+    info.season = season;
+    info.weather = weather;
+    info.snowCovered = snowCovered;
+    info.cheatsDisabled = cheatsDisabled;
+    info.worldType = worldType;
     save->writeLevel(info);
     save->flush();
 }
@@ -245,19 +266,19 @@ std::unique_ptr<Chunk> World::readSavedChunk(int cx, int cz) {
 }
 
 uint8_t World::blockAtSlow(int x, int y, int z) {
-    if (!inRange(x, z) || y < 0 || y >= 256) return 0;
+    if (!inRange(x, z) || y < 0 || y >= Chunk::HEIGHT) return 0;
     Chunk* c = provideChunk(x >> 4, z >> 4);
     return c ? c->getBlockID(x & 15, y, z & 15) : 0;
 }
 
 int World::metaAt(int x, int y, int z) {
-    if (!inRange(x, z) || y < 0 || y >= 256) return 0;
+    if (!inRange(x, z) || y < 0 || y >= Chunk::HEIGHT) return 0;
     Chunk* c = provideChunk(x >> 4, z >> 4);
     return c ? c->getMetadata(x & 15, y, z & 15) : 0;
 }
 
 bool World::checkChunksExist(int x1, int y1, int z1, int x2, int y2, int z2) const {
-    if (y2 < 0 || y1 >= 256) return false;
+    if (y2 < 0 || y1 >= Chunk::HEIGHT) return false;
     x1 >>= 4; z1 >>= 4; x2 >>= 4; z2 >>= 4;
     for (int x = x1; x <= x2; ++x)
         for (int z = z1; z <= z2; ++z)
@@ -266,21 +287,21 @@ bool World::checkChunksExist(int x1, int y1, int z1, int x2, int y2, int z2) con
 }
 
 bool World::setBlock(int x, int y, int z, int id) {
-    if (!inRange(x, z) || y < 0 || y >= 256) return false;
+    if (!inRange(x, z) || y < 0 || y >= Chunk::HEIGHT) return false;
     Chunk* c = provideChunk(x >> 4, z >> 4);
     if (!c) return true; // EmptyChunk.setBlockID
     return chunkSetBlockID(*c, x & 15, y, z & 15, id);
 }
 
 bool World::setBlockAndMetadataJ(int x, int y, int z, int id, int meta) {
-    if (!inRange(x, z) || y < 0 || y >= 256) return false;
+    if (!inRange(x, z) || y < 0 || y >= Chunk::HEIGHT) return false;
     Chunk* c = provideChunk(x >> 4, z >> 4);
     if (!c) return true;
     return chunkSetBlockIDWithMetadata(*c, x & 15, y, z & 15, id, meta);
 }
 
 bool World::setBlockMetadata(int x, int y, int z, int meta) {
-    if (!inRange(x, z) || y < 0 || y >= 256) return false;
+    if (!inRange(x, z) || y < 0 || y >= Chunk::HEIGHT) return false;
     Chunk* c = provideChunk(x >> 4, z >> 4);
     if (c) {
         c->modified = true;
@@ -328,7 +349,7 @@ bool World::canBlockSeeTheSky(int x, int y, int z) {
 bool World::canExistingBlockSeeTheSky(int x, int y, int z) {
     if (!inRange(x, z)) return false;
     if (y < 0) return false;
-    if (y >= 256) return true;
+    if (y >= Chunk::HEIGHT) return true;
     if (!chunkExists(x >> 4, z >> 4)) return false;
     Chunk* c = provideChunk(x >> 4, z >> 4);
     return y >= c->heightMap[(z & 15) << 4 | (x & 15)];
@@ -348,7 +369,7 @@ int World::getBlockLightValue_do(int x, int y, int z, bool slabs) {
         }
     }
     if (y < 0) return 0;
-    if (y >= 256) return std::max(0, 15 - skylightSubtracted);
+    if (y >= Chunk::HEIGHT) return std::max(0, 15 - skylightSubtracted);
     Chunk* c = provideChunk(x >> 4, z >> 4);
     if (!c) return 0;
     int s = c->skylight.get(x & 15, y, z & 15) - skylightSubtracted;
@@ -365,7 +386,7 @@ int World::getHeightValue(int x, int z) {
 
 int World::findTopSolidBlock(int x, int z) {
     Chunk* c = provideChunk(x >> 4, z >> 4);
-    int y = 255;
+    int y = Chunk::HEIGHT - 1;
     while (matSolid(materialAt(x, y, z)) && y > 0) --y;
     if (!c) return -1;
     for (; y > 0; --y) {
@@ -376,7 +397,7 @@ int World::findTopSolidBlock(int x, int z) {
 }
 
 int World::getSavedLightValue(Sky t, int x, int y, int z) {
-    if (y >= 0 && y < 256 && inRange(x, z)) {
+    if (y >= 0 && y < Chunk::HEIGHT && inRange(x, z)) {
         if (!chunkExists(x >> 4, z >> 4)) return 0;
         Chunk* c = provideChunk(x >> 4, z >> 4);
         return t == Sky::Sky ? c->skylight.get(x & 15, y, z & 15) : c->blocklight.get(x & 15, y, z & 15);
@@ -385,7 +406,7 @@ int World::getSavedLightValue(Sky t, int x, int y, int z) {
 }
 
 void World::setLightValue(Sky t, int x, int y, int z, int v) {
-    if (!inRange(x, z) || y < 0 || y >= 256 || !chunkExists(x >> 4, z >> 4)) return;
+    if (!inRange(x, z) || y < 0 || y >= Chunk::HEIGHT || !chunkExists(x >> 4, z >> 4)) return;
     Chunk* c = provideChunk(x >> 4, z >> 4);
     c->modified = true;
     if (t == Sky::Sky) c->skylight.set(x & 15, y, z & 15, v);
@@ -494,7 +515,7 @@ void World::LightUpdate::run(World& w) {
             }
             if (!ok) continue;
             if (y1 < 0) y1 = 0;
-            if (y2 >= 256) y2 = 255;
+            if (y2 >= Chunk::HEIGHT) y2 = Chunk::HEIGHT - 1;
             // Same reads as getSavedLightValue / blockAt / canExistingBlockSeeTheSky, with the
             // chunks of this column and its four neighbours looked up once (nothing in here can
             // load a chunk, so the pointers stay valid)
@@ -507,15 +528,15 @@ void World::LightUpdate::run(World& w) {
             const bool sky = type == Sky::Sky;
             const int outside = sky ? 15 : 0;
             auto saved = [&](Chunk* c, int bx, int by, int bz) -> int {
-                if (by < 0 || by >= 256) return outside;
+                if (by < 0 || by >= Chunk::HEIGHT) return outside;
                 if (!c) return 0;
                 return sky ? c->skylight.get(bx & 15, by, bz & 15) : c->blocklight.get(bx & 15, by, bz & 15);
             };
             const int lx = x & 15, lz = z & 15;
-            const int height = c0 ? c0->heightMap[lz << 4 | lx] : 256;
+            const int height = c0 ? c0->heightMap[lz << 4 | lx] : Chunk::HEIGHT;
             for (int y = y1; y <= y2; ++y) {
                 int cur = saved(c0, x, y, z);
-                int id = c0 ? c0->blocks[lx << 12 | lz << 8 | y] : 0;
+                int id = c0 ? c0->blocks[Chunk::index(lx, y, lz)] : 0;
                 int op = opacity(id);
                 if (op == 0) op = 1;
                 int src = 0;
@@ -610,9 +631,14 @@ void World::spawnEntity(nbt::TagPtr t) {
     c->modified = true;
 }
 
+// World.doWorldTick, per chunk within 9 of the player: the cave ambience, the season's ice (winter)
+// or its thaw (the rest of the year), then randomTickRate (80) random block ticks. (The jar goes
+// through a HashSet of the chunks, whose order for chunks with a negative z isn't even fixed from
+// one run to the next; here it's row by row.)
 void World::tickBlocks(double px, double py, double pz) {
     int pcx = int(std::floor(px / 16.0)), pcz = int(std::floor(pz / 16.0));
     if (caveSoundCooldown > 0) --caveSoundCooldown;
+    const bool winter = currentSeason() == WINTER;
     for (int dx = -9; dx <= 9; ++dx)
         for (int dz = -9; dz <= 9; ++dz) {
             Chunk* c = getChunk(pcx + dx, pcz + dz);
@@ -625,27 +651,41 @@ void World::tickBlocks(double px, double py, double pz) {
                     if (!getChunk(pcx + dx + ax, pcz + dz + az)) { ring = false; break; }
             if (!ring) continue;
             int bx = (pcx + dx) * 16, bz = (pcz + dz) * 16;
+            updateLCG = int(uint32_t(updateLCG) * 3u + 1013904223u);
+            int v = updateLCG >> 2;
+            int ranX = v & 15, ranZ = v >> 8 & 15, ranY = v >> 16 & 127;
             if (caveSoundCooldown == 0) {
-                updateLCG = int(uint32_t(updateLCG) * 3u + 1013904223u);
-                int v = updateLCG >> 2;
-                int x = v & 15, z = v >> 8 & 15, y = v >> 16 & 255;
-                int id = c->getBlockID(x, y, z);
-                x += bx;
-                z += bz;
-                if (id == 0 && getBlockLightValue(x, y, z) <= rand.nextInt(8) && getSavedLightValue(Sky::Sky, x, y, z) <= 0) {
-                    double ex = x + 0.5 - px, ey = y + 0.5 - py, ez = z + 0.5 - pz;
+                int id = c->getBlockID(ranX, ranY, ranZ);
+                int x = ranX + bx, z = ranZ + bz;
+                if (id == 0 && getBlockLightValue(x, ranY, z) <= rand.nextInt(8) && getSavedLightValue(Sky::Sky, x, ranY, z) <= 0) {
+                    double ex = x + 0.5 - px, ey = ranY + 0.5 - py, ez = z + 0.5 - pz;
                     double d2 = ex * ex + ey * ey + ez * ez;
                     if (d2 <= 64.0 && d2 > 4.0) {
-                        if (onSound) onSound("ambient.cave.cave", x + 0.5, y + 0.5, z + 0.5, 0.7f, 0.8f + rand.nextFloat() * 0.2f);
+                        if (onSound) onSound("ambient.cave.cave", x + 0.5, ranY + 0.5, z + 0.5, 0.7f, 0.8f + rand.nextFloat() * 0.2f);
                         caveSoundCooldown = rand.nextInt(12000) + 6000;
                     }
                 }
             }
-            for (int i = 0; i < 160; ++i) {
+            if (rand.nextInt(4) == 0) {
+                int x = ranX + bx, z = ranZ + bz;
+                int top = getTopSolidOrLiquidBlock(x, z);
+                if (top >= 0 && top < 128 && c->blocklight.get(ranX, top, ranZ) < 10) {
+                    int below = top > 0 ? c->getBlockID(ranX, top - 1, ranZ) : 0;
+                    int belowMeta = top > 0 ? c->getMetadata(ranX, top - 1, ranZ) : 0;
+                    if (winter) {
+                        // (snow would fall here too, but no chunk's weather level ever reaches 2)
+                        if (below == 9 && belowMeta == 0 && Blocks::canPlace(*this, 79, x, top, z)) setBlockWithNotify(x, top - 1, z, 79);
+                    } else {
+                        if (c->getBlockID(ranX, top, ranZ) == 78) setBlockWithNotify(x, top, z, 0);
+                        if (below == 79 && belowMeta == 0) setBlockWithNotify(x, top - 1, z, 9);
+                    }
+                }
+            }
+            for (int i = 0; i < randomTickRate; ++i) {
                 updateLCG = int(uint32_t(updateLCG) * 3u + 1013904223u);
-                int v = updateLCG >> 2;
-                int x = v & 15, z = v >> 8 & 15, y = v >> 16 & 255;
-                int id = c->blocks[x << 12 | z << 8 | y];
+                int w = updateLCG >> 2;
+                int x = w & 15, z = w >> 8 & 15, y = w >> 16 & 127;
+                int id = c->blocks[Chunk::index(x, y, z)];
                 if (BP[id].tickOnLoad) Blocks::updateTick(*this, x + bx, y, z + bz, id, rand);
             }
         }
@@ -720,64 +760,75 @@ void World::removeTileEntity(int x, int y, int z) {
 
 // ================================================================ Chunk.java internals
 
-void World::chunkGenerateHeightMap(Chunk& c) {
-    int low = 255;
+int World::getTopSolidOrLiquidBlock(int x, int z) {
+    Chunk* c = provideChunk(x >> 4, z >> 4);
+    if (!c) return -1;
+    for (int k = 127; k > 0; --k) {
+        int l = c->getBlockID(x & 15, k, z & 15);
+        if (l != 0 && (matSolid(BP[l].mat) || matLiquid(BP[l].mat))) return k + 1;
+    }
+    return -1;
+}
+
+void World::chunkSetFrozen(Chunk& c, bool flag) { // Chunk.setFrozen
+    int bx = c.xPosition << 4, bz = c.zPosition << 4;
     for (int x = 0; x < 16; ++x)
         for (int z = 0; z < 16; ++z) {
-            int h = 255;
-            int col = x << 12 | z << 8;
+            int j4 = getTopSolidOrLiquidBlock(x + bx, z + bz);
+            if (j4 >= 0 && j4 < 128 && c.blocklight.get(x, j4 & 127, z) < 10) {
+                int i5 = c.getBlockID(x, j4 - 1, z);
+                if (!flag && i5 == 79 && c.getMetadata(x, j4 - 1, z) == 0) setBlock(x + bx, j4 - 1, z + bz, 9);
+                if (flag && (i5 == 9 || i5 == 8) && c.getMetadata(x, j4 - 1, z) == 0) setBlock(x + bx, j4 - 1, z + bz, 79);
+            }
+        }
+    c.frozen = flag;
+    c.modified = true;
+}
+
+void World::chunkSetSnowy(Chunk& c, bool flag) { // Chunk.setSnowy
+    int bx = c.xPosition << 4, bz = c.zPosition << 4;
+    for (int x = 0; x < 16; ++x)
+        for (int z = 0; z < 16; ++z) {
+            int j4 = getTopSolidOrLiquidBlock(x + bx, z + bz);
+            if (j4 >= 0 && j4 < 128 && c.blocklight.get(x, j4, z) < 10) {
+                int i5 = c.getBlockID(x, j4, z);
+                if (flag && i5 == 0) { // BlockSnow.canPlaceSnowy: on an opaque block or leaves that stops movement
+                    int l = blockAt(x + bx, j4 - 1, z + bz);
+                    bool ok = !((l == 0 || !BP[l].opaqueCube) && l != 18) && matSolid(BP[l].mat);
+                    if (ok) setBlock(x + bx, j4, z + bz, 78);
+                }
+                if (!flag && i5 == 78) setBlock(x + bx, j4, z + bz, 0);
+            }
+        }
+    c.snowy = flag;
+    c.modified = true;
+}
+
+void World::chunkGenerateHeightMap(Chunk& c) { // Chunk.func_1018_b
+    int low = 127;
+    for (int x = 0; x < 16; ++x)
+        for (int z = 0; z < 16; ++z) {
+            int h = 127;
+            int col = Chunk::column(x, z);
             while (h > 0 && opacity(c.blocks[col + h - 1]) == 0) --h;
-            c.heightMap[z << 4 | x] = uint8_t(std::min(h, 255));
+            c.heightMap[z << 4 | x] = uint8_t(h);
             if (h < low) low = h;
         }
     c.lowestHeight = low;
     c.modified = true;
 }
 
-void World::chunkGenerateSkylight(Chunk& c) {
-    int low = 255;
+void World::chunkGenerateSkylight(Chunk& c) { // Chunk.func_1024_c: every column relit from the top
+    int low = 127;
     for (int x = 0; x < 16; ++x, yieldPoint())
         for (int z = 0; z < 16; ++z) {
-            int h = 255;
-            int col = x << 12 | z << 8;
-            while (h > 0 && opacity(c.blocks[col + h - 1]) == 0) --h;
-            c.heightMap[z << 4 | x] = uint8_t(std::min(h, 255));
-            if (h < low) low = h;
-            int light = 15, y = 255;
-            do {
-                light -= opacity(c.blocks[col + y]);
-                if (light > 0) c.skylight.set(x, y, z, light);
-                --y;
-            } while (y > 0 && light > 0);
+            c.heightMap[z << 4 | x] = 128; // (byte)-128
+            chunkRelight(c, x, 127, z);
+            if (c.heightMap[z << 4 | x] < low) low = c.heightMap[z << 4 | x];
         }
     c.lowestHeight = low;
     for (int x = 0; x < 16; ++x, yieldPoint())
         for (int z = 0; z < 16; ++z) chunkCheckNeighbours(c, x, z);
-    c.modified = true;
-}
-
-void World::chunkGenerateBlockLight(Chunk& c) {
-    const int Y0 = 32;
-    for (int x = 0; x < 16; ++x, yieldPoint())
-        for (int z = 0; z < 16; ++z) {
-            int col = x << 12 | z << 8;
-            for (int y = 0; y < 256; ++y) {
-                int l = BP[c.blocks[col + y]].light;
-                if (l > 0) c.blocklight.set(x, y, z, l);
-            }
-            int light = 15;
-            for (int y = Y0 - 2; y < 256 && light > 0; c.blocklight.set(x, y, z, light)) {
-                ++y;
-                int id = c.blocks[col + y];
-                int op = opacity(id), lv = BP[id].light;
-                if (op == 0) op = 1;
-                light -= op;
-                if (lv > light) light = lv;
-                if (light < 0) light = 0;
-            }
-        }
-    scheduleLightingUpdate(Sky::Block, c.xPosition * 16, Y0 - 1, c.zPosition * 16, c.xPosition * 16 + 16, Y0 + 1,
-                           c.zPosition * 16 + 16);
     c.modified = true;
 }
 
@@ -805,14 +856,14 @@ void World::chunkRelight(Chunk& c, int x, int y, int z) {
     int old = c.heightMap[z << 4 | x];
     int h = old;
     if (y > old) h = y;
-    int col = x << 12 | z << 8;
+    int col = Chunk::column(x, z);
     while (h > 0 && opacity(c.blocks[col + h - 1]) == 0) --h;
     if (h == old) return;
     markBlocksDirtyVertical(x, z, h, old);
-    c.heightMap[z << 4 | x] = uint8_t(std::min(h, 255));
+    c.heightMap[z << 4 | x] = uint8_t(h);
     if (h < c.lowestHeight) c.lowestHeight = h;
     else {
-        int low = 255;
+        int low = 127;
         for (int i = 0; i < 16; ++i)
             for (int k = 0; k < 16; ++k) low = std::min<int>(low, c.heightMap[k << 4 | i]);
         c.lowestHeight = low;

@@ -117,7 +117,7 @@ extern "C" void abort(void) {
 #endif
 namespace {
 
-constexpr const char* SAVES_DIR = "sdmc:/3ds/nsss3ds/saves";
+constexpr const char* SAVES_DIR = "sdmc:/3ds/nsss3ds/NSSSsaves"; // Minecraft.getMinecraftDir()/NSSSsaves
 constexpr float REACH = 5.0f;   // Beta survival reach
 constexpr float REPEAT = 0.25f; // break/place repeat while held (Beta: 4/sec)
 constexpr int LOAD_RADIUS = 4;  // chunks around the player kept loaded (Old 3DS)
@@ -184,7 +184,7 @@ void worldDirty(int x0, int y0, int z0, int x1, int y1, int z1) {
         if (std::abs(sx - viewCx) > LOAD_RADIUS) continue;
         for (int sz = (z0 - 1) >> 4; sz <= (z1 + 1) >> 4; sz++) {
             if (std::abs(sz - viewCz) > LOAD_RADIUS) continue;
-            for (int sy = (y0 - 1 < 0 ? 0 : y0 - 1) >> 4; sy <= (y1 + 1 > 255 ? 255 : y1 + 1) >> 4; sy++) rebuild.push(sx, sy, sz);
+            for (int sy = (y0 - 1 < 0 ? 0 : y0 - 1) >> 4; sy <= (y1 + 1 > Chunk::HEIGHT - 1 ? Chunk::HEIGHT - 1 : y1 + 1) >> 4; sy++) rebuild.push(sx, sy, sz);
         }
     }
 }
@@ -248,6 +248,7 @@ void storePlayer(SaveHandler* save, World& world, const Player& pl, const Invent
     p->setFloat("FallDistance", pl.fallDistance);
     p->setShort("Fire", int16_t(pl.fire));
     p->setShort("Air", int16_t(pl.air));
+    p->setBool("isCreative", inv.creative);
 }
 
 // Where right-click and left-click aim: the screen centre on the 3DS; on Android, through the finger
@@ -319,7 +320,7 @@ int main() {
     }
 
     // Automatic test (sdmc:/3ds/nsss3ds/autotest.txt present): the title screen for a few
-    // seconds, then World1, replaying tools/java/SimPlayer's input script with every tick logged.
+    // seconds, then World1, walking a fixed input script with every tick logged (CI screenshots).
     struct stat ast;
     bool autotestOn = stat("sdmc:/3ds/nsss3ds/autotest.txt", &ast) == 0;
     bool autotestNew = false; // "new" in the file: create World5 from seed 12345 instead
@@ -339,7 +340,7 @@ int main() {
     // ================================================================ title screen
     std::string worldName;
     bool titleCreated = false;
-    int titleGameType = 0;
+    TitleScreen::NewWorld titleNew;
     {
         u64 last = osGetTime();
         float acc = 0;
@@ -360,7 +361,7 @@ int main() {
             if (r == TitleScreen::PLAY) {
                 worldName = autotestOn ? (autotestNew ? "World5" : "World1") : title.world();
                 titleCreated = title.createdNew();
-                titleGameType = title.gameType();
+                titleNew = title.newWorldSettings();
                 break;
             }
             C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -385,17 +386,25 @@ int main() {
     if (!worldName.empty() && (autotestOn ? autotestNew : titleCreated)) {
         // GuiCreateWorld: a random seed; the spawn is found once the world exists (below)
         worldDir = std::string(SAVES_DIR) + "/" + worldName;
-        SaveHandler fresh(worldDir, 0);
+        SaveHandler fresh(worldDir);
         LevelInfo ni;
         JavaRandom seedRand(int64_t(osGetTime()) * 1000003LL ^ int64_t(svcGetSystemTick()));
         ni.seed = autotestNew ? 12345 : seedRand.nextLong();
         ni.spawnX = 0; ni.spawnY = 64; ni.spawnZ = 0;
-        brandNew = fresh.createLevel(ni, titleGameType);
+        // Minecraft.startWorld(name, season, weather, !commands, worldType)
+        ni.name = titleNew.name.empty() ? "New World" : titleNew.name;
+        ni.season = titleNew.season;
+        ni.weather = titleNew.weather;
+        ni.cheatsDisabled = !titleNew.commands;
+        ni.worldType = titleNew.worldType;
+        ni.snowCovered = ni.season == World::WINTER;
+        brandNew = fresh.createLevel(ni);
+        if (titleNew.name.empty()) remove((worldDir + "/name.data").c_str()); // GuiNameWorld: no name, no name.data
         dbg("created %s seed %lld ok %d", worldName.c_str(), (long long)ni.seed, brandNew);
     }
     if (!worldName.empty()) {
         worldDir = std::string(SAVES_DIR) + "/" + worldName;
-        save = new SaveHandler(worldDir, 0);
+        save = new SaveHandler(worldDir);
         if (!save->readLevel(info)) { delete save; save = nullptr; worldDir.clear(); }
 
     }
@@ -435,6 +444,7 @@ int main() {
     world.onParticle = [&](int type, double x, double y, double z, double a, double b, double c) {
         if (!gParticles) return;
         if (type == 1) gParticles->spawn(Particles::SMOKE, x, y, z, a, b, c);
+        else if (type == 2) gParticles->spawn(Particles::BUG, x, y, z, a, b, c); // "lightningbug"
     };
     GenFiber genFiber; // chunk loading/generation in small slices between frames
     TerrainWorker terrainWorker;
@@ -456,7 +466,7 @@ int main() {
     Camera cam;
     Inventory inv;
     Minimap minimap(world);
-    bool creative = info.gameType == 1;
+    bool creative = save && save->player() && save->player()->getBool("isCreative"); // EntityLiving.isCreative
     inv.creative = creative;
     struct Dig { bool active = false; int x = 0, y = 0, z = 0, id = 0, delay = 0; float damage = 0; int hits = 0, side = 1; } dig;
     BottomScreen bottom;
@@ -482,7 +492,7 @@ int main() {
         world.setWindow(info.spawnX >> 4, info.spawnZ >> 4);
         double feet = info.spawnY;
         int fx = info.spawnX, fz = info.spawnZ;
-        while (feet < 255 && (world.blockAt(fx, int(feet), fz) != 0 || world.blockAt(fx, int(feet) + 1, fz) != 0)) feet += 1.0;
+        while (feet < Chunk::HEIGHT - 1 && (world.blockAt(fx, int(feet), fz) != 0 || world.blockAt(fx, int(feet) + 1, fz) != 0)) feet += 1.0;
         cam.y = float(feet + 1.62);
         player.place(cam.x, cam.y, cam.z, (cam.yaw - PI) * 180.0f / PI, cam.pitch * 180.0f / PI);
     }
@@ -600,8 +610,8 @@ int main() {
         minimap.invalidate();
         bottom.markDirty();
     };
-    // Automatic movement test (sdmc:/3ds/nsss3ds/autotest.txt present): replays
-    // tools/java/SimPlayer's input script and logs every tick, to compare with Java.
+    // Automatic movement test (sdmc:/3ds/nsss3ds/autotest.txt present): a fixed input script,
+    // every tick logged.
     int autotest = autotestOn ? 0 : -1;
     dbg("player loaded%s", autotest == 0 ? " (autotest)" : "");
     if (!save) {
@@ -643,7 +653,7 @@ int main() {
         float o = std::log2(256.0f / renderer.renderDistance);
         return o < 0.0f ? 0.0f : o > 3.0f ? 3.0f : o;
     };
-    world.skylightSubtracted = atmosphere::skylightSubtracted(atmosphere::celestialAngle(info.time, 1.0f, false));
+    world.skylightSubtracted = atmosphere::skylightSubtracted(atmosphere::celestialAngle(info.time, 1.0f));
     bool fiberOn = world.generates() && genFiber.start(world);
     dbg("gen fiber: %d", fiberOn);
     std::unordered_set<int64_t> shown; // chunk columns the renderer is drawing
@@ -888,7 +898,7 @@ int main() {
             }
             ++cloudTicks;
             // World.tick: skylightSubtracted follows the sun (the shader relights every section)
-            world.skylightSubtracted = atmosphere::skylightSubtracted(atmosphere::celestialAngle(world.info.time, 1.0f, false));
+            world.skylightSubtracted = atmosphere::skylightSubtracted(atmosphere::celestialAngle(world.info.time, 1.0f));
             { // EntityRenderer.updateRenderer: the fog's brightness follows the light where you are
                 fogLightPrev = fogLight;
                 int lx = int(std::floor(player.posX)), ly = int(std::floor(player.posY)), lz = int(std::floor(player.posZ));
@@ -1345,7 +1355,7 @@ int main() {
                 world.setWindow(world.info.spawnX >> 4, world.info.spawnZ >> 4);
                 double feet = world.info.spawnY;
                 int fx = world.info.spawnX, fz = world.info.spawnZ;
-                while (feet < 255 && (world.blockAt(fx, int(feet), fz) != 0 || world.blockAt(fx, int(feet) + 1, fz) != 0)) feet += 1.0;
+                while (feet < Chunk::HEIGHT - 1 && (world.blockAt(fx, int(feet), fz) != 0 || world.blockAt(fx, int(feet) + 1, fz) != 0)) feet += 1.0;
                 player.resetAfterRespawn();
                 player.place(fx + 0.5, feet + 1.62, fz + 0.5, player.rotationYaw, 0);
                 cam.x = float(player.posX); cam.y = float(player.posY); cam.z = float(player.posZ);
@@ -1444,10 +1454,10 @@ int main() {
 
         { // EntityRenderer.updateFogColor + setupFog
             using namespace atmosphere;
-            float angle = celestialAngle(world.info.time, partial, false);
+            float angle = celestialAngle(world.info.time, partial);
             float opt = renderDistanceOption();
             float k = 1.0f - std::pow(1.0f / (4.0f - opt), 0.25f);
-            RGB sky = skyColour(angle, 0.5), fog = fogColour(angle, false);
+            RGB sky = skyColour(angle, 0.5), fog = fogColour(angle);
             fog.r += (sky.r - fog.r) * k;
             fog.g += (sky.g - fog.g) * k;
             fog.b += (sky.b - fog.b) * k;

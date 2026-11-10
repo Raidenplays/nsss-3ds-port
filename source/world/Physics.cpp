@@ -34,7 +34,7 @@ namespace {
 inline int floorD(double v) { return int(std::floor(v)); }
 
 bool chunksExist(const World& w, int x0, int y0, int z0, int x1, int y1, int z1) {
-    if (!(y1 >= 0 && y0 < 256)) return false;
+    if (!(y1 >= 0 && y0 < Chunk::HEIGHT)) return false;
     for (int cx = x0 >> 4; cx <= x1 >> 4; ++cx)
         for (int cz = z0 >> 4; cz <= z1 >> 4; ++cz)
             if (!w.isChunkLoaded(cx, cz)) return false;
@@ -46,79 +46,20 @@ void add(std::vector<AABB>& out, const AABB& area, double x0, double y0, double 
     if (area.intersects(b)) out.push_back(b);
 }
 
-// ---- BlockStairs.getStairBoxes (Axeolon modern stairs) ----
-const int DIR_X[4] = {1, -1, 0, 0};
-const int DIR_Z[4] = {0, 0, 1, -1};
-int stairMeta(const World& w, int x, int y, int z) {
-    int id = w.getBlockId(x, y, z);
-    return BLOCKS[id].render == RenderType::Stairs ? w.getBlockMetadata(x, y, z) : -1;
-}
-bool sameHalf(int a, int b) { return (a & 4) == (b & 4); }
-bool perpendicular(int a, int b) { return (a >> 1) != (b >> 1); }
-bool canTakeShape(const World& w, int x, int y, int z, int meta, int dir) {
-    int o = stairMeta(w, x + DIR_X[dir], y, z + DIR_Z[dir]);
-    return o < 0 || (o & 3) != (meta & 3) || !sameHalf(meta, o);
-}
-void halfOn(int f, bool q[2][2]) {
-    for (int xi = 0; xi < 2; xi++)
-        for (int zi = 0; zi < 2; zi++)
-            q[xi][zi] = (DIR_X[f] > 0 && xi == 1) || (DIR_X[f] < 0 && xi == 0) || (DIR_Z[f] > 0 && zi == 1) ||
-                        (DIR_Z[f] < 0 && zi == 0);
-}
+// BlockStairs.getCollidingBoundingBoxes: two boxes, a low half and a full-height half, by meta
 void stairBoxes(const World& w, int x, int y, int z, const AABB& area, std::vector<AABB>& out) {
-    int meta = w.getBlockMetadata(x, y, z);
-    int facing = meta & 3;
-    bool up = (meta & 4) != 0;
-    double baseMin = up ? 0.5 : 0.0, stepMin = up ? 0.0 : 0.5;
-    add(out, area, x, y + baseMin, z, x + 1, y + baseMin + 0.5, z + 1);
-    bool step[2][2];
-    halfOn(facing, step);
-    bool shaped = false;
-    int behind = stairMeta(w, x + DIR_X[facing], y, z + DIR_Z[facing]);
-    if (behind >= 0 && sameHalf(meta, behind)) {
-        int bf = behind & 3;
-        if (perpendicular(facing, bf) && canTakeShape(w, x, y, z, meta, bf ^ 1)) {
-            bool h[2][2];
-            halfOn(bf, h);
-            for (int a = 0; a < 2; a++) for (int c = 0; c < 2; c++) step[a][c] = step[a][c] && h[a][c];
-            shaped = true;
-        }
+    switch (w.getBlockMetadata(x, y, z)) {
+    case 0: add(out, area, x, y, z, x + 0.5, y + 0.5, z + 1); add(out, area, x + 0.5, y, z, x + 1, y + 1, z + 1); break;
+    case 1: add(out, area, x, y, z, x + 0.5, y + 1, z + 1); add(out, area, x + 0.5, y, z, x + 1, y + 0.5, z + 1); break;
+    case 2: add(out, area, x, y, z, x + 1, y + 0.5, z + 0.5); add(out, area, x, y, z + 0.5, x + 1, y + 1, z + 1); break;
+    case 3: add(out, area, x, y, z, x + 1, y + 1, z + 0.5); add(out, area, x, y, z + 0.5, x + 1, y + 0.5, z + 1); break;
+    default: break;
     }
-    if (!shaped) {
-        int front = stairMeta(w, x - DIR_X[facing], y, z - DIR_Z[facing]);
-        if (front >= 0 && sameHalf(meta, front)) {
-            int ff = front & 3;
-            if (perpendicular(facing, ff) && canTakeShape(w, x, y, z, meta, ff)) {
-                bool h[2][2];
-                halfOn(ff, h);
-                for (int a = 0; a < 2; a++) for (int c = 0; c < 2; c++) step[a][c] = step[a][c] || h[a][c];
-            }
-        }
-    }
-    double y0 = y + stepMin, y1 = y0 + 0.5;
-    for (int xi = 0; xi < 2; xi++)
-        if (step[xi][0] && step[xi][1]) {
-            add(out, area, x + xi * 0.5, y0, z, x + xi * 0.5 + 0.5, y1, z + 1);
-            step[xi][0] = step[xi][1] = false;
-        }
-    for (int zi = 0; zi < 2; zi++)
-        if (step[0][zi] && step[1][zi]) {
-            add(out, area, x, y0, z + zi * 0.5, x + 1, y1, z + zi * 0.5 + 0.5);
-            step[0][zi] = step[1][zi] = false;
-        }
-    for (int xi = 0; xi < 2; xi++)
-        for (int zi = 0; zi < 2; zi++)
-            if (step[xi][zi]) add(out, area, x + xi * 0.5, y0, z + zi * 0.5, x + xi * 0.5 + 0.5, y1, z + zi * 0.5 + 0.5);
 }
 
-// BlockFence: a post plus arms towards other fences, 1.5 tall
-void fenceBoxes(const World& w, int x, int y, int z, const AABB& area, std::vector<AABB>& out) {
-    const double MIN = 6.0f / 16.0f, MAX = 10.0f / 16.0f;
-    int id = w.getBlockId(x, y, z);
-    bool west = w.getBlockId(x - 1, y, z) == id, east = w.getBlockId(x + 1, y, z) == id;
-    bool north = w.getBlockId(x, y, z - 1) == id, south = w.getBlockId(x, y, z + 1) == id;
-    add(out, area, x + (west ? 0.0 : MIN), y, z + MIN, x + (east ? 1.0 : MAX), y + 1.5, z + MAX);
-    if (north || south) add(out, area, x + MIN, y, z + (north ? 0.0 : MIN), x + MAX, y + 1.5, z + (south ? 1.0 : MAX));
+// BlockFence.getCollidingBoundingBoxes: the whole cell, 1.5 tall
+void fenceBoxes(int x, int y, int z, const AABB& area, std::vector<AABB>& out) {
+    add(out, area, x, y, z, x + 1, y + 1.5, z + 1);
 }
 
 // BlockFluids.func_289_b: the flow level of a liquid block of the same material, -1 otherwise
@@ -191,7 +132,7 @@ void blockBoxes(const World& w, int x, int y, int z, const AABB& area, std::vect
     if (!id) return;
     const BlockInfo& bi = BLOCKS[id];
     if (bi.render == RenderType::Stairs) { stairBoxes(w, x, y, z, area, out); return; }
-    if (bi.render == RenderType::Fence) { fenceBoxes(w, x, y, z, area, out); return; }
+    if (bi.render == RenderType::Fence) { fenceBoxes(x, y, z, area, out); return; }
     BoxRef r = BLOCK_PHYSICS[id].boxes[w.getBlockMetadata(x, y, z) & 15];
     for (int i = 0; i < r.count; i++) {
         const float* b = COLLISION_BOXES[r.start + i];

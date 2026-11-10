@@ -48,12 +48,12 @@ public:
     void clearWorld(); // drop every chunk mesh (leaving a world) // chunk unloaded
 
     // Time of day and fog for the next renderWorld: World.skylightSubtracted, the darkest
-    // brightness (0.05, the Nether 0.1), the fog/clear colour 0xRRGGBB and the linear fog range.
+    // brightness (0.05), the fog/clear colour 0xRRGGBB and the linear fog range.
     void setAtmosphere(int skylightSubtracted, float ambient, uint32_t fogRGB, float fogStart, float fogEnd);
     uint32_t fogColour() const { return fogRGB; }
     // RenderGlobal.func_4142_a / func_4141_b for the next renderWorld (drawn when enabled)
     struct SkyState {
-        bool enabled = false;          // false in the Nether (WorldProvider.field_4220_c)
+        bool enabled = false;
         float angle = 0;               // celestial angle
         float sky[3] = {0, 0, 0};      // World.func_4079_a
         bool sunrise = false;

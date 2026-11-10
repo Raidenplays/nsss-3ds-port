@@ -1,7 +1,7 @@
 # NSSS 3DS
 
 A C++ port of **Not So Seecret Saturday** (DirtPiper's fork of Minecraft Alpha 1.1.2_01, version
-a1.1.12) to the Nintendo 3DS, using devkitPro + citro3d/citro2d. Built on the Axeolon 3DS engine.
+a1.1.12) to the Nintendo 3DS, using devkitPro + citro3d/citro2d, with the MCPE 0.5.0 look on top.
 See **PORTING.md** for the roadmap and what NSSS adds.
 
 Personal build, not affiliated with Mojang or the NSSS author. NSSS's source has no license, so
@@ -12,10 +12,13 @@ builds aren't shared without DirtPiper's permission.
 ## Status
 - ✅ World generation (terrain, beaches, caves) matches the PC game block for block for the same seed
   (`tools/host/alphagen.cpp` vs `tools/nsss/AlphaGenDump.java`).
-- ⏳ Being converted from the Axeolon engine: right now a build still runs Axeolon content.
+- ✅ Population, block behaviour (fluids, redstone, gears, random ticks) and chunk meshing match the
+  jar byte for byte (`tools/host/parity.sh`).
+- ⏳ Items, player, mobs, weather and the other world types: see PORTING.md.
 
 ## Files on the SD card
-- Worlds: `sdmc:/3ds/nsss3ds/saves/<name>/` (copy NSSS worlds from `.minecraft/saves`; keep a backup)
+- Worlds: `sdmc:/3ds/nsss3ds/NSSSsaves/World1..5/` (the jar's own layout: copy worlds from the
+  instance's `NSSSsaves` folder; keep a backup)
 - Options: `sdmc:/3ds/nsss3ds/options.txt`
 
 ## Building

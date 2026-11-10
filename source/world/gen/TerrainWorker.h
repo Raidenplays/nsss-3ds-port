@@ -17,7 +17,7 @@ public:
     ~TerrainWorker() { stop(); }
     // Chunks wanted next, nearest first (replaces the previous list)
     void want(const std::vector<std::pair<int, int>>& chunks);
-    // Takes a finished chunk if it's ready (65536 block ids)
+    // Takes a finished chunk if it's ready (32768 block ids)
     bool take(int cx, int cz, uint8_t* out);
     void prioritize(int cx, int cz); // wanted right now: to the front of the list
     bool running() const { return impl != nullptr; }

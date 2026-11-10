@@ -6,7 +6,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-// physics.txt for the NSSS jar, same format as tools/java/DumpPhysics:
+// physics.txt for the NSSS jar, read by tools/gen_physics.py:
 //   B id material solid liquid water lava ice slipperiness opaque
 //   C id meta n  box*n (relative to the block)  - an isolated block in air
 // The World is never constructed: only the block lookups below are answered.

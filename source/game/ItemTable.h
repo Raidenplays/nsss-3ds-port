@@ -1,5 +1,5 @@
 #pragma once
-// Every item's GUI icon, as Axeolon's RenderItem draws it (dumped by tools/java/DumpItems).
+// Every item's GUI icon, as NSSS's RenderItem draws it (dumped by tools/nsss/DumpNsss).
 #include <cstdint>
 
 enum ItemFlags { IF_BLOCK3D = 1, IF_ITEM = 4 };

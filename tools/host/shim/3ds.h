@@ -139,5 +139,6 @@ struct SwkbdState {
 };
 inline void swkbdInit(SwkbdState* s, SwkbdType, int, int maxLen) { s->maxLen = maxLen; }
 inline void swkbdSetHintText(SwkbdState* s, const char* hint) { s->hint = hint; }
+inline void swkbdSetInitialText(SwkbdState*, const char*) {}
 inline void swkbdSetFeatures(SwkbdState* s, u32 f) { s->features = f; }
 SwkbdButton swkbdInputText(SwkbdState* s, char* buf, size_t size);

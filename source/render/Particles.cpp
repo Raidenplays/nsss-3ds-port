@@ -4,6 +4,8 @@
 #include "Renderer.h"
 #include "world/BlockProps.h"
 #include "world/BlockTable.h"
+#include "world/Blocks.h"
+#include "world/Chunk.h"
 #include "world/MathHelper.h"
 #include "world/Physics.h"
 #include "world/World.h"
@@ -12,7 +14,7 @@
 Particles* gParticles = nullptr;
 
 namespace {
-constexpr size_t MAX_PARTICLES = 400; // Old 3DS: Beta allows 4000
+constexpr size_t MAX_PARTICLES = 400; // Old 3DS (the jar has no cap)
 constexpr float PI_F = 3.1415927f;
 inline int fl(double v) { return int(std::floor(v)); }
 }
@@ -45,7 +47,7 @@ Particles::P Particles::make(Type t, double x, double y, double z, double mx, do
         p.my = p.my * double(0.1f) + my;
         p.mz = p.mz * double(0.1f) + mz;
         p.r = p.g = p.b = float(rnd() * double(0.3f));
-        if (t == REDDUST) { p.r = float(rnd() * 0.2 + 0.8); p.g = p.b = 0.0f; }
+        if (t == REDDUST) { p.r = float(rnd() * double(0.3f)) + 0.7f; p.g = p.b = float(rnd() * double(0.1f)); }
         p.scale = p.baseScale = p.scale * 0.75f;
         p.maxAge = int(8.0 / (rnd() * 0.8 + 0.2));
         break;
@@ -72,44 +74,31 @@ Particles::P Particles::make(Type t, double x, double y, double z, double mx, do
         p.scale = p.baseScale = p.scale * (rand.nextFloat() * 2.0f + 0.2f);
         p.maxAge = int(16.0 / (rnd() * 0.8 + 0.2));
         p.tex = 49;
+        { JavaRandom r(rand.nextLong()); // a new Random()
+          float vol = r.nextFloat() * 0.25f + 0.75f, pitch = r.nextFloat() * 1.0f + 0.5f;
+          sound::play("liquid.lavapop", float(x) + 0.5f, float(y) + 0.5f, float(z) + 0.5f, vol, pitch); }
         break;
-    case PORTAL: { // EntityPortalFX: purple sparks
-        float f = rand.nextFloat() * 0.6f + 0.4f;
-        p.r = 0.9f * f; p.g = 0.3f * f; p.b = f;
-        p.mx = mx; p.my = my; p.mz = mz;
-        p.scale = p.baseScale = rand.nextFloat() * 0.2f + 0.5f;
-        p.maxAge = int(rnd() * 10.0) + 40;
-        p.tex = int(rnd() * 8.0);
-        p.noClip = true;
-        p.sx = x; p.sy = y; p.sz = z;
+    case BUG: // EntityLightningBugFX: a yellow speck that fades to blue
+        p.mx *= 0.1; p.my *= 0.2; p.mz *= 0.1;
+        p.b = float(rnd() * 0.1);
+        p.r = p.g = 1.0f;
+        p.maxAge = 40;
         break;
-    }
-    case NOTE: { // EntityNoteFX: a coloured note that floats up
-        float f = float(mx);
-        p.mx *= double(0.01f); p.my *= double(0.01f); p.mz *= double(0.01f);
-        p.my += 0.2;
-        p.r = std::sin((f + 0.0f) * 3.1415927f * 2.0f) * 0.65f + 0.35f;
-        p.g = std::sin((f + 1.0f / 3.0f) * 3.1415927f * 2.0f) * 0.65f + 0.35f;
-        p.b = std::sin((f + 2.0f / 3.0f) * 3.1415927f * 2.0f) * 0.65f + 0.35f;
-        p.scale = p.baseScale = p.scale * 0.75f * 2.0f;
-        p.maxAge = 6;
-        p.tex = 64;
-        break;
-    }
     case SNOWPOOF: // EntitySlimeFX with the snowball: a little white puff
     case SLIME:    // ... and with the slimeball (TODO(particles): the item's own icon, as in the jar)
         p.r = p.b = t == SLIME ? 0.5f : 1.0f;
         p.g = 1.0f;
         p.tex = 7;
-        p.gravity = 0.25f;
+        p.gravity = 1.0f; // Block.blockSnow.density
         p.scale = p.baseScale = p.scale / 2.0f;
         break;
-    case SPLASH: // EntitySplashFX (EntityRainFX with less gravity, one tile on)
+    case SPLASH: // EntitySplashFX: EntityRainFX, then less gravity and tiles 17..20
         p.mx *= double(0.3f);
         p.my = double(float(rnd()) * 0.2f + 0.1f);
         p.mz *= double(0.3f);
         p.r = p.g = p.b = 1.0f;
-        p.tex = 19 + rand.nextInt(4) + 1;
+        p.tex = 19 + rand.nextInt(4);
+        p.tex = 17 + rand.nextInt(4);
         p.gravity = 0.04f;
         p.maxAge = int(8.0 / (rnd() * 0.8 + 0.2));
         if (my == 0.0 && (mx != 0.0 || mz != 0.0)) {
@@ -179,66 +168,62 @@ void Particles::blockHit(const World& w, int x, int y, int z, int side) {
     list.push_back(p);
 }
 
-void Particles::spawnLargeSmoke(double x, double y, double z) {
-    spawn(SMOKE, x, y, z, 0, 0, 0);
-    if (!list.empty()) { list.back().scale *= 2.0f; list.back().baseScale *= 2.0f; }
+void Particles::spawnLargeSmoke(double x, double y, double z) { // new EntitySmokeFX(..., 2.5F)
+    P p = make(SMOKE, x, y, z, 0, 0, 0);
+    p.scale = p.baseScale = p.scale * 2.5f;
+    p.maxAge = int(float(p.maxAge) * 2.5f);
+    if (list.size() >= MAX_PARTICLES) list.erase(list.begin());
+    list.push_back(p);
 }
 
+// Minecraft.randomDisplayUpdates -> Block.randomDisplayTick, for the NSSS blocks that have one
 void Particles::ambient(const World& w, double px, double py, double pz) {
+    auto opaque = [&](int x, int y, int z) { return BP[w.getBlockId(x, y, z)].opaqueCube; }; // isBlockNormalCube
+    auto catches = [&](int x, int y, int z) { return Blocks::fireEncourage(w.getBlockId(x, y, z)) > 0; };
+    auto large = [&](double x, double y, double z) { spawnLargeSmoke(x, y, z); };
+    auto fr = [&]() { return double(rand.nextFloat()); };
     int cx = fl(px), cy = fl(py), cz = fl(pz);
     for (int i = 0; i < 1000; ++i) {
         int x = cx + rand.nextInt(16) - rand.nextInt(16);
         int y = cy + rand.nextInt(16) - rand.nextInt(16);
         int z = cz + rand.nextInt(16) - rand.nextInt(16);
-        if (y < 0 || y >= 256) continue;
+        if (y < 0 || y >= Chunk::HEIGHT) continue;
         int id = w.getBlockId(x, y, z);
         switch (id) {
-        case 51: { // BlockFire.randomDisplayTick: crackle and large smoke
+        case 51: // BlockFire
             if (rand.nextInt(24) == 0)
-                sound::play("fire.fire", x + 0.5, y + 0.5, z + 0.5, 1.0f + rand.nextFloat(), rand.nextFloat() * 0.7f + 0.3f);
-            for (int k = 0; k < 3; ++k) {
-                double sx = x + rand.nextFloat(), sy = y + rand.nextFloat() * 0.5f + 0.5f, sz = z + rand.nextFloat();
-                spawn(SMOKE, sx, sy, sz, 0, 0, 0);
-                if (!list.empty()) { list.back().scale *= 2.0f; list.back().baseScale *= 2.0f; }
+                sound::play("fire.fire", x + 0.5f, y + 0.5f, z + 0.5f, 1.0f + rand.nextFloat(), rand.nextFloat() * 0.7f + 0.3f);
+            if (!opaque(x, y - 1, z) && !catches(x, y - 1, z)) {
+                if (catches(x - 1, y, z)) for (int k = 0; k < 2; k++) { float a = x + rand.nextFloat() * 0.1f, b = y + rand.nextFloat(), c = z + rand.nextFloat(); large(a, b, c); }
+                if (catches(x + 1, y, z)) for (int k = 0; k < 2; k++) { float a = x + 1 - rand.nextFloat() * 0.1f, b = y + rand.nextFloat(), c = z + rand.nextFloat(); large(a, b, c); }
+                if (catches(x, y, z - 1)) for (int k = 0; k < 2; k++) { float a = x + rand.nextFloat(), b = y + rand.nextFloat(), c = z + rand.nextFloat() * 0.1f; large(a, b, c); }
+                if (catches(x, y, z + 1)) for (int k = 0; k < 2; k++) { float a = x + rand.nextFloat(), b = y + rand.nextFloat(), c = z + 1 - rand.nextFloat() * 0.1f; large(a, b, c); }
+                if (catches(x, y + 1, z)) for (int k = 0; k < 2; k++) { float a = x + rand.nextFloat(), b = y + 1 - rand.nextFloat() * 0.1f, c = z + rand.nextFloat(); large(a, b, c); }
+            } else {
+                for (int k = 0; k < 3; k++) { float a = x + rand.nextFloat(), b = y + rand.nextFloat() * 0.5f + 0.5f, c = z + rand.nextFloat(); large(a, b, c); }
+            }
+            break;
+        case 8: case 9: // BlockFluids (water): flowing water babbles
+            if (rand.nextInt(64) == 0) {
+                int m = w.getBlockMetadata(x, y, z);
+                if (m > 0 && m < 8)
+                    sound::play("liquid.water", x + 0.5f, y + 0.5f, z + 0.5f, rand.nextFloat() * 0.25f + 0.75f, rand.nextFloat() * 1.0f + 0.5f);
+            }
+            break;
+        case 10: case 11: { // BlockFluids (lava): pops out of the surface
+            int above = w.getBlockId(x, y + 1, z);
+            if (above == 0 && !BP[above].opaqueCube && rand.nextInt(100) == 0) {
+                double a = x + fr(), c = z + fr();
+                spawn(LAVA, a, y + 1.0, c, 0, 0, 0);
+                int m = w.getBlockMetadata(x, y, z);
+                if (m > 0 && m < 8)
+                    sound::play("liquid.lava", x + 0.5f, y + 0.5f, z + 0.5f, rand.nextFloat() * 0.25f + 0.75f, rand.nextFloat() * 1.0f + 0.5f);
             }
             break;
         }
-        case 55: // BlockRedstoneWire.randomDisplayTick: powered dust sparkles
-            if (w.getBlockMetadata(x, y, z) > 0)
-                spawn(REDDUST, x + 0.5 + (rand.nextFloat() - 0.5) * 0.2, y + 1.0 / 16.0, z + 0.5 + (rand.nextFloat() - 0.5) * 0.2, 0, 0, 0);
-            break;
-        case 94: { // BlockPowerRepeater (lit)
-            int m = w.getBlockMetadata(x, y, z) & 3;
-            int fx = m == 1 ? -1 : m == 3 ? 1 : 0, fz = m == 0 ? 1 : m == 2 ? -1 : 0;
-            double t = rand.nextBoolean() ? 0.25 : -0.15;
-            spawn(REDDUST, x + 0.5 + fx * t + (rand.nextDouble() - 0.5) * 0.2, y + 0.45, z + 0.5 + fz * t + (rand.nextDouble() - 0.5) * 0.2, 0, 0, 0);
-            break;
-        }
-        case 90: { // BlockPortal.randomDisplayTick: the hum, and sparks drifting off both faces
-            if (rand.nextInt(100) == 0)
-                sound::play("portal.portal", x + 0.5, y + 0.5, z + 0.5, 1.0f, rand.nextFloat() * 0.4f + 0.8f);
-            bool alongX = w.getBlockId(x - 1, y, z) == 90 || w.getBlockId(x + 1, y, z) == 90;
-            for (int k = 0; k < 4; ++k) {
-                double sx = x + rand.nextFloat(), sy = y + rand.nextFloat(), sz = z + rand.nextFloat();
-                int side = rand.nextInt(2) * 2 - 1;
-                double mx = (rand.nextFloat() - 0.5) * 0.5, my = (rand.nextFloat() - 0.5) * 0.5, mz = (rand.nextFloat() - 0.5) * 0.5;
-                if (!alongX) {
-                    sx = x + 0.5 + 0.25 * side;
-                    mx = rand.nextFloat() * 2.0f * side;
-                } else {
-                    sz = z + 0.5 + 0.25 * side;
-                    mz = rand.nextFloat() * 2.0f * side;
-                }
-                spawn(PORTAL, sx, sy, sz, mx, my, mz);
-            }
-            break;
-        }
-        case 111: // BlockMagicLight.randomDisplayTick
-            spawn(PORTAL, x + 0.5, y + 0.5, z + 0.5, (rand.nextDouble() - 0.5) * 0.6, (rand.nextDouble() - 0.5) * 0.6, (rand.nextDouble() - 0.5) * 0.6);
-            break;
-        case 50: { // BlockTorch.randomDisplayTick
+        case 50: { // BlockTorch
             int m = w.getBlockMetadata(x, y, z);
-            double fx = x + 0.5, fy = y + 0.7, fz = z + 0.5, up = 0.22, out = 0.27;
+            double fx = x + 0.5f, fy = y + 0.7f, fz = z + 0.5f, up = 0.22f, out = 0.27f;
             if (m == 1) { spawn(SMOKE, fx - out, fy + up, fz, 0, 0, 0); spawn(FLAME, fx - out, fy + up, fz, 0, 0, 0); }
             else if (m == 2) { spawn(SMOKE, fx + out, fy + up, fz, 0, 0, 0); spawn(FLAME, fx + out, fy + up, fz, 0, 0, 0); }
             else if (m == 3) { spawn(SMOKE, fx, fy + up, fz - out, 0, 0, 0); spawn(FLAME, fx, fy + up, fz - out, 0, 0, 0); }
@@ -246,22 +231,50 @@ void Particles::ambient(const World& w, double px, double py, double pz) {
             else { spawn(SMOKE, fx, fy, fz, 0, 0, 0); spawn(FLAME, fx, fy, fz, 0, 0, 0); }
             break;
         }
+        case 55: // BlockRedDustWire: powered dust sparkles
+            if (w.getBlockMetadata(x, y, z) > 0) {
+                double a = x + 0.5 + (rand.nextFloat() - 0.5) * 0.2, b = y + 0.0625f, c = z + 0.5 + (rand.nextFloat() - 0.5) * 0.2;
+                spawn(REDDUST, a, b, c, 0, 0, 0);
+            }
+            break;
         case 62: { // BlockFurnace (lit)
             int m = w.getBlockMetadata(x, y, z);
-            double fx = x + 0.5, fy = y + rand.nextFloat() * 6.0f / 16.0f, fz = z + 0.5, a = 0.52, b = rand.nextFloat() * 0.6f - 0.3f;
+            float fx = x + 0.5f, fy = y + 0.0f + rand.nextFloat() * 6.0f / 16.0f, fz = z + 0.5f, a = 0.52f, b = rand.nextFloat() * 0.6f - 0.3f;
             if (m == 4) { spawn(SMOKE, fx - a, fy, fz + b, 0, 0, 0); spawn(FLAME, fx - a, fy, fz + b, 0, 0, 0); }
             else if (m == 5) { spawn(SMOKE, fx + a, fy, fz + b, 0, 0, 0); spawn(FLAME, fx + a, fy, fz + b, 0, 0, 0); }
             else if (m == 2) { spawn(SMOKE, fx + b, fy, fz - a, 0, 0, 0); spawn(FLAME, fx + b, fy, fz - a, 0, 0, 0); }
             else if (m == 3) { spawn(SMOKE, fx + b, fy, fz + a, 0, 0, 0); spawn(FLAME, fx + b, fy, fz + a, 0, 0, 0); }
             break;
         }
-        case 10: case 11: // BlockFluids (lava): pops out of the surface
-            if (w.getBlockId(x, y + 1, z) == 0 && !BP[w.getBlockId(x, y + 1, z)].opaqueCube && rand.nextInt(100) == 0)
-                spawn(LAVA, x + rand.nextFloat(), y + 1.0, z + rand.nextFloat(), 0, 0, 0);
+        case 74: { // BlockRedOre (glowing): func_319_i, specks on the open faces
+            const double d = 0.0625;
+            for (int l = 0; l < 6; l++) {
+                double a = x + fr(), b = y + fr(), c = z + fr();
+                if (l == 0 && !opaque(x, y + 1, z)) b = y + 1 + d;
+                if (l == 1 && !opaque(x, y - 1, z)) b = y + 0 - d;
+                if (l == 2 && !opaque(x, y, z + 1)) c = z + 1 + d;
+                if (l == 3 && !opaque(x, y, z - 1)) c = z + 0 - d;
+                if (l == 4 && !opaque(x + 1, y, z)) a = x + 1 + d;
+                if (l == 5 && !opaque(x - 1, y, z)) a = x + 0 - d;
+                if (a < x || a > x + 1 || b < 0.0 || b > y + 1 || c < z || c > z + 1) spawn(REDDUST, a, b, c, 0, 0, 0);
+            }
             break;
-        case 76: // BlockRedstoneTorch (on)
-            spawn(REDDUST, x + 0.5 + (rand.nextFloat() - 0.5f) * 0.2, y + 0.7 + (rand.nextFloat() - 0.5f) * 0.2,
-                  z + 0.5 + (rand.nextFloat() - 0.5f) * 0.2, 0, 0, 0);
+        }
+        case 76: { // BlockRedTorch (on)
+            int m = w.getBlockMetadata(x, y, z);
+            double a = x + 0.5f + (rand.nextFloat() - 0.5f) * 0.2;
+            double b = y + 0.7f + (rand.nextFloat() - 0.5f) * 0.2;
+            double c = z + 0.5f + (rand.nextFloat() - 0.5f) * 0.2;
+            double up = 0.22f, out = 0.27f;
+            if (m == 1) spawn(REDDUST, a - out, b + up, c, 0, 0, 0);
+            else if (m == 2) spawn(REDDUST, a + out, b + up, c, 0, 0, 0);
+            else if (m == 3) spawn(REDDUST, a, b + up, c - out, 0, 0, 0);
+            else if (m == 4) spawn(REDDUST, a, b + up, c + out, 0, 0, 0);
+            else spawn(REDDUST, a, b, c, 0, 0, 0);
+            break;
+        }
+        case 86: // BlockGear: smoke while turning
+            if (w.getBlockMetadata(x, y, z) != 0) spawn(SMOKE, x + 0.5, y + 0.5, z + 0.5, 0, 0, 0);
             break;
         default: break;
         }
@@ -297,6 +310,9 @@ void Particles::move(const World& w, P& p) {
 }
 
 void Particles::tick(const World& w) {
+    struct Trail { double x, y, z, mx, my, mz; };
+    static std::vector<Trail> trail;
+    trail.clear();
     for (P& p : list) {
         p.px = p.x;
         p.py = p.y;
@@ -305,7 +321,7 @@ void Particles::tick(const World& w) {
         switch (p.type) {
         case SMOKE: case EXPLODE: case REDDUST:
             p.tex = 7 - p.age * 8 / std::max(1, p.maxAge);
-            p.my += 0.004;
+            if (p.type != REDDUST) p.my += 0.004;
             move(w, p);
             if (p.type != EXPLODE && p.y == p.py) { p.mx *= 1.1; p.mz *= 1.1; }
             { double f = p.type == EXPLODE ? double(0.9f) : double(0.96f); p.mx *= f; p.my *= f; p.mz *= f; }
@@ -314,23 +330,17 @@ void Particles::tick(const World& w) {
             move(w, p);
             p.mx *= double(0.96f); p.my *= double(0.96f); p.mz *= double(0.96f);
             break;
-        case PORTAL: { // EntityPortalFX.onUpdate: swept out along its motion, then pulled back in
-            float f1 = float(p.age - 1) / float(p.maxAge), f = -f1 + f1 * f1 * 2.0f;
-            f = 1.0f - f;
-            p.x = p.sx + p.mx * f;
-            p.y = p.sy + p.my * f + double(1.0f - f1);
-            p.z = p.sz + p.mz * f;
-            break;
-        }
-        case NOTE:
+        case BUG: // EntityLightningBugFX.onUpdate
+            p.tex = 0;
+            p.g = float(double(p.g) - 0.02);
+            p.r = float(double(p.r) - 0.02);
             move(w, p);
-            if (p.y == p.py) { p.mx *= 1.1; p.mz *= 1.1; }
-            p.mx *= double(0.66f); p.my *= double(0.66f); p.mz *= double(0.66f);
-            if (p.onGround) { p.mx *= double(0.7f); p.mz *= double(0.7f); }
+            if (p.y == p.py) { p.mx *= 1.2; p.mz *= 1.2; }
+            p.mx *= double(0.96f); p.my *= double(0.96f); p.mz *= double(0.96f);
             break;
         case LAVA: {
             float t = float(p.age) / float(p.maxAge);
-            if (rand.nextFloat() > t && list.size() < MAX_PARTICLES) {} // (the smoke trail is left out on 3DS)
+            if (rand.nextFloat() > t) trail.push_back({p.x, p.y, p.z, p.mx, p.my, p.mz}); // "smoke"
             p.my -= 0.03;
             move(w, p);
             p.mx *= double(0.999f); p.my *= double(0.999f); p.mz *= double(0.999f);
@@ -373,6 +383,7 @@ void Particles::tick(const World& w) {
         if (p.onGround) { p.mx *= double(0.7f); p.mz *= double(0.7f); }
     }
     list.erase(std::remove_if(list.begin(), list.end(), [](const P& p) { return p.maxAge < 0; }), list.end());
+    for (const Trail& t : trail) spawn(SMOKE, t.x, t.y, t.z, t.mx, t.my, t.mz);
 }
 
 void Particles::render(const World& w, Renderer& r, float partial, float yaw, float pitch) {
@@ -388,12 +399,12 @@ void Particles::render(const World& w, Renderer& r, float partial, float yaw, fl
               z = float(p.pz + (p.z - p.pz) * partial);
         float t = (float(p.age) + partial) / float(std::max(1, p.maxAge));
         float s = p.baseScale;
-        if (p.type == SMOKE || p.type == REDDUST) s *= std::min(1.0f, std::max(0.0f, t * 32.0f));
+        if (p.type == SMOKE || p.type == REDDUST || p.type == BUG) s *= std::min(1.0f, std::max(0.0f, t * 32.0f));
         else if (p.type == FLAME) s *= 1.0f - t * t * 0.5f;
         else if (p.type == LAVA) s *= 1.0f - t * t;
         float sz = 0.1f * s;
         float light = w.getBrightness(fl(x), fl(y), fl(z));
-        if (p.type == LAVA) light = 1.0f;
+        if (p.type == LAVA || p.type == BUG) light = 1.0f;
         else if (p.type == FLAME) { float a = std::min(1.0f, std::max(0.0f, t)); light = light * a + (1.0f - a); }
         float shade = light * (p.r + p.g + p.b) / 3.0f;
         float u0, u1, v0, v1;

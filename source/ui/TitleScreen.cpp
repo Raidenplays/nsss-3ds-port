@@ -79,7 +79,16 @@ void TitleScreen::scanSlots() {
         if (!d) { s.unreadable = true; continue; }
         s.exists = true;
         s.mb = float(d->getLong("SizeOnDisk") / 1024LL * 100LL / 1024LL) / 100.0f;
-        s.gameType = d->getInt("GameType");
+        s.name = "World " + std::to_string(i + 1);
+        if (FILE* f = fopen((dir + "/name.data").c_str(), "rb")) { // GuiSelectWorld: the name it was given
+            char line[64] = {0};
+            if (fgets(line, sizeof line, f)) {
+                std::string n;
+                for (char ch : std::string(line)) if (ch && ch != '\n' && ch != '\r') n += ch;
+                s.name = n;
+            }
+            fclose(f);
+        }
     }
 }
 
@@ -112,7 +121,7 @@ void TitleScreen::open(Screen s) {
             if (slots[i].exists) {
                 char mb[32];
                 snprintf(mb, sizeof mb, "%g", slots[i].mb);
-                t = "World " + std::to_string(i + 1) + " (" + mb + " MB)";
+                t = slots[i].name + " (" + mb + " MB)";
             } else {
                 t = slots[i].unreadable ? "World " + std::to_string(i + 1) + " (unreadable)" : "- empty -";
             }
@@ -122,13 +131,19 @@ void TitleScreen::open(Screen s) {
         buttons.push_back({21, cx - 100, 40 + 168, 200, 20, "Cancel"});
         break;
     }
-    case CREATE:
-        buttons.push_back({30, cx - 100, 60 + 24, 200, 20,
-                           std::string("Game Mode: ") + (createGameType == 1 ? "Creative" : "Survival")});
-        buttons.push_back({31, cx - 100, 60 + 96, 200, 20, "Create World", canCreateWorlds});
-        buttons.push_back({32, cx - 100, 60 + 120, 200, 20, "Cancel"});
-        selected = canCreateWorlds ? 1 : 2;
+    case CREATE: { // GuiNameWorld
+        static const char* SEASON[5] = {"Summer", "Fall", "Winter", "Spring", "Cycle"};
+        static const char* WEATHER[4] = {"Clear", "Precipitating", "Cycle", "Seasonal"};
+        buttons.push_back({33, cx - 100, 40, 200, 20, "Name: " + (create.name.empty() ? std::string("World ") + std::to_string(pendingSlot) : create.name)});
+        buttons.push_back({30, cx - 110, 66, 105, 20, "World Type: NORMAL"});
+        buttons.push_back({34, cx + 5, 66, 105, 20, std::string("Commands: ") + (create.commands ? "true" : "false")});
+        buttons.push_back({35, cx - 110, 90, 105, 20, std::string("Season: ") + SEASON[create.season]});
+        buttons.push_back({36, cx + 5, 90, 105, 20, std::string("Weather: ") + WEATHER[create.weather]});
+        buttons.push_back({31, cx - 100, 126, 200, 20, "Create", canCreateWorlds});
+        buttons.push_back({32, cx - 100, 150, 200, 20, "Cancel"});
+        selected = canCreateWorlds ? 5 : 6;
         break;
+    }
     case CONFIRM:
         buttons.push_back({40, cx - 155, 40 + 96, 150, 20, "Yes"});
         buttons.push_back({41, cx - 155 + 160, 40 + 96, 150, 20, "No"});
@@ -181,6 +196,12 @@ void TitleScreen::nudge(const Button& b, int dir) {
     selected = keep;
 }
 
+void TitleScreen::reopenCreate() {
+    int keep = selected;
+    open(CREATE);
+    selected = keep;
+}
+
 void TitleScreen::press(const Button& b) {
     if (!b.enabled) return;
     switch (b.id) {
@@ -189,14 +210,33 @@ void TitleScreen::press(const Button& b) {
     case 4: chosen.clear(); break;
     case 20: open(DELETE); break;
     case 21: open(screen == DELETE ? SELECT : MAIN); break;
-    case 30:
-        createGameType = createGameType == 1 ? 0 : 1;
-        open(CREATE);
+    case 30: break; // (only the normal generator is ported: FLOATING, CORRUPTION, DESERT, OLD-TIMEY aren't yet)
+    case 34: create.commands = !create.commands; reopenCreate(); break;
+    case 35: { // GuiPreSeasonWorld.getNextSeason: summer, winter, cycle (fall and spring go to summer)
+        static const int NEXT[5] = {2, 0, 4, 0, 0};
+        create.season = NEXT[create.season];
+        reopenCreate();
         break;
+    }
+    case 36: { // getNextWeather: clear, precipitating, seasonal (cycle goes to seasonal)
+        static const int NEXT[4] = {1, 3, 3, 0};
+        create.weather = NEXT[create.weather];
+        reopenCreate();
+        break;
+    }
+    case 33: { // the world's name: the system keyboard (up to 20 characters)
+        SwkbdState kb;
+        char buf[64] = {0};
+        swkbdInit(&kb, SWKBD_TYPE_NORMAL, 2, 20);
+        swkbdSetHintText(&kb, "World name");
+        swkbdSetInitialText(&kb, create.name.c_str());
+        if (swkbdInputText(&kb, buf, sizeof buf) == SWKBD_BUTTON_CONFIRM) create.name = buf;
+        reopenCreate();
+        break;
+    }
     case 31:
         chosen = "World" + std::to_string(pendingSlot);
         newWorld = true;
-        chosenGameType = createGameType;
         break;
     case 32: open(SELECT); break;
     case 40:
@@ -218,12 +258,11 @@ void TitleScreen::press(const Button& b) {
             } else if (s.unreadable) {
                 // GuiWorldUnreadable: never offer to create a new world over it
             } else if (!s.exists) {
-                createGameType = 0;
+                create = NewWorld();
                 open(CREATE);
             } else {
                 chosen = "World" + std::to_string(slot);
                 newWorld = false;
-                chosenGameType = s.gameType;
             }
         }
         break;
@@ -380,14 +419,10 @@ void TitleScreen::drawBottom() {
         break;
     case SELECT: font.drawCentered("Select World", 160, 20, 0xFFFFFF); break;
     case DELETE: font.drawCentered("Delete world", 160, 20, 0xFFFFFF); break;
-    case CREATE: {
-        font.drawCentered("Create World " + std::to_string(pendingSlot), 160, 60 - 20, 0xFFFFFF);
-        std::string d = createGameType == 1 ? "Unlimited blocks, free flight, no damage"
-                                            : "Gather resources, craft, and survive";
-        font.drawCentered(d, 160, 60 + 50, 0xA0A0A0);
-        if (!canCreateWorlds) font.drawCentered("(world generation is still being ported)", 160, 60 + 64, 0xA0A0A0);
+    case CREATE:
+        font.drawCentered("Create World", 160, 20, 0xFFFFFF);
+        if (!canCreateWorlds) font.drawCentered("(world generation is still being ported)", 160, 112, 0xA0A0A0);
         break;
-    }
     case CONFIRM:
         font.drawCentered("Are you sure you want to delete this world?", 160, 70, 0xFFFFFF);
         font.drawCentered("'World" + std::to_string(pendingSlot) + "' will be lost forever!", 160, 90, 0xFFFFFF);

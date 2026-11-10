@@ -7,7 +7,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-// Writes the engine's table inputs from the NSSS a1.1.12 jar, in the same formats as tools/java/*:
+// Writes the engine's table inputs from the NSSS a1.1.12 jar, for the tools/gen_*.py generators:
 //   blocks.json (DumpBlocks)  blockprops.tsv (DumpBlockProps)  items.tsv (DumpItems)
 //   survival.txt (DumpSurvival)  drops.txt (DumpDrops)
 // usage: java -cp out:a1.1.12.jar DumpNsss <out dir>

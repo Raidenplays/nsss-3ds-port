@@ -1,9 +1,9 @@
 # Porting plan: Not So Seecret Saturday a1.1.12 → 3DS (C++ / citro3d)
 
 ## The rule: 1:1 with the jar
-The game under the hood is NSSS, translated line by line from the a1.1.12 jar's own classes. The
-Axeolon engine supplies only the 3DS layers (citro3d drawing, input, sound, files) and the PE 0.5.0
-look of the screens. Anything that behaves like Beta or Axeolon instead of NSSS is a bug.
+The game under the hood is NSSS, translated line by line from the a1.1.12 jar's own classes. Only
+the 3DS layers (citro3d drawing, input, sound, files) and the PE 0.5.0 look of the screens are new.
+Anything that behaves like Beta instead of NSSS is a bug.
 
 Every ported system is checked against the real jar running headless (NSSS's `World` constructs fine
 with no Minecraft window): same seed, same chunk order, then every block and metadata value compared.
@@ -23,9 +23,11 @@ with no Minecraft window): same seed, same chunk order, then every block and met
 | Remaining block classes: player-triggered (bleeding obsidian, pyramidion, sponge breaking, jukebox, doors by hand), burnt cloth, slab orientation | ⏳ |
 | Entities and mobs (38 + 34 item classes) | ⏳ |
 | Player, exhaustion, inventory, crafting | ⏳ |
-| World ticking, lighting, seasons, weather, day length | ⏳ |
+| Chunk meshing (RenderBlocks: every render type, smooth-less Alpha light) | ✅ identical (sims/render) |
+| 128-tall chunks, NSSS saves (McRegion, level.dat with season/weather, name.data) | ✅ |
+| World tick (random ticks, winter ice/thaw), create-world screen (name, commands, season, weather) | ✅ |
+| Lighting, weather, day length | ⏳ |
 | Other world types (Floating, Corruption, Desert, Old-Timey) | ⏳ |
-| Remove what Alpha doesn't have (Nether, Axeolon blocks/mobs) | ⏳ |
 
 
 Source of truth: the `a1.1.12.jar` jarmod from `NSSS_a1.1.12.zip` (MultiMC instance).
@@ -33,11 +35,8 @@ It is a **full replacement jar** (591 classes, already deobfuscated, `com.mojang
 packages), so it decompiles straight to readable Java with Vineflower. No vanilla a1.1.2_01
 jar and no RetroMCP mappings are needed. Decompiled: 581 files, ~73k lines.
 
-Engine: forked from **Axeolon 3DS** (`Raidenplays/axeolon3ds`). It already does chunks,
-meshing, lighting, NBT, region and old chunk files, physics, redstone, rails, mobs with
-Blockbench models, containers, the bottom-screen UI, options, commands, and the Azahar CI.
-Same rules as there: port **behaviour** line by line, rewrite the **platform layers**, and
-Old 3DS at 60 fps with 64 MB.
+Rules: port **behaviour** line by line, write the **platform layers** for the 3DS, and hold
+60 fps on an Old 3DS with 64 MB.
 
 Personal build. The NSSS source has no license, so ask DirtPiper (NSSS Discord) before
 sharing builds. The decompiled Java stays out of this repo.
@@ -91,8 +90,9 @@ F3 coordinates and seed · fog toggle · F7 rain · `/help` and `/summon` in sin
 Peaceful/Easy · textured clouds · more than 5 worlds.
 
 ### Saves
-Region files **and** `c.<x>.<z>.dat` old chunk files with the usual `Level` NBT. Axeolon 3DS reads
-and writes both already, so NSSS worlds can be copied to the SD card and played both ways.
+`NSSSsaves/WorldN/`: McRegion files (`region/r.x.z.mcr`, each chunk gzipped NBT inside the region's
+deflate), `level.dat` with NSSS's extra fields (season, weather, SnowCovered, cheatsDisabled,
+WorldType…) and `name.data`. The 3DS reads and writes the same, so worlds go both ways.
 
 ### Skipped (for now)
 - Custom multiplayer (login and permissions protocol): a separate project
@@ -103,22 +103,17 @@ and writes both already, so NSSS worlds can be copied to the SD card and played 
 
 ## Phases
 
-### Phase 0: Fork and strip
-Repo: `Raidenplays/nsss-3ds-port`, started from Axeolon 3DS @ ffba73f (its old notes are in `docs/`).
-Chunk storage stays 256 tall internally; the world is capped at 128 and saved 128 tall like Alpha.
-- Copy the Axeolon 3DS engine; set `TARGET nsss3ds`, title "Not So Seecret Saturday", own save
-  path `sdmc:/3ds/nsss3ds/saves/`, own title ID.
-- Turn off the Axeolon layer: charms, mana, spells, the Almanac tab, the Nether, bosses,
-  Axeolon mobs, the 256 height (back to 128).
-- Keep the bottom-screen hotbar, the Items tab (inventory + crafting + chests) and Menu.
+### Phase 0: Strip ✅
+Everything that wasn't NSSS is gone: the old engine's blocks, items, mobs, models, the Nether, the
+256 height, its tools and its textures. Chunks are 128 tall, as in the jar.
 
 ### Phase 1: Content tables (generated from the decompile, like `gen_blockprops.py`)
 - Block table 1–103: hardness, resistance, light, opacity, texture index, step sound, material.
 - Item table: IDs, stack sizes (food 8, doors/signs 16), durability ×2, armour values.
 - Recipes from `Recipes*.java` + `CraftingManager`.
-- Atlases: `terrain.png`, `gui/items.png` and the rest straight from the jar.
+- Atlases: `terrain.png`, `gui/items.png` and the rest straight from the jar (`tools/gen_assets.py`).
 
-### Phase 2: World generation (seed parity, checked with `tools/host` like Axeolon)
+### Phase 2: World generation (seed parity, checked with `tools/host`)
 - ✅ `ChunkProviderGenerate` terrain + beaches + soil + `MapGenCaves` → `source/world/gen/AlphaGen.*`.
   Byte-identical to the jar on seeds 0, 404, 12345, 8675309 and -7461234987123, near spawn and
   ±1000–3000 chunks out (`tools/host/alphagen.cpp` vs `tools/nsss/AlphaGenDump.java`).
@@ -134,7 +129,7 @@ Chunk storage stays 256 tall internally; the world is capped at 128 and saved 12
 - **Gear / motor / generator network:** `GearGroup` merge and split, load limit, gear animation.
 
 ### Phase 4: Entities
-- Remap Axeolon's Beta mob code to NSSS's versions (purple arrows, wall-climbing spiders, drops).
+- Port the mobs from the jar (purple arrows, wall-climbing spiders, drops).
 - Giant (big zombie model), chicken + eggs, fish, fire extinguisher projectile, lightning.
 - Indev pathfinding on Normal/Hard, with a per-frame budget.
 

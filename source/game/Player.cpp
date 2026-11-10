@@ -288,7 +288,7 @@ void Player::moveEntity(const World& w, double dx, double dy, double dz) {
     // onEntityCollidedWithBlock (soul sand slows you down)
     int bx0 = floorD(boundingBox.minX), by0 = floorD(boundingBox.minY), bz0 = floorD(boundingBox.minZ);
     int bx1 = floorD(boundingBox.maxX), by1 = floorD(boundingBox.maxY), bz1 = floorD(boundingBox.maxZ);
-    bool loaded = by1 >= 0 && by0 < 256;
+    bool loaded = by1 >= 0 && by0 < Chunk::HEIGHT;
     for (int cx = bx0 >> 4; loaded && cx <= bx1 >> 4; ++cx)
         for (int cz = bz0 >> 4; cz <= bz1 >> 4; ++cz) loaded &= w.isChunkLoaded(cx, cz);
     if (loaded)
@@ -308,7 +308,7 @@ void Player::moveEntity(const World& w, double dx, double dy, double dz) {
         int x0 = floorD(boundingBox.minX), x1 = floorD(boundingBox.maxX + 1.0);
         int y0 = floorD(boundingBox.minY), y1 = floorD(boundingBox.maxY + 1.0);
         int z0 = floorD(boundingBox.minZ), z1 = floorD(boundingBox.maxZ + 1.0);
-        bool have = y1 > 0 && y0 < 256;
+        bool have = y1 > 0 && y0 < Chunk::HEIGHT;
         for (int cx = x0 >> 4; have && cx <= (x1 - 1) >> 4; ++cx)
             for (int cz = z0 >> 4; cz <= (z1 - 1) >> 4; ++cz) have &= w.isChunkLoaded(cx, cz);
         for (int x = x0; have && !burning && x < x1; ++x)

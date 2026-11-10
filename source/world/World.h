@@ -77,11 +77,12 @@ public:
     int season = SUMMER, weather = CLEAR;
     bool snowCovered = false, cheatsDisabled = false;
     int daysInSeason = 14;
+    int randomTickRate = 80; // GameSettings.randomTickRate ("rantick")
     int worldType = 0; // 0 normal, 1 floating, 2 corruption, 3 desert, 4 old-timey
     int skylightSubtracted = 0;
     // RenderGlobal.markBlockRangeNeedsUpdate (IWorldAccess); set by the game
     std::function<void(int, int, int, int, int, int)> onBlocksDirty;
-    // Terrain made ahead of time on the other CPU core (TerrainWorker): fills 65536 block ids
+    // Terrain made ahead of time on the other CPU core (TerrainWorker): fills 32768 block ids
     // and returns true if it has (cx, cz) ready. Same result as generating it here.
     std::function<bool(int, int, uint8_t*)> pregenerated;
     // Called now and then from the middle of generation, so a long populate can be paused
@@ -112,17 +113,17 @@ public:
     Chunk* provideChunk(int cx, int cz); // null = Beta's blank chunk
     uint8_t blockAt(int x, int y, int z) {
         if (++yieldCounter >= 2048) yieldPoint();
-        if (unsigned(y) >= 256u) return 0;
+        if (unsigned(y) >= unsigned(Chunk::HEIGHT)) return 0;
         Chunk* c = getChunk(x >> 4, z >> 4);
         if (!c || (!ignoreWindow && !inWindow(x >> 4, z >> 4))) return blockAtSlow(x, y, z);
-        return c->blocks[(x & 15) << 12 | (z & 15) << 8 | y];
+        return c->blocks[Chunk::index(x & 15, y, z & 15)];
     }
     uint8_t blockAtSlow(int x, int y, int z);
     int metaAt(int x, int y, int z);
     Mat materialAt(int x, int y, int z) { return BP[blockAt(x, y, z)].mat; }
     bool isAirBlock(int x, int y, int z) { return blockAt(x, y, z) == 0; }
     bool isBlockOpaqueCube(int x, int y, int z) { return BP[blockAt(x, y, z)].opaqueCube; }
-    bool blockExists(int x, int y, int z) const { return y >= 0 && y < 256 && chunkExists(x >> 4, z >> 4); }
+    bool blockExists(int x, int y, int z) const { return y >= 0 && y < Chunk::HEIGHT && chunkExists(x >> 4, z >> 4); }
     bool checkChunksExist(int x1, int y1, int z1, int x2, int y2, int z2) const;
     bool doChunksNearChunkExist(int x, int y, int z, int r) const { return checkChunksExist(x - r, y - r, z - r, x + r, y + r, z + r); }
 
@@ -149,6 +150,7 @@ public:
     int getBlockLightValue_do(int x, int y, int z, bool slabs);
     int getHeightValue(int x, int z);
     int findTopSolidBlock(int x, int z);
+    int getTopSolidOrLiquidBlock(int x, int z); // the first air above a solid block or a liquid
     int getSavedLightValue(Sky t, int x, int y, int z);
     void setLightValue(Sky t, int x, int y, int z, int v);
     void neighborLightPropagationChanged(Sky t, int x, int y, int z, int v);
@@ -159,21 +161,15 @@ public:
     void scheduleBlockUpdate(int x, int y, int z, int id);
     void scheduleBlockUpdateIn(int x, int y, int z, int id, int delay);
     bool tickUpdates(bool all); // World.TickUpdates
-    // World.func_4080_j: random block ticks (160 a chunk: Axeolon's chunks are twice as tall) and
+    // World.doWorldTick: random block ticks, the season's ice, and
     // cave ambience, for loaded chunks within 9 of the player
     void tickBlocks(double px, double py, double pz);
     std::function<void(const char*, double, double, double, float, float)> onSound; // playSoundEffect
     // World.entityJoinedWorld for a mob made during generation (its saved form): the game adopts
     // it, or else it goes into its chunk's saved list
     std::function<void(nbt::TagPtr)> onSpawnEntity;
-    // AxeolonBlockAnims.play / .door and World.spawnParticle, for block code that has no renderer
-    std::function<void(int kind, int x, int y, int z, const char* name)> onBlockAnim;
-    std::function<void(int x, int y, int z, int metaBefore)> onDoorSwing;
+    // World.spawnParticle, for block code that has no renderer
     std::function<void(int type, double x, double y, double z, double a, double b, double c)> onParticle;
-    // BlockPistonBase.launch: throw whatever is in the box
-    std::function<void(const AABB& box, double mx, double my, double mz)> onLaunch;
-    // BlockDispenser.dispenseItem (the game owns the projectiles and dropped items)
-    std::function<void(int x, int y, int z)> onDispense;
     // BlockSand.tryToFall: an EntityFallingSand takes the block from here
     std::function<void(int x, int y, int z, int id)> onFallingBlock;
     void spawnEntity(nbt::TagPtr t);
@@ -237,7 +233,8 @@ public:
     bool chunkSetBlockID(Chunk& c, int x, int y, int z, int id);
     bool chunkSetBlockIDWithMetadata(Chunk& c, int x, int y, int z, int id, int meta);
     void chunkGenerateSkylight(Chunk& c);    // func_1024_c
-    void chunkGenerateBlockLight(Chunk& c);  // func_4143_d
+    void chunkSetFrozen(Chunk& c, bool flag); // Chunk.setFrozen: ice on still water (or water again)
+    void chunkSetSnowy(Chunk& c, bool flag);  // Chunk.setSnowy: snow layers (or gone)
     void chunkGenerateHeightMap(Chunk& c);   // generateHeightMap
 private:
     void chunkRelight(Chunk& c, int x, int y, int z); // func_1003_g

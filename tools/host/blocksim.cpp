@@ -14,7 +14,7 @@
 int main(int argc, char** argv) {
     if (argc < 5) { fprintf(stderr, "usage: blocksim seed dir script out\n"); return 1; }
     mkdir(argv[2], 0777);
-    SaveHandler s(argv[2], 0);
+    SaveHandler s(argv[2]);
     LevelInfo li;
     li.seed = strtoll(argv[1], nullptr, 10);
     World w(&s, li, false);

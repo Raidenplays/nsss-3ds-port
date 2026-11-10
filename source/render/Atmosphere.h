@@ -14,8 +14,7 @@ struct RGB { float r, g, b; };
 
 inline float clamp01(float v) { return v < 0.0f ? 0.0f : v > 1.0f ? 1.0f : v; }
 
-inline float celestialAngle(int64_t time, float partial, bool nether) {
-    if (nether) return 0.5f;
+inline float celestialAngle(int64_t time, float partial) {
     int t = int(time % 24000LL);
     float f = (float(t) + partial) / 24000.0f - 0.25f;
     if (f < 0.0f) ++f;
@@ -66,8 +65,7 @@ inline RGB skyColour(float angle, double temperature) {
     return {float(c >> 16 & 255) / 255.0f * d, float(c >> 8 & 255) / 255.0f * d, float(c & 255) / 255.0f * d};
 }
 
-inline RGB fogColour(float angle, bool nether) {
-    if (nether) return {0.2f, 0.03f, 0.03f};
+inline RGB fogColour(float angle) {
     float d = daylight(angle);
     return {192.0f / 255.0f * (d * 0.94f + 0.06f), 216.0f / 255.0f * (d * 0.94f + 0.06f), 1.0f * (d * 0.91f + 0.09f)};
 }

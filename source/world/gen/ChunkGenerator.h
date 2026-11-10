@@ -12,8 +12,7 @@ class World;
 class ChunkGenerator {
 public:
     explicit ChunkGenerator(int64_t seed);
-    // ChunkProviderGenerate.provideChunk: out = 65536 block ids, index x << 12 | z << 8 | y
-    // (Alpha's 128-tall chunk in the bottom half of the engine's 256-tall layout)
+    // ChunkProviderGenerate.provideChunk: out = 32768 block ids, index x << 11 | z << 7 | y
     void provideChunk(int cx, int cz, uint8_t* out);
     // ChunkProviderGenerate.generateStructures
     void populate(World& w, int cx, int cz);
@@ -22,7 +21,6 @@ public:
 
 private:
     void alphaPopulate(World& w, int cx, int cz);
-    uint8_t scratch[32768];
 };
 
 // NSSS BlockSapling's tree (Populate.cpp)

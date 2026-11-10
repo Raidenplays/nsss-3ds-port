@@ -665,7 +665,7 @@ C3D_Tex* Renderer::texture(const std::string& path) {
         int w = wh[0], h = wh[1];
         fclose(f);
         f = nullptr;
-        // the GPU wants power-of-two sizes of at least 8 (all of Beta's and Axeolon's mob textures are)
+        // the GPU wants power-of-two sizes of at least 8 (all of NSSS's mob textures are)
         bool pot = w >= 8 && h >= 8 && w <= 1024 && h <= 1024 && !(w & (w - 1)) && !(h & (h - 1));
         u32* staging = pot ? (u32*)linearAlloc(size_t(w) * h * 4) : nullptr;
         if (staging && readRgba(path.c_str(), w, h, staging)) {

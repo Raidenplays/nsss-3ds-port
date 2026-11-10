@@ -6,7 +6,7 @@
 import os, struct, subprocess, sys
 
 RATE = 32000
-EFFECT_DIRS = ['sound/newsound', 'sound/sound', 'axeolon/sound/mob', 'axeolon/sound/ui']
+EFFECT_DIRS = ['sound/newsound', 'sound/sound']
 
 def main():
     romfs = sys.argv[1]

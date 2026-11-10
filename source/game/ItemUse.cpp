@@ -213,7 +213,7 @@ bool useOnBlock(World& w, Player& p, Inventory& inv, const RayHit& hit, float hi
         if (side != 1) return false;
         ++y;
         int door = id == 330 ? 71 : (h.damage <= 0 || h.damage >= 10) ? 64 : 144 + h.damage;
-        if (y >= 254 || !BP[w.getBlockId(x, y - 1, z)].opaqueCube || w.getBlockId(x, y, z) != 0 || w.getBlockId(x, y + 1, z) != 0)
+        if (y >= 127 || !BP[w.getBlockId(x, y - 1, z)].opaqueCube || w.getBlockId(x, y, z) != 0 || w.getBlockId(x, y + 1, z) != 0)
             return false;
         int f = fl(double((p.rotationYaw + 180.0f) * 4.0f / 360.0f) - 0.5) & 3;
         int dx = f == 1 ? -1 : f == 3 ? 1 : 0, dz = f == 0 ? 1 : f == 2 ? -1 : 0;
@@ -234,7 +234,7 @@ bool useOnBlock(World& w, Player& p, Inventory& inv, const RayHit& hit, float hi
     case 323: { // ItemSign: a post on top, on the wall otherwise; then the keyboard for the words
         if (side == 0 || !matSolid(BP[target].mat)) return false;
         offset(side, x, y, z);
-        if (y < 0 || y >= 255 || w.getBlockId(x, y, z) != 0) return false;
+        if (y < 0 || y >= Chunk::HEIGHT - 1 || w.getBlockId(x, y, z) != 0) return false;
         if (side == 1)
             w.setBlockAndMetadataWithNotify(x, y, z, 63, fl(double((p.rotationYaw + 180.0f) * 16.0f / 360.0f) + 0.5) & 15);
         else
@@ -343,7 +343,7 @@ bool useItem(World& w, Player& p, Inventory& inv, bool creative, double ex, doub
                ddz = std::fabs(dz) < 1e-12 ? 1e30 : 1.0 / std::fabs(dz);
         int side = -1;
         for (int i = 0; i < 64; ++i) {
-            if (y >= 0 && y < 256) {
+            if (y >= 0 && y < Chunk::HEIGHT) {
                 int id = w.getBlockId(x, y, z);
                 bool liquid = id >= 8 && id <= 11;
                 bool hit = false;
@@ -362,11 +362,7 @@ bool useItem(World& w, Player& p, Inventory& inv, bool creative, double ex, doub
                     }
                     offset(side, x, y, z);
                     if (w.getBlockId(x, y, z) == 0 || !matSolid(BP[w.getBlockId(x, y, z)].mat)) {
-                        if (w.info.dimension == -1 && h.id == 326) {
-                            sound::play("random.fizz", ex + 0.5, ey + 0.5, ez + 0.5, 0.5f, 2.6f + (w.rand.nextFloat() - w.rand.nextFloat()) * 0.8f);
-                        } else {
-                            w.setBlockAndMetadataWithNotify(x, y, z, h.id == 326 ? 9 : 11, 0);
-                        }
+                        w.setBlockAndMetadataWithNotify(x, y, z, h.id == 326 ? 9 : 11, 0);
                         if (!creative) h.id = 325;
                         return true;
                     }

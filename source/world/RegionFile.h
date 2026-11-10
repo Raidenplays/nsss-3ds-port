@@ -1,5 +1,5 @@
 #pragma once
-// Port of Axeolon's RegionFile (the Beta 1.3 McRegion format it adopted):
+// The jar's RegionFile (McRegion):
 // region/r.X.Z.mcr holds 32x32 chunks. Header = 1024 offsets (sector << 8 |
 // sector count) + 1024 timestamps; each chunk = int length, byte compression
 // (1 gzip, 2 zlib), then the compressed NBT. Sectors are 4096 bytes.

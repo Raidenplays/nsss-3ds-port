@@ -24,7 +24,7 @@ struct TerrainWorker::Impl {
         return busy && busyX == cx && busyZ == cz;
     }
     void run() {
-        std::vector<uint8_t> buf(65536);
+        std::vector<uint8_t> buf(32768);
         while (!quit) {
             int cx = 0, cz = 0;
             bool got = false;
@@ -96,7 +96,7 @@ bool TerrainWorker::take(int cx, int cz, uint8_t* out) {
     LightLock_Lock(&impl->lock);
     for (size_t k = 0; k < impl->done.size(); ++k)
         if (impl->done[k].cx == cx && impl->done[k].cz == cz) {
-            std::memcpy(out, impl->done[k].blocks.data(), 65536);
+            std::memcpy(out, impl->done[k].blocks.data(), 32768);
             impl->done.erase(impl->done.begin() + k);
             ok = true;
             break;

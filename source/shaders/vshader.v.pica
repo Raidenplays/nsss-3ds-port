@@ -1,4 +1,4 @@
-; Axeolon 3DS - the one vertex shader (Old 3DS friendly)
+; NSSS 3DS - the one vertex shader (Old 3DS friendly)
 ; Chunk sections send the 12-byte BlockVertex:
 ;   v0 = short4 (x, y, z, shade)  position in 1/64 block relative to the section, shade 0..255
 ;   v1 = short2 (u, v)            quarter texels in the 256x1024 atlas (v from the bottom)
