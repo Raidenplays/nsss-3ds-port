@@ -77,10 +77,6 @@
 #include "world/gen/TerrainWorker.h"
 #include "world/GenFiber.h"
 #include "world/gen/ChunkGenerator.h"
-#ifdef __ANDROID__
-#include <android/log.h>
-#include "../android/src/Platform.h" // the Pocket Edition controls, the bottom screen panel
-#endif
 
 // libctru gives the main thread 32 KB of stack by default; world loading and meshing want more
 u32 __stacksize__ = 512 * 1024;
@@ -97,14 +93,6 @@ namespace {
 // Startup log on the SD card (sdmc:/3ds/nsss3ds/log.txt), flushed every line, so a crash
 // leaves a trail of how far it got.
 void dbg(const char* fmt, ...) {
-#ifdef __ANDROID__
-    { // and to logcat
-        va_list ap;
-        va_start(ap, fmt);
-        __android_log_vprint(ANDROID_LOG_INFO, "axeolon", fmt, ap);
-        va_end(ap);
-    }
-#else
     { // and to the debugger / emulator log, in order (the emulator's SD appends can shuffle)
         char line[256];
         va_list ap;
@@ -113,7 +101,6 @@ void dbg(const char* fmt, ...) {
         va_end(ap);
         if (n > 0) svcOutputDebugString(line, std::min(n, int(sizeof line) - 1));
     }
-#endif
     FILE* f = fopen("sdmc:/3ds/nsss3ds/log.txt", "a");
     if (!f) return;
     va_list ap;
@@ -365,21 +352,7 @@ void storePlayer(SaveHandler* save, World& world, const Player& pl, const Invent
 // (Pocket Edition has no crosshair: you tap the chest, the dog, the block you mean)
 static void aimDir(const Camera& cam, float fovDeg, float& fx, float& fy, float& fz) {
     cam.forward(fx, fy, fz);
-#ifdef __ANDROID__
-    float nx, ny;
-    platform::aimPoint(nx, ny);
-    float t = std::tan(fovDeg * 3.14159265f / 360.0f);
-    float rx = std::cos(cam.yaw), rz = std::sin(cam.yaw);          // right
-    float ux = -rz * fy, uy = rz * fx - rx * fz, uz = rx * fy;       // up = right x forward
-    float sx = nx * t * platform::topAspect(), sy = ny * t;
-    fx += rx * sx + ux * sy;
-    fy += uy * sy;
-    fz += rz * sx + uz * sy;
-    float l = std::sqrt(fx * fx + fy * fy + fz * fz);
-    fx /= l; fy /= l; fz /= l;
-#else
     (void)fovDeg;
-#endif
 }
 
 void drawCrosshair() {
@@ -427,11 +400,7 @@ bool useBlock(World& w, int x, int y, int z, bool emptyHand) {
 }
 } // namespace
 
-#ifdef __ANDROID__
-int axeolon_main() { // android/src/Platform.cpp runs it on the game thread
-#else
 int main() {
-#endif
     osSetSpeedupEnable(true); // no-op on Old 3DS, 804 MHz on New
     gfxInitDefault();
     gfxSet3D(true); // stereoscopic 3D, depth from the 3D slider
@@ -509,17 +478,6 @@ int main() {
     bool titleCreated = false;
     int titleGameType = 0;
     if (arrivingByPortal) { worldName = portalWorld; portalWorld.clear(); }
-#ifdef __ANDROID__
-    else if (autotestOn) {
-        worldName = autotestNether ? "World6" : autotestNew ? "World5" : "World1";
-    } else { // Pocket Edition's menus (android/src/Screens.cpp)
-        platform::TitleChoice choice;
-        if (!platform::runTitle(choice)) { appRunning = false; break; }
-        worldName = choice.world;
-        titleCreated = choice.created;
-        titleGameType = choice.gameType;
-    }
-#else
     else {
         u64 last = osGetTime();
         float acc = 0;
@@ -549,7 +507,6 @@ int main() {
             C3D_FrameEnd(0);
         }
     }
-#endif
     if (!appRunning) break;
     {
     // ================================================================ playing a world
@@ -1061,9 +1018,6 @@ int main() {
     while (aptMainLoop()) {
         frameNo++;
         static int traceUntil = 0;
-#ifdef __ANDROID__
-        if (platform::bottomVisible() && traceUntil == 0) traceUntil = frameNo + 3; // the first frames with the panel
-#endif
         bool trace = frameNo <= 3 || frameNo == 60 || frameNo == 600 || frameNo <= traceUntil;
         if (trace) dbg("frame %d", frameNo);
 #ifdef __3DS__
@@ -1103,26 +1057,12 @@ int main() {
         hidCircleRead(&pad);
         // ---- the game menu: START pauses (nothing moves while it's up) ----
         bool saveNow = false;
-#ifdef __ANDROID__
-        if (platform::takeSaveRequest()) saveNow = true; // the app went to the background
-#endif
         if ((down & KEY_START) && !player.dead()) {
             paused = !paused;
             pauseSel = 0;
             down &= ~KEY_START;
             sound::playUi("random.click", 1.0f, 1.0f);
         }
-#ifdef __ANDROID__
-        if (paused) { // Hud::drawPause's three buttons, tapped
-            int row = platform::takeMenuTap(4, 240 / 4 + 24, 24);
-            if (row >= 0) { pauseSel = row; down |= KEY_A; }
-        } else if (player.dead()) { // Hud::drawGameOver's two
-            int row = platform::takeMenuTap(2, 240 / 4 + 72, 24);
-            if (row >= 0) { gameOverSel = row; down |= KEY_A; }
-        } else {
-            platform::takeMenuTap(0, 0, 0);
-        }
-#endif
         if (paused) {
             if (down & KEY_DUP) pauseSel = (pauseSel + 3) % 4;
             if (down & KEY_DDOWN) pauseSel = (pauseSel + 1) % 4;
@@ -1194,21 +1134,6 @@ int main() {
         player.rotationPitch -= lookY * LOOK_DEG * gOptions.lookScale() * dt;
         if (player.rotationPitch < -90.0f) player.rotationPitch = -90.0f;
         if (player.rotationPitch > 90.0f) player.rotationPitch = 90.0f;
-#ifdef __ANDROID__
-        if (!paused && !spellPicker && !mobs.introPlaying()) platform::applyLook(player.rotationYaw, player.rotationPitch); // the look finger
-        {
-            int slot = platform::takeHotbarTap();
-            if (slot >= 0 && !inv.battleMode) { inv.currentItem = slot; bottom.markDirty(); }
-            if (platform::takeChatToggle()) chatRequest = true; // GuiChat: the log and the keyboard
-            if (platform::takeInventoryToggle()) {
-                bool open = !platform::bottomVisible();
-                dbg("inventory panel %s at frame %d", open ? "open" : "closed", frameNo);
-                platform::showBottom(open);
-                if (open) bottom.setTab(BottomScreen::Tab::Items);
-                bottom.markDirty();
-            }
-        }
-#endif
         cam.yaw = player.rotationYaw * PI / 180.0f + PI;
         cam.pitch = player.rotationPitch * PI / 180.0f;
         if (flying) {
@@ -1808,52 +1733,6 @@ int main() {
             placeHeld = false;
             bottom.markDirty();
         }
-#ifdef __ANDROID__
-        { // Pocket Edition's interact buttons over the hotbar: Ride, Sit / Stand, Feed, Milk, Dismount...
-            std::vector<std::string> labels;
-            std::vector<Mobs::Action> acts;
-            int target = -1;
-            if (!player.dead() && !paused && !spellPicker && !mobs.cinematicActive()) {
-                if (vehicles.riding() || mobs.riding()) {
-                    labels.push_back("Dismount");
-                } else {
-                    // the mob the finger last pointed at, else the one in the middle of the view
-                    for (int pass = 0; pass < 2 && target < 0; ++pass) {
-                        float fx, fy, fz;
-                        if (pass == 0) aimDir(cam, renderer.fovDeg, fx, fy, fz);
-                        else cam.forward(fx, fy, fz);
-                        RayHit bh = world.rayTrace(cam.x, cam.y, cam.z, fx, fy, fz, 3.0f);
-                        double blockDist = 3.0, md;
-                        if (bh.hit) {
-                            double bx = bh.x + 0.5 - cam.x, by = bh.y + 0.5 - cam.y, bz = bh.z + 0.5 - cam.z;
-                            blockDist = std::sqrt(bx * bx + by * by + bz * bz) - 0.5;
-                        }
-                        int t = mobs.pick(cam.x, cam.y, cam.z, fx, fy, fz, 3.0, md);
-                        if (t >= 0 && md <= blockDist && !mobs.offers(t, inv).empty()) target = t;
-                    }
-                    if (target >= 0)
-                        for (const Mobs::Offer& o : mobs.offers(target, inv)) {
-                            labels.push_back(o.label);
-                            acts.push_back(o.act);
-                        }
-                }
-            }
-            int tap = platform::takeInteractTap();
-            if (tap >= 0 && tap < int(labels.size())) {
-                if (acts.empty()) { // Dismount
-                    if (vehicles.riding()) vehicles.dismount(player);
-                    if (mobs.riding()) mobs.dismount(player);
-                } else {
-                    if (acts[size_t(tap)] == Mobs::ACT_RIDE && vehicles.riding()) vehicles.dismount(player);
-                    std::string chat;
-                    if (mobs.act(target, acts[size_t(tap)], player, inv, creative, chat) && !chat.empty()) hud.addChat(chat);
-                    bottom.markDirty();
-                }
-                player.swingItem();
-            }
-            platform::setInteractButtons(labels);
-        }
-#endif
         if (placeHeld && placeTimer <= 0 && !player.dead()) { // Entity.interact: right-click on a mob
             float fx, fy, fz;
             aimDir(cam, renderer.fovDeg, fx, fy, fz);
@@ -2227,11 +2106,7 @@ int main() {
         // ---- draw ----
         C3D_Mtx view;
         cam.viewMatrix(view);
-#ifdef __ANDROID__
-        const float viewAspect = platform::topAspect(); // the whole window
-#else
         const float viewAspect = 400.0f / 240.0f;
-#endif
         frustum.build(cam.x, cam.y, cam.z, cam.yaw, cam.pitch, C3D_AngleFromDegrees(renderer.fovDeg), viewAspect);
 
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -2305,9 +2180,7 @@ int main() {
             hud.drawOverlays(eb, player.isInsideOfWater(world), player.fire > 0 && !creative, player.rotationYaw,
                              player.rotationPitch, renderer);
             hud.drawPortal(player.prevTimeInPortal + (player.timeInPortal - player.prevTimeInPortal) * partial, renderer);
-#ifndef __ANDROID__
             drawCrosshair(); // Pocket Edition has none: you aim with your finger
-#endif
         }
         { // the how-to-play hint
             bool want = false /* NSSS (Alpha): no How to Play hints */ && !creative && inv.tutorial >= 0 && inv.tutorial < 99 && !cine && !paused && !spellPicker && !player.dead();
@@ -2318,20 +2191,6 @@ int main() {
                 const char* brk = zButtons ? "ZR" : "R";
                 const char* use = zButtons ? "ZL" : "L";
                 char buf[200];
-#ifdef __ANDROID__
-                switch (inv.tutorial) { // Pocket Edition's controls
-                case 0: snprintf(buf, sizeof buf, "Use the arrows at the bottom left to walk around."); break;
-                case 1: snprintf(buf, sizeof buf, "Drag anywhere on the screen to look around."); break;
-                case 2: snprintf(buf, sizeof buf, "Tap the middle of the arrows to jump."); break;
-                case 3: snprintf(buf, sizeof buf, "Touch and hold to mine a block. Punch a tree to collect wood."); break;
-                case 4: snprintf(buf, sizeof buf, "Tap ... next to the hotbar to open your inventory."); break;
-                case 5: snprintf(buf, sizeof buf, "Make planks from the wood: in the inventory, put it in the crafting grid or tap Craft."); break;
-                case 6: snprintf(buf, sizeof buf, "Tap to place blocks, and to open doors and chests."); break;
-                case 7: snprintf(buf, sizeof buf, "Monsters come out at night. Build a shelter and light it with torches before dark."); break;
-                default: snprintf(buf, sizeof buf, "The Almanac in the inventory maps where you've been. Tap the map to drop a waypoint."); break;
-                }
-                if (false)
-#endif
                 switch (inv.tutorial) {
                 case 0: snprintf(buf, sizeof buf, "Use the Circle Pad to walk around."); break;
                 case 1: snprintf(buf, sizeof buf, "Look around with %s.", look); break;
@@ -2344,11 +2203,7 @@ int main() {
                 default: snprintf(buf, sizeof buf, "The Almanac on the touch screen maps where you've been. Tap the map to drop a waypoint."); break;
                 }
                 char title[48];
-#ifdef __ANDROID__
-                snprintf(title, sizeof title, "How to Play  %d/9", std::min(inv.tutorial, 8) + 1);
-#else
                 snprintf(title, sizeof title, "How to Play  %d/9   SELECT: skip", std::min(inv.tutorial, 8) + 1);
-#endif
                 hud.drawHint(title, buf, tutFade);
             }
         }
@@ -2364,13 +2219,7 @@ int main() {
         if (paused) hud.drawPause(pauseSel);
         if (savingFrames > 0) hud.drawSaving(frameNo);
         }
-#ifdef __ANDROID__
-        if (platform::bottomVisible()) bottom.markDirty(); // the panel is redrawn with every frame
-#endif
         bottom.draw();
-#ifdef __ANDROID__
-        platform::drawOverlay(inv, renderer, true);
-#endif
         C3D_FrameEnd(0);
         if (savingFrames > 0) --savingFrames;
         if (trace) dbg(" frame end");

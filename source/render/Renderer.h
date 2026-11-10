@@ -17,20 +17,12 @@
 #include "model/BlockModels.h"
 #include <string>
 
-#ifdef __ANDROID__
-struct GpuMesh { // OpenGL ES buffers (android/src/RendererGL.cpp)
-    unsigned vbo = 0, ibo = 0;
-    int indexCount = 0;
-    uint32_t faceStart[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-};
-#else
 struct GpuMesh {
     BlockVertex* vbo = nullptr;
     uint16_t* ibo = nullptr;
     int indexCount = 0;
     uint32_t faceStart[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // see MeshData::faceStart
 };
-#endif
 
 class Renderer {
 public:
@@ -116,27 +108,6 @@ public:
 
 private:
     struct Column { int cx, cz; GpuMesh sections[SECTIONS]; };
-#ifdef __ANDROID__
-public:
-    struct Gl; // the OpenGL ES side lives in android/src/RendererGL.cpp
-private:
-    Gl* gl = nullptr;
-    C3D_RenderTarget* target = nullptr;
-    C3D_RenderTarget* targetRight = nullptr;
-    int curEye = 0;
-    int skySub = 0;
-    float ambientLight = 0.05f, fogStart = 14.0f, fogEnd = 56.0f;
-    uint32_t fogRGB = 0x99BFFF;
-    std::unordered_map<std::string, C3D_Tex*> textures;
-    C3D_Mtx projection;
-    C3D_Tex terrain;
-    std::unordered_map<int64_t, Column> columns;
-    size_t linearBytes = 0;
-    bool cullBack = true;
-    int drawnSections = 0, drawnTris = 0;
-    static int64_t key(int cx, int cz) { return int64_t(cx) << 32 ^ uint32_t(cz); }
-    void freeMesh(GpuMesh& m);
-#else
 
     C3D_RenderTarget* target = nullptr;
     C3D_RenderTarget* targetRight = nullptr;
@@ -178,5 +149,4 @@ private:
     static int64_t key(int cx, int cz) { return int64_t(cx) << 32 ^ uint32_t(cz); }
     bool loadTerrainAtlas();
     void freeMesh(GpuMesh& m, bool deferred);
-#endif
 };

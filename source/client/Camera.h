@@ -2,7 +2,7 @@
 // Free-fly camera for now. Phase 5 replaces this with a ported EntityPlayer +
 // collision; the camera then just follows the player's eyes.
 #include <cmath>
-#if defined(__3DS__) || defined(__ANDROID__)
+#if defined(__3DS__)
 #include <3ds.h>
 #include <citro3d.h>
 #endif
@@ -43,7 +43,7 @@ struct Camera {
         y += moveY * s;
     }
 
-#if defined(__3DS__) || defined(__ANDROID__)
+#if defined(__3DS__)
     void viewMatrix(C3D_Mtx& out) const {
         Mtx_Identity(&out);
         if (deathRoll != 0.0f) Mtx_RotateZ(&out, deathRoll, true);

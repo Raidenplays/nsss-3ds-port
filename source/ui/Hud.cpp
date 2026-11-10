@@ -7,25 +7,14 @@
 #include "game/ItemTable.h"
 #include "audio/Sound.h"
 #include "world/BlockTable.h"
-#ifdef __ANDROID__
-#include "../android/src/Platform.h"
-#endif
 
 namespace {
 // the screen's edges in the top screen's units: 0..400 on the 3DS, the whole window on Android
 float edgeL() {
-#ifdef __ANDROID__
-    return platform::topLeft();
-#else
     return 0.0f;
-#endif
 }
 float edgeR() {
-#ifdef __ANDROID__
-    return platform::topRight();
-#else
     return 400.0f;
-#endif
 }
 } // namespace
 
@@ -286,22 +275,6 @@ void Hud::drawChat() {
         f *= f;
         return int(255.0 * f);
     };
-#ifdef __ANDROID__
-    // Pocket Edition: under the hearts at the top left, newest at the bottom (the pad is down below)
-    size_t n = 0;
-    while (n < chat.size() && n < lines && alpha(n) > 2) ++n;
-    if (chatOpen && chat.empty()) {
-        C2D_DrawRectSolid(edgeL() + 2, 25, 0.5f, 320, 9, C2D_Color32(0, 0, 0, 0x80));
-        font.draw("No messages yet", edgeL() + 2, 26, 0xFFA0A0A0);
-    }
-    for (size_t k = 0; k < n; ++k) {
-        size_t i = n - 1 - k;
-        int a = alpha(i);
-        float y = 26 + float(k) * 9.0f;
-        C2D_DrawRectSolid(edgeL() + 2, y - 1, 0.5f, 320, 9, C2D_Color32(0, 0, 0, a / 2));
-        font.draw(chat[i].text, edgeL() + 2, y, 0xFFFFFF | (uint32_t(a) << 24));
-    }
-#else
     const float bottom = 240 - 36;
     for (size_t i = 0; i < chat.size() && i < lines; ++i) {
         int a = alpha(i);
@@ -311,7 +284,6 @@ void Hud::drawChat() {
         C2D_DrawRectSolid(2, y - 1, 0.5f, 320, 9, C2D_Color32(0, 0, 0, a / 2));
         font.draw(chat[i].text, 2, y, 0xFFFFFF | (uint32_t(a) << 24));
     }
-#endif
 }
 
 void Hud::drawSpellPicker(const std::vector<uint8_t>& ids, const std::vector<int>& uses, int selected, int cursor,
@@ -371,11 +343,7 @@ void Hud::drawBoss(bool cutscene, int elapsed, int left, int titleTick, float he
         return;
     }
     const int barW = 182;
-#ifdef __ANDROID__
-    float x = 200 - barW / 2, y = 34; // under the hearts and mana
-#else
     float x = 200 - barW / 2, y = 12;
-#endif
     int fill = int(health * float(barW + 1));
     auto blit = [&](float bx, float by, int u, int v, int w, int h) {
         if (!bossbar || w <= 0) return;
