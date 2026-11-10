@@ -296,6 +296,11 @@ ChunkGenerator::ChunkGenerator(int64_t s, const std::string& worldDir, int dimen
     peaks.reset(new Peaks(seed, blend));
     manager.reset(new ChunkManager(seed, *peaks));
     if (dimension == -1) hell.reset(new NetherTerrain(seed));
+    else {
+        alpha::GenWorld gw;
+        gw.seed = seed;
+        alphaTerrain.reset(new alpha::Terrain(gw));
+    }
 }
 
 ChunkGenerator::~ChunkGenerator() = default;
@@ -303,6 +308,13 @@ ChunkGenerator::~ChunkGenerator() = default;
 void ChunkGenerator::provideChunk(int cx, int cz, uint8_t* out) {
     if (hell) {
         hell->provideChunk(cx, cz, out);
+        return;
+    }
+    if (alphaTerrain) { // NSSS: Alpha terrain + caves, 128 tall, into the 256-tall layout
+        alphaTerrain->provideChunk(cx, cz, scratch);
+        std::memset(out, 0, 65536);
+        for (int x = 0; x < 16; ++x)
+            for (int z = 0; z < 16; ++z) std::memcpy(out + (x << 12 | z << 8), scratch + (x << 11 | z << 7), 128);
         return;
     }
     rand.setSeed(add(mul(cx, 341873128712LL), mul(cz, 132897987541LL)));

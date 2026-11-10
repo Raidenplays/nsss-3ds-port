@@ -111,6 +111,11 @@ def gen_block_table(blocks):
     return '\n'.join(out) + '\n'
 
 def main():
+    if len(sys.argv) == 2 and sys.argv[1] == '--tables':  # just BlockTable.cpp + ItemTable.cpp
+        blocks = json.load(open(os.path.join(ROOT, 'tools/generated/blocks.json')))
+        open(os.path.join(ROOT, 'source/world/BlockTable.cpp'), 'w').write(gen_block_table(blocks))
+        gen_item_table()
+        return 0
     if len(sys.argv) < 5:
         print(__doc__)
         print('usage: gen_assets.py <textures_out> <jars/assets> <minecraft/src/axeolon> <romfs dir>')

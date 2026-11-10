@@ -1683,6 +1683,7 @@ void ChunkGenerator::populate(World& w, int cx, int cz) {
         populateHell(w, hell->hellRNG, cx, cz);
         return;
     }
+    if (alphaTerrain) return; // NSSS: Alpha's populate step (ChunkProviderGenerate.generateStructures) is next to port
     Blocks::sandFallInstantly = true;
     Blocks::flowerGenerating = true;
     int bx = cx * 16, bz = cz * 16;

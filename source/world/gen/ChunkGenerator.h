@@ -10,6 +10,7 @@
 #include "Biome.h"
 #include "Noise.h"
 #include "Nether.h"
+#include "AlphaGen.h"
 #include "world/JavaRandom.h"
 
 class World;
@@ -85,6 +86,7 @@ public:
     std::unique_ptr<ChunkManager> manager;
     std::vector<Biome> biomes; // of the last chunk
     std::unique_ptr<NetherTerrain> hell; // set in the Nether
+    std::unique_ptr<alpha::Terrain> alphaTerrain; // NSSS: the overworld is Alpha's (AlphaGen)
     // a chunk was generated on the other core: put the generator's state where it would be
     void providedElsewhere(int cx, int cz) { if (hell) hell->syncAfterProvide(cx, cz); }
 

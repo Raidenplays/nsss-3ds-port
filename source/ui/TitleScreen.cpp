@@ -150,8 +150,9 @@ bool TitleScreen::init(Renderer& r, const std::string& saves) {
     rng ^= uint32_t(time(nullptr));
     bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     if (!font.load(r)) return false;
-    for (int i = 0; i < 6; i++)
-        panorama[i] = r.texture("romfs:/axeolon/title/panorama_" + std::to_string(i) + ".rgba");
+    peTouch = r.texture("romfs:/textures/pe/touchgui.rgba");
+    peLogo = r.texture("romfs:/textures/pe/title.rgba");
+    peDirt = r.texture("romfs:/textures/pe/bg32.rgba");
     black = r.texture("romfs:/textures/title/black.rgba");
     gui = r.texture("romfs:/textures/gui/gui.rgba");
     background = r.texture("romfs:/textures/gui/background.rgba");
@@ -215,13 +216,21 @@ void TitleScreen::open(Screen s) {
     selected = 0;
     const float cx = 160; // width / 2
     switch (s) {
-    case MAIN:
-        buttons.push_back({1, cx - 100, 44, 200, 20, "Singleplayer"});
-        buttons.push_back({2, cx - 100, 68, 200, 20, "Multiplayer", false});
-        buttons.push_back({3, cx - 100, 92, 200, 20, "Mods and Texture Packs", false});
-        buttons.push_back({0, cx - 100, 128, 98, 20, "Options..."});
-        buttons.push_back({4, cx + 2, 128, 98, 20, "Quit Game"});
+    case MAIN: {
+        // PE 0.5.0: Join Game, Start Game, Options; touchgui.png's 76x75 squares at 1.25x
+        const float w = 95, h = 94, gap = (320 - 3 * w) / 4, y = 72;
+        Button join{2, gap, y, w, h, "Join Game", false};
+        join.icon = 2;
+        Button start{1, gap * 2 + w, y, w, h, "Start Game"};
+        start.icon = 1;
+        Button opts{0, gap * 3 + w * 2, y, w, h, "Options"};
+        opts.icon = 0;
+        buttons = {join, start, opts};
+        selected = 1;
+        held = -1;
+        padUsed = false;
         break;
+    }
     case SELECT:
     case DELETE: {
         scanSlots();
@@ -358,6 +367,35 @@ TitleScreen::Result TitleScreen::input(u32 down, const touchPosition& touch) {
         if (b.id == 4 && b.enabled) quit = true;
         press(b);
     };
+    if (screen == MAIN) {
+        // PE: a button lights while the touch is on it and acts when the touch lifts there
+        auto under = [&](const touchPosition& t) {
+            for (size_t i = 0; i < buttons.size(); i++) {
+                const Button& b = buttons[i];
+                if (t.px >= b.x && t.px < b.x + b.w && t.py >= b.y && t.py < b.y + b.h) return int(i);
+            }
+            return -1;
+        };
+        u32 heldKeys = hidKeysHeld(), up = hidKeysUp();
+        if (down & KEY_TOUCH) { held = under(touch); padUsed = false; }
+        else if (heldKeys & KEY_TOUCH) { if (held >= 0 && under(touch) != held) held = -1; }
+        if ((up & KEY_TOUCH) && held >= 0) {
+            selected = held;
+            Button copy = buttons[held];
+            held = -1;
+            activate(copy);
+        }
+        if (!(heldKeys & KEY_TOUCH) && !(up & KEY_TOUCH)) held = -1;
+        if (down & KEY_DLEFT) { selected = (selected + 2) % 3; padUsed = true; }
+        if (down & KEY_DRIGHT) { selected = (selected + 1) % 3; padUsed = true; }
+        if (down & KEY_A) {
+            Button copy = buttons[selected];
+            activate(copy);
+        }
+        if (down & KEY_START) quit = true;
+        if (quit) return QUIT;
+        return chosen.empty() ? NONE : PLAY;
+    }
     if (down & KEY_TOUCH) {
         for (size_t i = 0; i < buttons.size(); i++) {
             const Button& b = buttons[i];
@@ -485,7 +523,46 @@ void TitleScreen::drawTop2D() {
     font.drawRotated(splash, 200 + 125 * 400.0f / 427.0f, 74, -8, -20.0f, 0xFFFF00, s);
 }
 
+namespace {
+// a w x h piece of a texW x texH texture at (x, y), in citro2d's flipped v
+Tex3DS_SubTexture subOf(float texW, float texH, float x, float y, float w, float h) {
+    return {uint16_t(w), uint16_t(h), x / texW, 1.0f - y / texH, (x + w) / texW, 1.0f - (y + h) / texH};
+}
+} // namespace
+
+void TitleScreen::drawPeDirt(float w, float h) {
+    if (!peDirt) return;
+    Tex3DS_SubTexture d = subOf(32, 32, 0, 0, 32, 32);
+    for (float y = 0; y < h; y += 64)
+        for (float x = 0; x < w; x += 64) C2D_DrawImageAt({peDirt, &d}, x, y, 0.1f, nullptr, 2.0f, 2.0f);
+}
+
+void TitleScreen::drawPeTop() {
+    // PE 0.5.0's title: dirt, the Pocket Edition logo (0.5.0's title.png: 256x64, logo at y 1-63),
+    // the version line under it, and the credit in the corner
+    drawPeDirt(400, 240);
+    if (peLogo) {
+        Tex3DS_SubTexture logo = subOf(256, 64, 0, 1, 256, 63);
+        const float s = 1.4f;
+        C2D_DrawImageAt({peLogo, &logo}, 200 - 256 * s / 2, 28, 0.5f, nullptr, s, s);
+    }
+    font.drawCentered("NSSS a1.1.12", 200, 28 + 63 * 1.4f + 10, 0xE0E0E0, true, 1.5f);
+    font.draw("Mojang AB", 400 - font.width("Mojang AB") * 1.5f - 4, 240 - 16, 0xFFFFFF, true, 1.5f);
+}
+
+void TitleScreen::drawPeButton(const Button& b, bool lit) {
+    // touchgui.png: 76x75 squares, normal at x 0 and pressed at x 76; rows y 26 / 101 / 176
+    if (peTouch) {
+        Tex3DS_SubTexture sq = subOf(256, 256, lit ? 76 : 0, 26 + 75 * b.icon, 76, 75);
+        C2D_ImageTint dim;
+        C2D_PlainImageTint(&dim, C2D_Color32(0, 0, 0, 255), 0.45f); // greyed out: 45% toward black
+        C2D_DrawImageAt({peTouch, &sq}, b.x, b.y, 0.5f, b.enabled ? nullptr : &dim, b.w / 76.0f, b.h / 75.0f);
+    }
+    font.drawCentered(b.text, b.x + b.w / 2, b.y + 12, b.enabled ? 0xFFFFFF : 0x909090);
+}
+
 void TitleScreen::drawButton(const Button& b, bool hover) {
+    if (b.icon >= 0) return drawPeButton(b, hover);
     // GuiButton: the 200x20 sprite at gui.png (0, 46 + state*20), drawn as two halves
     int state = !b.enabled ? 0 : hover ? 2 : 1;
     float half = b.w / 2.0f;
@@ -507,10 +584,8 @@ void TitleScreen::drawBottom() {
     C3D_RenderTargetSetOutput(bottom, GFX_BOTTOM, GFX_LEFT, GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8) | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
     C2D_TargetClear(bottom, C2D_Color32(0, 0, 0, 255));
     C2D_SceneBegin(bottom);
-    if (screen == MAIN && panorama[0]) {
-        // the front of the panorama behind the menu, darkened like the top
-        C2D_DrawImageAt({panorama[0], &panoSub}, -32, -40, 0.1f, nullptr, 1.5f, 1.5f);
-        C2D_DrawRectSolid(0, 0, 0.2f, 320, 240, C2D_Color32(0, 0, 0, 120));
+    if (screen == MAIN) {
+        drawPeDirt(320, 240);
     } else if (background) {
         // GuiScreen.drawWorldBackground: dirt at 32 px a tile, tinted 0x404040
         for (int y = 0; y < 240; y += 32)
@@ -548,7 +623,8 @@ void TitleScreen::drawBottom() {
         font.drawCentered("L / R hotbar, X items", 160, 110, 0xA0A0A0);
         break;
     }
-    for (size_t i = 0; i < buttons.size(); i++) drawButton(buttons[i], int(i) == selected);
+    for (size_t i = 0; i < buttons.size(); i++)
+        drawButton(buttons[i], screen == MAIN ? (int(i) == held || (padUsed && int(i) == selected)) : int(i) == selected);
 }
 
 void TitleScreen::drawLoading(const std::string& title, const std::string& status, float progress) {
@@ -578,11 +654,10 @@ void TitleScreen::drawLoading(const std::string& title, const std::string& statu
 }
 
 void TitleScreen::draw(float partial) {
+    (void)partial;
     renderer->beginTitle();
-    drawPanorama(partial);
-    drawLogo(partial);
     renderer->prepare2D();
     C2D_SceneBegin(renderer->topTarget(0));
-    drawTop2D();
+    drawPeTop();
     drawBottom();
 }
