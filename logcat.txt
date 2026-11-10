@@ -1,0 +1,202 @@
+11-10 12:57:33.733   168   168 W libc    : Unable to set property "ro.boottime.init.fsck.data" to "27": error code: 0xb
+11-10 12:57:33.746   168   168 W libc    : Unable to set property "ro.boottime.init.mount.data" to "8": error code: 0xb
+11-10 12:57:33.848     1     1 W libc    : Unable to set property "ro.crypto.state" to "unsupported": error code: 0xb
+11-10 12:57:35.597   130   130 W libc    : Unable to set property "ro.hardware.egl" to "emulation": error code: 0xb
+11-10 12:57:35.745   325   325 I libc    : malloc_limit: Allocation limit enabled, max size 415457280 bytes
+11-10 12:57:35.806   280   280 D AndroidRuntime: >>>>>> START com.android.internal.os.ZygoteInit uid 0 <<<<<<
+11-10 12:57:35.863   280   280 I AndroidRuntime: Using default boot image
+11-10 12:57:35.863   280   280 I AndroidRuntime: Leaving lock profiling enabled
+11-10 12:57:36.005   284   284 D AndroidRuntime: >>>>>> START com.android.internal.os.ZygoteInit uid 0 <<<<<<
+11-10 12:57:36.038   284   284 I AndroidRuntime: Using default boot image
+11-10 12:57:36.038   284   284 I AndroidRuntime: Leaving lock profiling enabled
+11-10 12:57:36.486   444   444 I libc    : malloc_limit: Allocation limit enabled, max size 134217728 bytes
+11-10 12:57:36.550   442   442 I libc    : malloc_limit: Allocation limit enabled, max size 415457280 bytes
+11-10 12:57:38.279   513   513 D CompatConfig: Found a config file: /system/etc/compatconfig/libcore-platform-compat-config.xml
+11-10 12:57:42.629   513   513 E AppIdleHistory: 	at libcore.io.IoBridge.open(IoBridge.java:492)
+11-10 12:57:42.629   513   513 E AppIdleHistory: 	at libcore.io.Linux.open(Native Method)
+11-10 12:57:42.629   513   513 E AppIdleHistory: 	at libcore.io.ForwardingOs.open(ForwardingOs.java:166)
+11-10 12:57:42.629   513   513 E AppIdleHistory: 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:254)
+11-10 12:57:42.629   513   513 E AppIdleHistory: 	at libcore.io.IoBridge.open(IoBridge.java:478)
+11-10 12:57:42.648   513   655 W FileUtils: 	at libcore.io.Linux.chmod(Native Method)
+11-10 12:57:42.648   513   655 W FileUtils: 	at libcore.io.ForwardingOs.chmod(ForwardingOs.java:85)
+11-10 12:57:42.648   513   655 W FileUtils: 	at libcore.io.BlockGuardOs.chmod(BlockGuardOs.java:80)
+11-10 12:57:42.702   316   316 W libc    : Unable to set property "vendor.wlan.firmware.version" to "1.0": error code: 0x18
+11-10 12:57:42.715   316   316 W libc    : Unable to set property "vendor.wlan.driver.version" to "1.0": error code: 0x18
+11-10 12:57:43.106   853   853 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+11-10 12:57:43.114   842   842 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+11-10 12:57:45.724   513   655 W FileUtils: 	at libcore.io.Linux.chmod(Native Method)
+11-10 12:57:45.724   513   655 W FileUtils: 	at libcore.io.ForwardingOs.chmod(ForwardingOs.java:85)
+11-10 12:57:45.724   513   655 W FileUtils: 	at libcore.io.BlockGuardOs.chmod(BlockGuardOs.java:80)
+11-10 12:57:46.849  1426  1426 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-10 12:57:46.871  1426  1426 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.profilebootclasspath"
+11-10 12:57:46.871  1426  1426 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_apex_image"
+11-10 12:57:46.871  1426  1426 I AndroidRuntime: Using default boot image
+11-10 12:57:46.871  1426  1426 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.disable_lock_profiling"
+11-10 12:57:46.871  1426  1426 I AndroidRuntime: Leaving lock profiling enabled
+11-10 12:57:46.871  1426  1426 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_generational_cc"
+11-10 12:57:47.404  1426  1426 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-10 12:57:47.452   513   655 W FileUtils: 	at libcore.io.Linux.chmod(Native Method)
+11-10 12:57:47.452   513   655 W FileUtils: 	at libcore.io.ForwardingOs.chmod(ForwardingOs.java:85)
+11-10 12:57:47.452   513   655 W FileUtils: 	at libcore.io.BlockGuardOs.chmod(BlockGuardOs.java:80)
+11-10 12:57:47.720  1426  1426 D AndroidRuntime: Shutting down VM
+11-10 12:57:48.553  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.mkdir(BlockGuardOs.java:235)
+11-10 12:57:48.553  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.mkdir(ForwardingOs.java:156)
+11-10 12:57:48.554  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.chmod(BlockGuardOs.java:78)
+11-10 12:57:48.554  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.chmod(ForwardingOs.java:85)
+11-10 12:57:49.723  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.access(BlockGuardOs.java:71)
+11-10 12:57:49.723  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.access(ForwardingOs.java:72)
+11-10 12:57:49.723  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.access(BlockGuardOs.java:71)
+11-10 12:57:49.723  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.access(ForwardingOs.java:72)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.access(BlockGuardOs.java:71)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.access(ForwardingOs.java:72)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:249)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.open(ForwardingOs.java:166)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.IoBridge.open(IoBridge.java:478)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:252)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.open(ForwardingOs.java:166)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.IoBridge.open(IoBridge.java:478)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.fstat(BlockGuardOs.java:174)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.fstat(ForwardingOs.java:106)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.IoBridge.open(IoBridge.java:481)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.write(BlockGuardOs.java:417)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.write(ForwardingOs.java:240)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.IoBridge.write(IoBridge.java:535)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.chmod(BlockGuardOs.java:78)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.chmod(ForwardingOs.java:85)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.BlockGuardOs.stat(BlockGuardOs.java:389)
+11-10 12:57:49.724  1865  1865 D StrictMode: 	at libcore.io.ForwardingOs.stat(ForwardingOs.java:221)
+11-10 12:57:50.694   513   569 V BackupManagerService: [UserID:0] restoreAtInstall pkg=com.raidenplays.axeolon token=1 restoreSet=0
+11-10 12:57:50.722   741  2147 E BackupHelper: 	at libcore.io.IoBridge.open(IoBridge.java:492)
+11-10 12:57:50.722   741  2147 E BackupHelper: 	at libcore.io.Linux.open(Native Method)
+11-10 12:57:50.722   741  2147 E BackupHelper: 	at libcore.io.ForwardingOs.open(ForwardingOs.java:166)
+11-10 12:57:50.722   741  2147 E BackupHelper: 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:254)
+11-10 12:57:50.722   741  2147 E BackupHelper: 	at libcore.io.ForwardingOs.open(ForwardingOs.java:166)
+11-10 12:57:50.722   741  2147 E BackupHelper: 	at libcore.io.IoBridge.open(IoBridge.java:478)
+11-10 12:57:50.774  1400  1400 I MediaProvider: Invalidating LocalCallingIdentity cache for package com.raidenplays.axeolon. Reason: package android.intent.action.PACKAGE_ADDED
+11-10 12:57:50.786   702   702 D AvrcpMediaPlayerList: Name of package changed: com.raidenplays.axeolon
+11-10 12:57:50.853   513  1181 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=com.raidenplays.axeolon/android.app.NativeActivity} from uid 2000
+11-10 12:57:50.912   513   553 I ActivityManager: Start proc 2181:com.raidenplays.axeolon/u0a130 for pre-top-activity {com.raidenplays.axeolon/android.app.NativeActivity}
+11-10 12:57:51.180   513   551 D ArtManagerInternalImpl: /data/misc/iorapd/com.raidenplays.axeolon/1/android.app.NativeActivity/compiled_traces/compiled_trace.pb doesn't exist
+11-10 12:57:51.198   513   551 I ActivityTaskManager: Displayed com.raidenplays.axeolon/android.app.NativeActivity: +302ms
+11-10 12:57:51.781   513  1457 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.raidenplays.axeolon flg=0x4000010 (has extras) } to com.android.packageinstaller/.PackageInstalledReceiver
+11-10 12:57:51.782   513   552 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.raidenplays.axeolon flg=0x4000010 (has extras) } to com.android.gallery3d/.app.PackagesMonitor
+11-10 12:57:51.835  2181  2225 I axeolon : start
+11-10 12:57:51.847  2181  2225 I axeolon : bundled worlds ok
+11-10 12:57:51.856  2181  2225 I axeolon : renderer init 1
+11-10 12:57:51.862  2181  2225 I axeolon : title init 1
+11-10 12:57:51.913  2181  2225 I axeolon : sound 1
+11-10 12:58:31.322  2372  2372 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-10 12:58:31.334  2372  2372 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.profilebootclasspath"
+11-10 12:58:31.334  2372  2372 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_apex_image"
+11-10 12:58:31.334  2372  2372 I AndroidRuntime: Using default boot image
+11-10 12:58:31.334  2372  2372 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.disable_lock_profiling"
+11-10 12:58:31.334  2372  2372 I AndroidRuntime: Leaving lock profiling enabled
+11-10 12:58:31.334  2372  2372 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_generational_cc"
+11-10 12:58:31.472  2372  2372 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-10 12:58:31.479  2372  2372 D AndroidRuntime: Shutting down VM
+11-10 12:58:36.292  2389  2389 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-10 12:58:36.295  2389  2389 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.profilebootclasspath"
+11-10 12:58:36.295  2389  2389 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_apex_image"
+11-10 12:58:36.295  2389  2389 I AndroidRuntime: Using default boot image
+11-10 12:58:36.295  2389  2389 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.disable_lock_profiling"
+11-10 12:58:36.295  2389  2389 I AndroidRuntime: Leaving lock profiling enabled
+11-10 12:58:36.295  2389  2389 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_generational_cc"
+11-10 12:58:36.408  2389  2389 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-10 12:58:36.413  2389  2389 D AndroidRuntime: Shutting down VM
+11-10 12:58:36.417  2389  2401 I AndroidRuntime: NOTE: attach of thread 'Binder:2389_2' failed
+11-10 12:58:36.424  2181  2225 I axeolon : world: 'World1'
+11-10 12:58:36.424  2181  2225 I axeolon : level read: save=1 dim=0 player -177.5 65.6 -265.6
+11-10 12:58:36.425  2181  2225 I axeolon : terrain worker on core 1: 0
+11-10 12:58:36.427  2181  2225 I axeolon : bottom init 1
+11-10 12:58:36.429  2181  2225 I axeolon : player loaded
+11-10 12:58:37.186  2181  2225 I axeolon : built 121 chunks in 757 ms
+11-10 12:58:37.188  2181  2225 I axeolon : gen fiber: 1
+11-10 12:58:37.188  2181  2225 I axeolon : frame 1
+11-10 12:58:37.188  2181  2225 I axeolon :  streamed, columns queued 1296
+11-10 12:58:37.188  2181  2225 I axeolon :  ticked
+11-10 12:58:37.193  2181  2225 I axeolon :  meshed, 1270 left
+11-10 12:58:37.335  2181  2225 I axeolon :  world drawn: 0 sections 0 tris
+11-10 12:58:37.548  2181  2225 I axeolon :  mobs drawn (17)
+11-10 12:58:37.583  2181  2225 I axeolon :  frame end
+11-10 12:58:37.583  2181  2225 I axeolon : frame 2
+11-10 12:58:37.583  2181  2225 I axeolon :  streamed, columns queued 1270
+11-10 12:58:37.588  2181  2225 I axeolon :  ticked
+11-10 12:58:37.593  2181  2225 I axeolon :  meshed, 1231 left
+11-10 12:58:37.593  2181  2225 I axeolon :  world drawn: 0 sections 0 tris
+11-10 12:58:37.598  2181  2225 I axeolon :  mobs drawn (20)
+11-10 12:58:37.614  2181  2225 I axeolon :  frame end
+11-10 12:58:37.614  2181  2225 I axeolon : frame 3
+11-10 12:58:37.614  2181  2225 I axeolon :  streamed, columns queued 1231
+11-10 12:58:37.614  2181  2225 I axeolon :  ticked
+11-10 12:58:37.619  2181  2225 I axeolon :  meshed, 1219 left
+11-10 12:58:37.619  2181  2225 I axeolon :  world drawn: 0 sections 0 tris
+11-10 12:58:37.620  2181  2225 I axeolon :  mobs drawn (20)
+11-10 12:58:37.632  2181  2225 I axeolon :  frame end
+11-10 12:58:38.684  2181  2225 F libc    : Fatal signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0x754540d59018 in tid 2225 (Thread-2), pid 2181 (enplays.axeolon)
+11-10 12:58:38.705  2405  2405 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+11-10 12:58:38.705  2405  2405 F DEBUG   : Build fingerprint: 'Android/sdk_phone_x86_64/generic_x86_64:11/RSR1.210722.013.A2/10067904:userdebug/test-keys'
+11-10 12:58:38.705  2405  2405 F DEBUG   : Revision: '0'
+11-10 12:58:38.705  2405  2405 F DEBUG   : ABI: 'x86_64'
+11-10 12:58:38.705  2405  2405 F DEBUG   : Timestamp: 2026-11-10 12:58:38+0000
+11-10 12:58:38.705  2405  2405 F DEBUG   : pid: 2181, tid: 2225, name: Thread-2  >>> com.raidenplays.axeolon <<<
+11-10 12:58:38.705  2405  2405 F DEBUG   : uid: 10130
+11-10 12:58:38.705  2405  2405 F DEBUG   : signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0x754540d59018
+11-10 12:58:38.705  2405  2405 F DEBUG   :     rax 00007544feca9a39  rbx 0000754540d59018  rcx 000000000000001c  rdx 0000000000000004
+11-10 12:58:38.705  2405  2405 F DEBUG   :     r8  000000000000001c  r9  0000000000011600  r10 0000000000002364  r11 0000000000000175
+11-10 12:58:38.705  2405  2405 F DEBUG   :     r12 0000000000011600  r13 0000000000000004  r14 00007544fec9d7f9  r15 000000000000001c
+11-10 12:58:38.705  2405  2405 F DEBUG   :     rdi 00007544feca9a39  rsi 0000754540d59018
+11-10 12:58:38.705  2405  2405 F DEBUG   :     rbp 000000000000c240  rsp 00007544ff5443b0  rip 00007547e8c6433b
+11-10 12:58:38.741  2405  2405 F DEBUG   : backtrace:
+11-10 12:58:38.741  2405  2405 F DEBUG   :       #00 pc 000000000005133b  /apex/com.android.runtime/lib64/bionic/libc.so (memmove+715) (BuildId: 3707c39fc397eeaa328142d90b50a973)
+11-10 12:58:38.741  2405  2405 F DEBUG   :       #01 pc 0000000000000017  <anonymous:754540d59000>
+11-10 12:58:38.741  2405  2405 F DEBUG   :       #02 pc 000000000001b03e  /vendor/lib64/libOpenglCodecCommon.so (glUtilsPackPointerData+126) (BuildId: ca1a7f59d6c91b54f4450902354cce86)
+11-10 12:58:38.741  2405  2405 F DEBUG   :       #03 pc 0000000000011629  <unknown>
+11-10 12:58:38.741  2405  2405 F DEBUG   :       #04 pc 0000000000050591  /vendor/lib64/libGLESv2_enc.so ((anonymous namespace)::glVertexAttribPointerData_enc(void*, unsigned int, int, unsigned int, unsigned char, int, void*, unsigned int)+177) (BuildId: 2ed55cef0b8d41699a4fddd03d4ca830)
+11-10 12:58:38.741  2405  2405 F DEBUG   :       #05 pc 0000000000000057  [anon:scudo:secondary]
+11-10 12:58:38.741  2405  2405 F DEBUG   :       #06 pc 000000000003f22d  /vendor/lib64/libGLESv2_enc.so (GL2Encoder::sendVertexAttributes(int, int, bool, int)+1053) (BuildId: 2ed55cef0b8d41699a4fddd03d4ca830)
+11-10 12:58:38.741  2405  2405 F DEBUG   :       #07 pc 0000000000000004  <unknown>
+11-10 12:58:38.741  2405  2405 F DEBUG   :       #08 pc 000000000002dabd  /vendor/lib64/libGLESv2_enc.so (GL2Encoder::s_glDrawElements(void*, unsigned int, int, unsigned int, void const*)+845) (BuildId: 2ed55cef0b8d41699a4fddd03d4ca830)
+11-10 12:58:38.741  2405  2405 F DEBUG   :       #09 pc 00000000000eb89f  [anon:stack_and_tls:2225]
+11-10 12:58:38.896   513  2412 W ActivityTaskManager:   Force finishing activity com.raidenplays.axeolon/android.app.NativeActivity
+11-10 12:58:38.944   513   601 W InputDispatcher: channel '920a3ee com.raidenplays.axeolon/android.app.NativeActivity (server)' ~ Consumer closed input channel or an error occurred.  events=0x9
+11-10 12:58:38.944   513   601 E InputDispatcher: channel '920a3ee com.raidenplays.axeolon/android.app.NativeActivity (server)' ~ Channel is unrecoverably broken and will be disposed!
+11-10 12:58:38.958   513   982 I WindowManager: WIN DEATH: Window{920a3ee u0 com.raidenplays.axeolon/android.app.NativeActivity}
+11-10 12:58:38.958   513   982 W InputDispatcher: Attempted to unregister already unregistered input channel '920a3ee com.raidenplays.axeolon/android.app.NativeActivity (server)'
+11-10 12:58:38.958   513  1181 I ActivityManager: Process com.raidenplays.axeolon (pid 2181) has died: fg  TOP 
+11-10 12:59:07.231  2427  2427 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-10 12:59:07.232  2427  2427 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.profilebootclasspath"
+11-10 12:59:07.232  2427  2427 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_apex_image"
+11-10 12:59:07.232  2427  2427 I AndroidRuntime: Using default boot image
+11-10 12:59:07.232  2427  2427 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.disable_lock_profiling"
+11-10 12:59:07.232  2427  2427 I AndroidRuntime: Leaving lock profiling enabled
+11-10 12:59:07.232  2427  2427 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_generational_cc"
+11-10 12:59:07.277  2427  2427 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-10 12:59:07.897  2427  2427 D AndroidRuntime: Shutting down VM
+11-10 12:59:11.601  2444  2444 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-10 12:59:11.602  2444  2444 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.profilebootclasspath"
+11-10 12:59:11.602  2444  2444 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_apex_image"
+11-10 12:59:11.602  2444  2444 I AndroidRuntime: Using default boot image
+11-10 12:59:11.602  2444  2444 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.disable_lock_profiling"
+11-10 12:59:11.602  2444  2444 I AndroidRuntime: Leaving lock profiling enabled
+11-10 12:59:11.602  2444  2444 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_generational_cc"
+11-10 12:59:11.651  2444  2444 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-10 12:59:11.655  2444  2444 D AndroidRuntime: Shutting down VM
+11-10 12:59:12.109   292   338 E libc    : Access denied finding property "persist.camera.profiler.open_close"
+11-10 12:59:14.298  2549  2549 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-10 12:59:14.299  2549  2549 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.profilebootclasspath"
+11-10 12:59:14.299  2549  2549 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_apex_image"
+11-10 12:59:14.299  2549  2549 I AndroidRuntime: Using default boot image
+11-10 12:59:14.299  2549  2549 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.disable_lock_profiling"
+11-10 12:59:14.299  2549  2549 I AndroidRuntime: Leaving lock profiling enabled
+11-10 12:59:14.299  2549  2549 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_generational_cc"
+11-10 12:59:14.343  2549  2549 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-10 12:59:14.349  2549  2549 D AndroidRuntime: Shutting down VM
+11-10 12:59:16.983  2563  2563 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-10 12:59:16.984  2563  2563 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.profilebootclasspath"
+11-10 12:59:16.984  2563  2563 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_apex_image"
+11-10 12:59:16.984  2563  2563 I AndroidRuntime: Using default boot image
+11-10 12:59:16.984  2563  2563 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.disable_lock_profiling"
+11-10 12:59:16.984  2563  2563 I AndroidRuntime: Leaving lock profiling enabled
+11-10 12:59:16.984  2563  2563 E libc    : Access denied finding property "persist.device_config.runtime_native_boot.enable_generational_cc"
+11-10 12:59:17.034  2563  2563 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-10 12:59:17.037  2563  2563 D AndroidRuntime: Shutting down VM
