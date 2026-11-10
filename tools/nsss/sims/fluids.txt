@@ -1,0 +1,9 @@
+# water and lava on the surface near 0,0 (seed 12345), spreading for 200 ticks, then meeting
+load 0 0 3
+set 4 80 4 8 0
+set 20 80 6 10 0
+set 12 75 12 9 0
+tick 200
+set 8 72 8 10 0
+tick 200
+dump -8 50 -8 31 90 31

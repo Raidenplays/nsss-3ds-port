@@ -2,6 +2,9 @@
 import os, re
 here = os.path.dirname(os.path.abspath(__file__))
 rows = [l.rstrip('\n').split('\t') for l in open(os.path.join(here, 'generated/blockprops.tsv'))]
+# NSSS (Alpha) class names that the engine knows by their Beta names
+ALIAS = {'BlockRedDustWire': 'BlockRedstoneWire', 'BlockRedTorch': 'BlockRedstoneTorch', 'BlockRedOre': 'BlockRedstoneOre'}
+for r in rows: r[2] = ALIAS.get(r[2], r[2])
 MATS = ['air','ground','wood','rock','iron','water','lava','leaves','plants','sponge','cloth','fire','sand','circuits',
         'glass','tnt','unused','ice','snow','builtSnow','cactus','clay','pumpkin','portal','field_21150_y',
         'wug', 'web'] # the last two are NSSS's

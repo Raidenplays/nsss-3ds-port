@@ -24,3 +24,8 @@ Populated-world parity (generation + decoration, same chunk order on both sides)
     g++ -std=gnu++17 -O1 -ffp-contract=off -Isource -Iandroid/shim tools/host/alphapop.cpp \
         source/world/*.cpp source/world/gen/*.cpp source/game/SurvivalData.cpp -o alphapop -lz
     ./alphapop <seed> <emptydir> cx cz loadR reportR cpp.bin && cmp java.bin cpp.bin
+
+Block behaviour parity (scripted placements + scheduled ticks; scripts in sims/):
+
+    java -cp "out:$JAR" com.mojang.minecraft.core.level.BlockSimDump <seed> <tmpdir> sims/X.txt java.bin
+    g++ ... tools/host/blocksim.cpp ... -o blocksim && ./blocksim <seed> <emptydir> sims/X.txt cpp.bin

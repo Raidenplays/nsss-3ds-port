@@ -48,8 +48,12 @@ void checkForHarden(World& w, int x, int y, int z, int id) {
                  w.materialAt(x, y + 1, z) == Mat::water;
     if (!water) return;
     int m = w.metaAt(x, y, z);
-    if (m == 0) w.setBlockWithNotify(x, y, z, OBSIDIAN);
-    else if (m <= 4) w.setBlockWithNotify(x, y, z, COBBLE);
+    if (m == 0) {
+        w.setBlockWithNotify(x, y, z, OBSIDIAN);
+        if (std::rand() % 500 == 1) w.setBlockWithNotify(x, y, z, 94); // NSSS: new Random().nextInt(500): bleeding obsidian
+    } else if (m <= 4) {
+        w.setBlockWithNotify(x, y, z, COBBLE);
+    }
     // func_292_i: fizz sound + smoke (uses world.rand)
     w.rand.nextFloat();
     w.rand.nextFloat();
@@ -63,9 +67,11 @@ struct FlowState {
 };
 FlowState flowState[2]; // water, lava
 
-bool blocksFlow(World& w, int x, int y, int z) { // func_295_l
+bool nearSponge(World& w, int x, int y, int z); // BlockSponge.getSurroundSponge
+
+bool blocksFlow(World& w, int x, int y, int z) { // NSSS BlockFlowing.canFlowInto (named backwards: true = blocked)
     int id = w.blockAt(x, y, z);
-    if (isDoor(id) || id == SIGN || id == LADDER || id == REED) return true;
+    if (isDoor(id) || nearSponge(w, x, y, z) || id == SIGN || id == LADDER || id == REED) return true;
     if (id == 0) return false;
     return matSolid(BP[id].mat);
 }
@@ -144,7 +150,7 @@ void flowingTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
     Mat m = liquidMat(id);
     FlowState& s = flowState[m == Mat::lava ? 1 : 0];
     int decay = flowDecay(w, m, x, y, z);
-    int step = m == Mat::lava && !w.hell ? 2 : 1; // lava runs further in the Nether
+    int step = m == Mat::lava ? 2 : 1; // fluidType
     bool still = true;
     int next;
     if (decay > 0) {
@@ -159,9 +165,9 @@ void flowingTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
             int above = flowDecay(w, m, x, y + 1, z);
             next = above >= 8 ? above : above + 8;
         }
-        if (s.sources >= 2 && m == Mat::water) {
-            if (w.isBlockOpaqueCube(x, y - 1, z)) next = 0;
-            else if (w.materialAt(x, y - 1, z) == m && w.metaAt(x, y, z) == 0) next = 0;
+        if (s.sources >= 2 && m == Mat::water) { // NSSS: also over water, never by a sponge
+            if (w.isBlockOpaqueCube(x, y - 1, z) || w.materialAt(x, y - 1, z) == Mat::water) next = 0;
+            else if (w.materialAt(x, y - 1, z) == m && w.metaAt(x, y, z) == 0 && !nearSponge(w, x, y, z)) next = 0;
         }
         if (m == Mat::lava && decay < 8 && next < 8 && next > decay && r.nextInt(4) != 0) {
             next = decay;
@@ -226,6 +232,95 @@ void stationaryTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
             return;
         }
     }
+}
+
+// ---------------------------------------------------------------- sponges (NSSS)
+
+constexpr int SPONGE_ID = 19, WET_SPONGE = 87;
+
+bool nearSponge(World& w, int x, int y, int z) { // BlockSponge.getSurroundSponge: a sponge within 2
+    for (int x1 = x - 2; x1 <= x + 2; ++x1)
+        for (int y1 = y - 2; y1 <= y + 2; ++y1)
+            for (int z1 = z - 2; z1 <= z + 2; ++z1)
+                if (w.blockAt(x1, y1, z1) == SPONGE_ID) return true;
+    return false;
+}
+
+bool redPowerAround(World& w, int i, int j, int k, int l) { // BlockSponge.isReceivingRedPower (same in both)
+    using Redstone::isBlockIndirectlyProvidingPowerTo;
+    if (l != 0 && isBlockIndirectlyProvidingPowerTo(w, i, j - 1, k, 0)) return true;
+    if (l != 1 && isBlockIndirectlyProvidingPowerTo(w, i, j + 1, k, 1)) return true;
+    if (l != 2 && isBlockIndirectlyProvidingPowerTo(w, i, j, k - 1, 2)) return true;
+    if (l != 3 && isBlockIndirectlyProvidingPowerTo(w, i, j, k + 1, 3)) return true;
+    if (l != 5 && isBlockIndirectlyProvidingPowerTo(w, i + 1, j, k, 5)) return true;
+    if (l != 4 && isBlockIndirectlyProvidingPowerTo(w, i - 1, j, k, 4)) return true;
+    if (isBlockIndirectlyProvidingPowerTo(w, i, j, k, 0)) return true;
+    if (isBlockIndirectlyProvidingPowerTo(w, i, j + 2, k, 1)) return true;
+    if (isBlockIndirectlyProvidingPowerTo(w, i, j + 1, k - 1, 2)) return true;
+    if (isBlockIndirectlyProvidingPowerTo(w, i, j + 1, k + 1, 3)) return true;
+    return isBlockIndirectlyProvidingPowerTo(w, i - 1, j + 1, k, 4) || isBlockIndirectlyProvidingPowerTo(w, i + 1, j + 1, k, 5);
+}
+
+bool openWater(World& w, int x, int y, int z) { int id = w.blockAt(x, y, z); return id == 0 || id == WATER_STILL; }
+
+void spongeFlowWater(World& w, int x, int y, int z, int sx, int sz) { // BlockSponge.flowWater (dropWater does nothing)
+    const int radius = 3;
+    if (!(openWater(w, x, y, z) && !nearSponge(w, x, y, z))) return;
+    if (x + 1 < sx + radius && openWater(w, x + 1, y, z) && !nearSponge(w, x + 1, y, z)) w.notifyBlocksOfNeighborChange(x + 1, y, z, 1);
+    if (z + 1 < sz + radius && openWater(w, x, y, z + 1) && !nearSponge(w, x, y, z + 1)) w.notifyBlocksOfNeighborChange(x, y, z + 1, 1);
+    if (x - 1 > sx - radius && openWater(w, x - 1, y, z) && !nearSponge(w, x - 1, y, z)) w.notifyBlocksOfNeighborChange(x - 1, y, z, 1);
+    if (z - 1 > sz - radius && openWater(w, x, y, z - 1) && !nearSponge(w, x, y, z - 1))
+        w.notifyBlocksOfNeighborChange(x, y, z + 1, 1); // (z + 1 in the jar)
+}
+
+void spongeDestroyed(World& w, int a, int b, int c) { // BlockSponge.onBlockDestroyedByPlayer
+    const int radius = 3;
+    for (int x = a - radius; x <= a + radius; ++x)
+        for (int y = b + radius; y > b - radius; --y)
+            for (int z = c - radius; z <= c + radius; ++z) {
+                int id = w.blockAt(x, y, z);
+                if (id == WATER || id == WATER_STILL) spongeFlowWater(w, x, y, z, a, c);
+            }
+}
+
+void spongeAdded(World& w, int a, int b, int c) { // BlockSponge.onBlockAdded: soak up water within 2
+    for (int x = a - 2; x <= a + 2; ++x)
+        for (int y = b - 2; y <= b + 2; ++y)
+            for (int z = c - 2; z <= c + 2; ++z) {
+                int id = w.blockAt(x, y, z);
+                if (id == WATER || id == WATER_STILL) w.setBlockWithNotify(x, y, z, 0);
+            }
+}
+
+void wetSpongeAdded(World& w, int a, int b, int c) { // BlockSpongeInactive.onBlockAdded: the water within 3 flows again
+    for (int x = a - 3; x <= a + 3; ++x)
+        for (int y = b - 3; y <= b + 3; ++y)
+            for (int z = c - 3; z <= c + 3; ++z) {
+                int id = w.blockAt(x, y, z);
+                if (id == WATER || id == WATER_STILL) w.setBlockAndMetadataWithNotify(x, y, z, WATER, w.metaAt(x, y, z));
+            }
+}
+
+// ---------------------------------------------------------------- gears, motors, light bulbs (NSSS)
+// NSSS's gear network never powers anything: World.applyGearPower only looks at gear groups with
+// `i < gearGroups.size() - 1`, and the groups never form. So a motor keeps its tile entity and
+// nothing else happens, exactly like the jar. A gear needs a solid cube beside it, checked when a
+// neighbour changes (BlockGear.func_271_h), not when it's placed.
+
+bool gearSupported(World& w, int i, int j, int k) { // BlockGear.canPlace
+    return w.isBlockOpaqueCube(i - 1, j, k) || w.isBlockOpaqueCube(i + 1, j, k) || w.isBlockOpaqueCube(i, j, k - 1) ||
+           w.isBlockOpaqueCube(i, j, k + 1);
+}
+
+void gearNeighbourChange(World& w, int i, int j, int k, int id) {
+    if (!gearSupported(w, i, j, k)) {
+        dropBlockAsItem(w, i, j, k, id, w.metaAt(i, j, k));
+        w.setBlockWithNotify(i, j, k, 0);
+    }
+}
+
+void lightBulbNeighbourChange(World& w, int i, int j, int k, int neighbour) { // BlockLightBulb (setBlock, no notify)
+    w.setBlock(i, j, k, redPowerAround(w, i, j, k, neighbour) ? 98 : 97);
 }
 
 // ---------------------------------------------------------------- sand / gravel
@@ -382,6 +477,8 @@ const char* tileEntityId(int id) {
     case BC::Crate: return "AxeolonCrate";
     case BC::SpawnCrystal: return "AxeolonSpawnCrystal";
     case BC::Hopper: return "AxeolonHopper";
+    case BC::Gear: return "Gear";   // NSSS TileEntityGear
+    case BC::Motor: return "Motor"; // NSSS TileEntityMotor (motor and generator)
     default: return nullptr;
     }
 }
@@ -588,6 +685,8 @@ void onBlockAdded(World& w, int x, int y, int z, int id) {
         if (w.blockAt(x, y, z) == id) w.scheduleBlockUpdate(x, y, z, id);
         break;
     case BC::Stationary: checkForHarden(w, x, y, z, id); break;
+    case BC::Sponge: spongeAdded(w, x, y, z); break;
+    case BC::SpongeInactive: wetSpongeAdded(w, x, y, z); break;
     case BC::Sand: case BC::Gravel: w.scheduleBlockUpdate(x, y, z, id); break;
     case BC::Frozen:
         if (id == COMPACTED_ICE) w.scheduleBlockUpdate(x, y, z, id);
@@ -669,6 +768,17 @@ void onNeighborBlockChange(World& w, int x, int y, int z, int id, int neighbour)
         if (BP[id].cls == BC::Stationary && w.blockAt(x, y, z) == id) stationaryToFlowing(w, x, y, z, id);
         break;
     case BC::Sand: case BC::Gravel: w.scheduleBlockUpdate(x, y, z, id); break;
+    case BC::Gear: gearNeighbourChange(w, x, y, z, id); break;
+    case BC::LightBulb: lightBulbNeighbourChange(w, x, y, z, neighbour); break;
+    case BC::Sponge: // powered: wet sponge (the water around runs back)
+        if (redPowerAround(w, x, y, z, neighbour)) {
+            spongeDestroyed(w, x, y, z);
+            w.setBlockWithNotify(x, y, z, WET_SPONGE);
+        }
+        break;
+    case BC::SpongeInactive: // power gone: a dry sponge again
+        if (!redPowerAround(w, x, y, z, neighbour)) w.setBlockWithNotify(x, y, z, SPONGE_ID);
+        break;
     case BC::Portal: portalNeighborChange(w, x, y, z); break;
     case BC::MinecartTrack: rails::onNeighborChange(w, x, y, z, neighbour); break;
     case BC::Cake: // nothing under it: gone (it drops nothing)

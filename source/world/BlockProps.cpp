@@ -56,7 +56,7 @@ const BlockProps BP[256] = {
     {BC::MobSpawner, Mat::rock, 0, 0, 10, false, true, true, false, false}, // 52 mobSpawner
     {BC::Stairs, Mat::wood, 0, 0, 10, false, true, false, false, false}, // 53 stairCompact_Wood
     {BC::Chest, Mat::wood, 255, 0, 10, true, true, true, false, true}, // 54 crate
-    {BC::RedDustWire, Mat::circuits, 0, 0, 10, false, false, false, false, false}, // 55 redWire
+    {BC::RedstoneWire, Mat::circuits, 0, 0, 10, false, false, false, false, false}, // 55 redWire
     {BC::Ore, Mat::rock, 255, 0, 10, true, true, false, false, true}, // 56 oreDiamond
     {BC::OreBlock, Mat::iron, 255, 0, 10, true, true, false, false, true}, // 57 blockDiamond
     {BC::Workbench, Mat::wood, 255, 0, 10, true, true, false, false, true}, // 58 workbench
@@ -74,10 +74,10 @@ const BlockProps BP[256] = {
     {BC::PressurePlate, Mat::rock, 0, 0, 20, false, true, false, true, false}, // 70 pressurePlateStone
     {BC::Door, Mat::iron, 0, 0, 10, false, false, false, false, false}, // 71 doorSteel
     {BC::PressurePlate, Mat::rock, 0, 0, 20, false, true, false, true, false}, // 72 pressurePlateWood
-    {BC::RedOre, Mat::rock, 255, 0, 30, true, true, false, false, true}, // 73 oreRed
-    {BC::RedOre, Mat::rock, 255, 9, 30, true, true, false, true, true}, // 74 oreRedGlowing
-    {BC::RedTorch, Mat::circuits, 0, 0, 2, false, false, false, true, false}, // 75 torchRedIdle
-    {BC::RedTorch, Mat::circuits, 0, 7, 2, false, false, false, true, false}, // 76 torchRedActive
+    {BC::RedstoneOre, Mat::rock, 255, 0, 30, true, true, false, false, true}, // 73 oreRed
+    {BC::RedstoneOre, Mat::rock, 255, 9, 30, true, true, false, true, true}, // 74 oreRedGlowing
+    {BC::RedstoneTorch, Mat::circuits, 0, 0, 2, false, false, false, true, false}, // 75 torchRedIdle
+    {BC::RedstoneTorch, Mat::circuits, 0, 7, 2, false, false, false, true, false}, // 76 torchRedActive
     {BC::Button, Mat::circuits, 0, 0, 20, false, false, false, true, false}, // 77 button
     {BC::Snow, Mat::snow, 0, 0, 10, false, true, false, true, false}, // 78 snow
     {BC::Ice, Mat::ice, 3, 0, 10, false, true, false, true, false}, // 79 ice
