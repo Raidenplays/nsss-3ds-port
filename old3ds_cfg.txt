@@ -1,0 +1,4 @@
+322:log_filter=*:Info Debug.Emulated:Debug Kernel:Debug Core.ARM11:Debug
+323:log_filter\default=false
+398:is_new_3ds=false
+399:is_new_3ds\default=false

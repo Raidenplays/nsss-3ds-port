@@ -1,0 +1,784 @@
+[   0.061745] Input <Error> input_common/gcadapter/gc_adapter.cpp:Adapter:38: libusb could not be initialized. failed with error = -99
+[   0.069724] Input <Info> input_common/udp/client.cpp:StartCommunication:206: Starting communication with UDP input server on 127.0.0.1:26760
+[   0.094807] Frontend <Info> citra_qt/citra_qt.cpp:GMainWindow:462: Azahar Version: 2126.2 | HEAD-219d743
+[   0.094815] Frontend <Info> citra_qt/citra_qt.cpp:GMainWindow:467: Build Variant: N/A
+[   0.094817] Frontend <Info> citra_qt/citra_qt.cpp:GMainWindow:482: Host CPU: AMD EPYC 7763 64-Core Processor                 | AVX2 | FMA
+[   0.094840] Frontend <Info> citra_qt/citra_qt.cpp:GMainWindow:484: Host OS: Ubuntu 24.04.5 LTS
+[   0.094849] Frontend <Info> citra_qt/citra_qt.cpp:GMainWindow:487: Host RAM: 15.61 GiB
+[   0.094849] Frontend <Info> citra_qt/citra_qt.cpp:GMainWindow:488: Host Swap: 3.00 GiB
+[   0.138517] Frontend <Info> citra_qt/citra_qt.cpp:BootGame:1495: Azahar starting...
+[   0.138610] Config <Info> common/settings.cpp:LogSettings:88: Azahar Configuration:
+[   0.138618] Config <Info> common/settings.cpp:operator():85: Core_UseCpuJit: true
+[   0.138619] Config <Info> common/settings.cpp:operator():85: Core_CPUClockPercentage: 100
+[   0.138620] Config <Info> common/settings.cpp:operator():85: Controller_UseArticController: false
+[   0.138621] Config <Info> common/settings.cpp:operator():85: Renderer_UseGLES: false
+[   0.138622] Config <Info> common/settings.cpp:operator():85: Renderer_GraphicsAPI: OpenGL
+[   0.138622] Config <Info> common/settings.cpp:operator():85: Renderer_AsyncShaders: false
+[   0.138623] Config <Info> common/settings.cpp:operator():85: Renderer_AsyncPresentation: true
+[   0.138624] Config <Info> common/settings.cpp:operator():85: Renderer_SpirvShaderGen: true
+[   0.138624] Config <Info> common/settings.cpp:operator():85: Renderer_DisableSpirvOptimizer: true
+[   0.138625] Config <Info> common/settings.cpp:operator():85: Renderer_Debug: false
+[   0.138626] Config <Info> common/settings.cpp:operator():85: Renderer_PicaDebugging: false
+[   0.138627] Config <Info> common/settings.cpp:operator():85: Renderer_UseHwShader: true
+[   0.138627] Config <Info> common/settings.cpp:operator():85: Renderer_ShadersAccurateMul: true
+[   0.138628] Config <Info> common/settings.cpp:operator():85: Renderer_UseShaderJit: true
+[   0.138629] Config <Info> common/settings.cpp:operator():85: Renderer_UseResolutionFactor: 1
+[   0.138629] Config <Info> common/settings.cpp:operator():85: Renderer_UseIntegerScaling: false
+[   0.138631] Config <Info> common/settings.cpp:operator():85: Renderer_FrameLimit: 100
+[   0.138632] Config <Info> common/settings.cpp:operator():85: Renderer_VSyncNew: true
+[   0.138633] Config <Info> common/settings.cpp:operator():85: Renderer_SkipDuplicateFrames: false
+[   0.138634] Config <Info> common/settings.cpp:operator():85: Renderer_PostProcessingShader: None (builtin)
+[   0.138636] Config <Info> common/settings.cpp:operator():85: Renderer_FilterMode: true
+[   0.138638] Config <Info> common/settings.cpp:operator():85: Renderer_TextureFilter: None
+[   0.138639] Config <Info> common/settings.cpp:operator():85: Renderer_TextureSampling: GameControlled
+[   0.138640] Config <Info> common/settings.cpp:operator():85: Renderer_DelayGameRenderThreadUs: 0
+[   0.138641] Config <Info> common/settings.cpp:operator():85: Renderer_Simulate3DSGPUTimings: false
+[   0.138642] Config <Info> common/settings.cpp:operator():85: Renderer_DisableRightEyeRender: false
+[   0.138643] Config <Info> common/settings.cpp:operator():85: Stereoscopy_Render3d: 0
+[   0.138644] Config <Info> common/settings.cpp:operator():85: Stereoscopy_Factor3d: 0
+[   0.138645] Config <Info> common/settings.cpp:operator():85: Stereoscopy_Swap_Eyes: false
+[   0.138646] Config <Info> common/settings.cpp:operator():85: Stereoscopy_Render_3d_to_which_display: 0
+[   0.138647] Config <Info> common/settings.cpp:operator():85: Stereoscopy_MonoRenderOption: 0
+[   0.138647] Config <Info> common/settings.cpp:operator():85: Layout_LayoutOption: 0
+[   0.138648] Config <Info> common/settings.cpp:operator():85: Layout_PortraitLayoutOption: 0
+[   0.138649] Config <Info> common/settings.cpp:operator():85: Layout_SecondaryDisplayLayout: 4
+[   0.138650] Config <Info> common/settings.cpp:operator():85: Layout_SwapScreen: false
+[   0.138650] Config <Info> common/settings.cpp:operator():85: Layout_UprightScreen: false
+[   0.138651] Config <Info> common/settings.cpp:operator():85: Layout_ScreenGap: 0
+[   0.138652] Config <Info> common/settings.cpp:operator():85: Layout_LargeScreenProportion: 4
+[   0.138653] Config <Info> common/settings.cpp:operator():85: Layout_SmallScreenPosition: 2
+[   0.138653] Config <Info> common/settings.cpp:operator():85: Utility_DumpTextures: false
+[   0.138654] Config <Info> common/settings.cpp:operator():85: Utility_CustomTextures: false
+[   0.138655] Config <Info> common/settings.cpp:operator():85: Utility_PreloadTextures: false
+[   0.138655] Config <Info> common/settings.cpp:operator():85: Utility_AsyncCustomLoading: true
+[   0.138656] Config <Info> common/settings.cpp:operator():85: Utility_UseDiskShaderCache: true
+[   0.138657] Config <Info> common/settings.cpp:operator():85: Audio_Emulation: HLE
+[   0.138657] Config <Info> common/settings.cpp:operator():85: Audio_OutputType: 0
+[   0.138658] Config <Info> common/settings.cpp:operator():85: Audio_OutputDevice: Auto
+[   0.138658] Config <Info> common/settings.cpp:operator():85: Audio_InputType: 0
+[   0.138659] Config <Info> common/settings.cpp:operator():85: Audio_InputDevice: Auto
+[   0.138659] Config <Info> common/settings.cpp:operator():85: Audio_EnableAudioStretching: true
+[   0.138660] Config <Info> common/settings.cpp:operator():85: Audio_EnableRealtime: false
+[   0.138660] Config <Info> common/settings.cpp:operator():85: Camera_OuterRightName: blank
+[   0.138661] Config <Info> common/settings.cpp:operator():85: Camera_OuterRightConfig: 
+[   0.138661] Config <Info> common/settings.cpp:operator():85: Camera_OuterRightFlip: 0
+[   0.138662] Config <Info> common/settings.cpp:operator():85: Camera_InnerName: blank
+[   0.138663] Config <Info> common/settings.cpp:operator():85: Camera_InnerConfig: 
+[   0.138663] Config <Info> common/settings.cpp:operator():85: Camera_InnerFlip: 0
+[   0.138664] Config <Info> common/settings.cpp:operator():85: Camera_OuterLeftName: blank
+[   0.138664] Config <Info> common/settings.cpp:operator():85: Camera_OuterLeftConfig: 
+[   0.138665] Config <Info> common/settings.cpp:operator():85: Camera_OuterLeftFlip: 0
+[   0.138665] Config <Info> common/settings.cpp:operator():85: DataStorage_UseVirtualSd: true
+[   0.138666] Config <Info> common/settings.cpp:operator():85: DataStorage_UseCustomStorage: false
+[   0.138666] Config <Info> common/settings.cpp:operator():85: System_IsNew3ds: false
+[   0.138667] Config <Info> common/settings.cpp:operator():85: System_LLEApplets: true
+[   0.138667] Config <Info> common/settings.cpp:operator():85: System_RegionValue: -1
+[   0.138668] Config <Info> common/settings.cpp:operator():85: System_PluginLoader: false
+[   0.138668] Config <Info> common/settings.cpp:operator():85: System_PluginLoaderAllowed: true
+[   0.138669] Config <Info> common/settings.cpp:operator():85: System_ApplyRegionFreePatch: true
+[   0.138669] Config <Info> common/settings.cpp:operator():85: Debugging_DelayStartForLLEModules: true
+[   0.138670] Config <Info> common/settings.cpp:operator():85: Debugging_UseGdbstub: false
+[   0.138671] Config <Info> common/settings.cpp:operator():85: Debugging_GdbstubPort: 24689
+[   0.138671] Config <Info> common/settings.cpp:operator():85: Debugging_InstantDebugLog: false
+[   0.138672] Config <Info> common/settings.cpp:operator():85: Debugging_ToggleUniqueDataConsoleType: false
+[   0.138672] Config <Info> common/settings.cpp:operator():85: Debugging_EnableExceptionHandler: false
+[   0.438264] Audio.Sink <Critical> audio_core/cubeb_sink.cpp:CubebSink:79: Error initializing cubeb stream (-1)
+[   0.441899] Service.HTTP <Error> core/hle/service/http/http_c.cpp:DecryptClCertA:2282: ClCertA file missing, using default
+[   0.441957] Render.OpenGL <Info> video_core/renderer_opengl/gl_driver.cpp:ReportDriverInfo:133: GL_VERSION: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4
+[   0.441958] Render.OpenGL <Info> video_core/renderer_opengl/gl_driver.cpp:ReportDriverInfo:134: GL_VENDOR: Mesa
+[   0.441959] Render.OpenGL <Info> video_core/renderer_opengl/gl_driver.cpp:ReportDriverInfo:135: GL_RENDERER: llvmpipe (LLVM 20.1.2, 256 bits)
+[   0.528155] Kernel <Debug> core/hle/kernel/process.cpp:HeapAllocate:307: Allocate heap target=00100000, size=00162000
+[   0.528165] Kernel <Debug> core/hle/kernel/process.cpp:HeapAllocate:334: Allocated FCRAM region lower=05E9E000, upper=06000000
+[   0.528323] Kernel <Debug> core/hle/kernel/process.cpp:HeapAllocate:307: Allocate heap target=00262000, size=0003F000
+[   0.528328] Kernel <Debug> core/hle/kernel/process.cpp:HeapAllocate:334: Allocated FCRAM region lower=05E5F000, upper=05E9E000
+[   0.528379] Kernel <Debug> core/hle/kernel/process.cpp:HeapAllocate:307: Allocate heap target=002A1000, size=0005F000
+[   0.528383] Kernel <Debug> core/hle/kernel/process.cpp:HeapAllocate:334: Allocated FCRAM region lower=05E00000, upper=05E5F000
+[   0.528426] Kernel <Debug> core/hle/kernel/process.cpp:HeapAllocate:307: Allocate heap target=0FFFC000, size=00004000
+[   0.528430] Kernel <Debug> core/hle/kernel/process.cpp:HeapAllocate:334: Allocated FCRAM region lower=05DFC000, upper=05E00000
+[   0.528474] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 00000000 - 00100000  size:   100000 --- Free
+[   0.528478] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 00100000 - 00262000  size:   162000 R-X Code
+[   0.528478] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 00262000 - 002A1000  size:    3F000 R-- Code
+[   0.528479] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 002A1000 - 00300000  size:    5F000 RW- Private
+[   0.528480] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 00300000 - 0FFFC000  size:  FCFC000 --- Free
+[   0.528481] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 0FFFC000 - 10000000  size:     4000 RW- Locked
+[   0.528481] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 10000000 - 1F000000  size:  F000000 --- Free
+[   0.528482] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 1F000000 - 1F600000  size:   600000 RW- IO
+[   0.528482] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 1F600000 - 1FF50000  size:   950000 --- Free
+[   0.528483] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 1FF50000 - 1FF58000  size:     8000 R-- IO
+[   0.528483] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 1FF58000 - 1FF70000  size:    18000 --- Free
+[   0.528484] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 1FF70000 - 1FF78000  size:     8000 R-- IO
+[   0.528484] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 1FF78000 - 1FF80000  size:     8000 --- Free
+[   0.528485] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 1FF80000 - 1FF81000  size:     1000 R-- Shared
+[   0.528486] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 1FF81000 - 1FF82000  size:     1000 R-- Shared
+[   0.528486] Kernel <Debug> core/hle/kernel/vm_manager.cpp:LogLayout:241: 1FF82000 - 40000000  size: 2007E000 --- Free
+[   0.528489] Kernel <Debug> core/hle/kernel/process.cpp:AllocateThreadLocalStorage:476: Allocating new TLS page in slot 0
+[   0.528491] Kernel <Debug> core/hle/kernel/process.cpp:AllocateThreadLocalStorage:503: Allocated TLS page at addr=1FF82000
+[   0.528495] Service.FS <Warning> core/file_sys/archive_selfncch.cpp:Register:255: Could not read program id when registering with SelfNCCH, this might be a 3dsx file
+[   0.544494] Core <Error> core/core.cpp:Load:518: Failed to find title id for ROM (Error 0)
+[   0.544511] Core.Cheats <Info> core/cheats/cheats.cpp:LoadCheatFile:92: Attempting to load cheats file: /home/runner/.local/share/azahar-emu/cheats/0000000000000000.txt
+[   0.544521] Core.Cheats <Info> core/cheats/gateway_cheat.cpp:LoadFile:491: GatewayCheat::LoadFile failed, file doesn't exist: /home/runner/.local/share/azahar-emu/cheats/0000000000000000.txt
+[   0.548413] Service.CAM <Info> citra_qt/camera/qt_multimedia_camera.cpp:ResumeCameras:50: Resuming all cameras
+[   0.549000] Frontend <Warning> citra_qt/citra_qt.cpp:HoldWakeLockLinux:1304: Couldn't connect to XDP D-Bus endpoint
+[   0.549395] Frontend <Warning> common/linux/gamemode.cpp:StartGamemode:15: Failed to start gamemode: dlopen failed - libgamemode.so: cannot open shared object file: No such file or directory
+[   0.608255] Kernel <Debug> core/hle/kernel/process.cpp:HeapAllocate:307: Allocate heap target=08000000, size=045FC000
+[   0.608265] Kernel <Debug> core/hle/kernel/process.cpp:HeapAllocate:334: Allocated FCRAM region lower=01800000, upper=05DFC000
+[   0.610751] Kernel <Debug> core/hle/kernel/process.cpp:LinearAllocate:381: Allocate linear heap target=00000000, size=01800000
+[   0.612307] Kernel <Debug> core/hle/kernel/process.cpp:LinearAllocate:423: Allocated at target=30000000
+[   0.612856] Service.SRV <Warning> core/hle/service/sm/srv.cpp:RegisterClient:64: (STUBBED) called. Caller PID=11
+[   0.633664] Kernel <Debug> core/hle/kernel/process.cpp:AllocateThreadLocalStorage:505: Allocating TLS in existing page slot 0
+[   0.634903] Service.APT <Warning> core/hle/service/apt/apt.cpp:NotifyToWait:362: (STUBBED) app_id=768
+[   0.636134] Service <Error> core/hle/service/service.cpp:ReportUnimplementedFunction:170: unknown / unimplemented function 'ConfigureNew3DSCPU': port='ptm:sysm' cmd_buf={[0]=0x8180040 (0x0818, 1, 0), [1]=0x0}
+[   0.636527] Service.APT <Warning> core/hle/service/apt/apt.cpp:AppletUtility:735: (STUBBED) called command=0X00000007, input_size=0X00000004, output_size=0X00000001
+[   0.636715] Service.APT <Warning> core/hle/service/apt/apt.cpp:AppletUtility:735: (STUBBED) called command=0X00000004, input_size=0X00000001, output_size=0X00000001
+[   0.679662] Service <Error> core/hle/service/service.cpp:ReportUnimplementedFunction:170: unknown / unimplemented function 'ConfigureNew3DSCPU': port='ptm:sysm' cmd_buf={[0]=0x8180040 (0x0818, 1, 0), [1]=0x3}
+[   0.683526] Kernel <Debug> core/hle/kernel/process.cpp:AllocateThreadLocalStorage:505: Allocating TLS in existing page slot 0
+[   0.692379] Service.FS <Error> ./core/file_sys/archive_backend.h:GetOpenDelayNs:221: Delay generator was not initalized. Using default
+[   0.792399] Service.FS <Error> core/file_sys/archive_sdmc.cpp:DeleteDirectoryHelper:198: Path not found /home/runner/.local/share/azahar-emu/sdmc/3ds/nsss3ds/log.txt
+[   0.809983] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: start
+[   1.045110] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: renderer init 1
+[   1.579530] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: title init 1
+[   1.627090] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: sound 0
+[   8.418336] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: world: 'World5'
+[   8.434687] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory: heap used 49 of 71664 KB, linear free 20412 KB
+[   8.603882] Service.FS <Error> core/file_sys/archive_sdmc.cpp:DeleteDirectoryHelper:198: Path not found /home/runner/.local/share/azahar-emu/sdmc/3ds/nsss3ds/NSSSsaves/World5/level.dat_old
+[   8.619304] Common.Filesystem <Error> common/file_util.cpp:Rename:439: failed /home/runner/.local/share/azahar-emu/sdmc/3ds/nsss3ds/NSSSsaves/World5/level.dat --> /home/runner/.local/share/azahar-emu/sdmc/3ds/nsss3ds/NSSSsaves/World5/level.dat_old: No such file or directory
+[   8.635387] Common.Filesystem <Error> common/file_util.cpp:Rename:439: failed /home/runner/.local/share/azahar-emu/sdmc/3ds/nsss3ds/NSSSsaves/World5/level.dat --> /home/runner/.local/share/azahar-emu/sdmc/3ds/nsss3ds/NSSSsaves/World5/level.dat_old: No such file or directory
+[   8.684730] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: created World5 seed 12345 ok 1
+[   8.785108] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: level read: save=1 player 0.0 0.0 0.0
+[   9.653791] Service.FS <Error> core/file_sys/archive_sdmc.cpp:DeleteDirectoryHelper:198: Path not found /home/runner/.local/share/azahar-emu/sdmc/3ds/nsss3ds/NSSSsaves/World5/level.dat_old
+[   9.704043] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: spawn 100 64 43 after 890 ms
+[   9.756493] Kernel <Debug> core/hle/kernel/process.cpp:AllocateThreadLocalStorage:505: Allocating TLS in existing page slot 0
+[   9.756647] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: terrain worker on core 1: 1
+[   9.772533] Service.FS <Warning> core/file_sys/archive_ncch.cpp:OpenFile:187: Shared Font file missing. Loading open source replacement from memory
+[  10.189834] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: bottom init 1
+[  10.624249] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: player loaded (autotest)
+[  26.386169] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: built 121 chunks in 15720 ms
+[  26.454738] Kernel <Debug> core/hle/kernel/process.cpp:AllocateThreadLocalStorage:505: Allocating TLS in existing page slot 0
+[  26.454971] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: gen fiber: 1
+[  26.485810] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 1
+[  26.843804] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 709
+[  26.870953] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[  26.928335] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 663 left
+[  27.155809] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 1 sections 770 tris
+[  27.197672] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (0)
+[  27.290612] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[  27.295000] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 2
+[  27.320434] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 663
+[  27.431531] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[  27.474806] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 662 left
+[  27.520883] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 2 sections 2714 tris
+[  27.554162] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (0)
+[  27.591423] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[  27.621019] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 3
+[  27.654586] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 662
+[  27.729956] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[  27.775161] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 662 left
+[  27.822189] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 3 sections 3894 tris
+[  27.872092] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (3)
+[  27.917328] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[  39.996058] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 60
+[  40.005428] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 634
+[  40.174006] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[  40.209412] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 633 left
+[  40.253620] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 21 sections 13878 tris
+[  40.274438] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (28)
+[  40.304110] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[  48.739628] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 100): heap used 12485 of 71664 KB, linear free 15130 KB
+[  51.582642] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: autotest: save and quit (visit 1, heap 12484 KB)
+[  51.603413] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: leaving: fiber (heap 12484 KB)
+[  51.621404] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: leaving: fiber stopped (heap 11968 KB)
+[  51.638105] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: save: containers (heap 11968 KB)
+[  51.670852] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: save: world (heap 11968 KB)
+[  55.853311] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: save: player (heap 12312 KB)
+[  55.881965] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: save: world again (heap 12312 KB)
+[  56.934459] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: save: done (heap 12312 KB)
+[  56.954908] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: saved, back to the title (heap used 12312 KB)
+[  63.670732] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: world: 'World5'
+[  63.686897] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory: heap used 439 of 71664 KB, linear free 18979 KB
+[  63.904450] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: created World5 seed 12345 ok 1
+[  63.987981] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: level read: save=1 player 0.0 0.0 0.0
+[  69.671425] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: spawn -79 64 -174 after 5637 ms
+[  69.722781] Kernel <Debug> core/hle/kernel/process.cpp:AllocateThreadLocalStorage:505: Allocating TLS in existing page slot 0
+[  69.722801] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: terrain worker on core 1: 1
+[  69.754624] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: bottom init 1
+[  69.804513] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: player loaded (autotest)
+[  83.327429] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: built 121 chunks in 13480 ms
+[  83.360074] Kernel <Debug> core/hle/kernel/process.cpp:AllocateThreadLocalStorage:505: Allocating TLS in existing page slot 0
+[  83.360101] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: gen fiber: 1
+[  83.393473] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 1
+[  83.933031] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 648
+[  83.961770] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[  84.013114] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 647 left
+[  84.062145] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 0 sections 0 tris
+[  84.095564] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (0)
+[  84.132966] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[  84.162351] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 2
+[  84.195888] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 647
+[  84.250732] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[  84.297316] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 646 left
+[  84.346313] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 0 sections 0 tris
+[  84.380505] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (0)
+[  84.415626] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[  84.446545] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 3
+[  84.480652] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 646
+[  84.549209] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[  84.597932] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 645 left
+[  84.647170] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 0 sections 0 tris
+[  84.680567] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (0)
+[  84.718632] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[  86.355810] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 60
+[  86.369785] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 573
+[  86.404096] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[  86.438261] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 570 left
+[  86.469707] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 0 sections 0 tris
+[  86.487546] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (9)
+[  86.505623] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[  87.731056] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 100): heap used 12735 of 71664 KB, linear free 17418 KB
+[  91.711189] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 200): heap used 12983 of 71664 KB, linear free 15858 KB
+[  95.049593] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 300): heap used 12990 of 71664 KB, linear free 13940 KB
+[  95.140840] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 0 -78.5 65.620002746582031 -173.51960000023246 -2.1842802930988278e-18 -0.078400001525878907 -0.017836000725567347 0
+[  95.184499] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 1 -78.5 65.620000004768372 -173.55703600119048 -4.1719754171037915e-18 -0.078400001525878907 -0.034066761853601364 1
+[  95.245725] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 2 -78.5 65.620000004768372 -173.68910275303051 -8.8307392777055993e-18 -0.078400001525878907 -0.072108454880237996 1
+[  95.295956] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 3 -78.5 65.620000004768372 -173.85921119789717 -1.1374424641049924e-17 -0.078400001525878907 -0.092879221685360724 1
+[  95.360663] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 4 -78.5 65.620000004768372 -174.05009040956895 -1.2763277010754777e-17 -0.078400001525878907 -0.10422006167822612 1
+[  95.375884] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 5 -78.5 65.620000004768372 -174.25231046123361 -1.352159049269373e-17 -0.078400001525878907 -0.11041216103355923 1
+[  95.448679] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 6 -78.5 65.620000004768372 -174.46072261225359 -1.3935629701924142e-17 -0.078400001525878907 -0.11379304767426997 1
+[  95.510801] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 7 -78.5 65.620000004768372 -174.67251564991429 -1.4161695136422041e-17 -0.078400001525878907 -0.11563901199451164 1
+[  95.524332] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 8 -78.5 65.620000004768372 -174.88615465189523 -1.4285126877994814e-17 -0.078400001525878907 -0.11664690863043345 1
+[  95.593947] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 9 -78.5 65.620000004768372 -175.10080155051207 -1.4352520616721509e-17 -0.078400001525878907 -0.11719722025756689 1
+[  95.645976] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 10 -78.5 65.620000004768372 -175.31599876075606 -1.438931760234035e-17 -0.078400001525878907 -0.11749769044088215 1
+[  95.695475] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 11 -78.5 65.620000004768372 -175.53149644118335 -1.4409408758821879e-17 -0.078400001525878907 -0.11766174718002791 1
+[  95.766788] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 12 -78.5 65.620000004768372 -175.74715817834979 -1.4420378531534961e-17 -0.078400001525878907 -0.11775132217000586 1
+[  95.787293] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 13 -78.5 65.620000004768372 -175.96290949050621 -1.4426368028131999e-17 -0.078400001525878907 -0.11780023012021461 1
+[  95.852026] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 14 -78.5 65.620000004768372 -176.17870971061285 -1.4429638293653832e-17 -0.078400001525878907 -0.1178269338641303 1
+[  95.904998] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 15 -78.5 65.620000004768372 -176.39453663446341 -1.4431423858836151e-17 -0.078400001525878907 -0.11784151411000179 1
+[  95.960111] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: chunks +1 (-10,-17) in 17.6 ms (unload 0.0), light queue 0, fps 31
+[  95.968641] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 16 -78.5 65.620000004768372 -176.61037813855984 -1.4432398777538938e-17 -0.078400001525878907 -0.1178494749251723 1
+[  96.065566] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: chunks +1 (-9,-17) in 12.1 ms (unload 0.0), light queue 36, fps 31
+[  96.077538] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 17 -78.5 65.620000004768372 -176.82622760347144 -1.4432931083212486e-17 -0.078400001525878907 -0.11785382153076025 1
+[  96.106380] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 18 -78.5 65.620000004768372 -177.04208141498862 -1.4433221722144003e-17 -0.078400001525878907 -0.11785619477768694 1
+[  96.185674] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 19 -78.5 65.620000004768372 -177.25793759975272 -1.4433380411019045e-17 -0.078400001525878907 -0.11785749057065943 1
+[  96.193868] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 20 -78.5 65.620000004768372 -177.4737950803098 -1.4433467055154879e-17 -0.078400001525878907 -0.11785819807370458 1
+[  96.274863] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 21 -78.5 65.620000004768372 -177.68965326836991 -1.443351436285854e-17 -0.078400001525878907 -0.11785858437041209 1
+[  96.286812] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 22 -78.5 65.620000004768372 -177.90551184272675 -1.4433540192867738e-17 -0.078400001525878907 -0.1178587952884389 1
+[  96.372475] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 23 -78.5 65.620000004768372 -178.12137062800161 -1.4433554296054399e-17 -0.078400001525878907 -0.11785891044969492 1
+[  96.382735] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 24 -78.5 65.620000004768372 -178.33722952843772 -1.4433561996395211e-17 -0.078400001525878907 -0.11785897332774802 1
+[  96.505846] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 25 -78.5 65.620000004768372 -178.55308849175188 -1.4433566200781782e-17 -0.078400001525878907 -0.117859007659169 1
+[  96.530222] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 26 -78.5 65.620000004768372 -178.76894748939748 -1.4433568496377117e-17 -0.078400001525878907 -0.11785902640412703 1
+[  96.618893] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 27 -78.5 65.620000004768372 -178.98480650578801 -1.4433569749772316e-17 -0.078400001525878907 -0.1178590366388753 1
+[  96.630835] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 28 -78.5 65.620000004768372 -179.2006655324133 -1.4433570434126173e-17 -0.078400001525878907 -0.1178590422270485 1
+[  96.720298] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: chunks +1 (-8,-17) in 11.6 ms (unload 0.0), light queue 32, fps 15
+[  96.730336] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 29 -78.5 65.620000004768372 -179.41652456462677 -1.4433570807783422e-17 -0.078400001525878907 -0.11785904527819142 1
+[  96.744785] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 30 -78.5 65.620000004768372 -179.63238359989137 -1.4433571011800306e-17 -0.078400001525878907 -0.11785904694411564 1
+[  96.817402] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 31 -78.5 65.620000004768372 -179.84824263682191 -1.4433571123193536e-17 -0.078400001525878907 -0.11785904785371037 1
+[  96.827753] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 32 -78.5 65.620000004768372 -180.06410167466203 -1.4433571184014246e-17 -0.078400001525878907 -0.11785904835034916 1
+[  96.913081] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 33 -78.5 65.620000004768372 -180.27996071299879 -1.443357121722236e-17 -0.078400001525878907 -0.11785904862151397 1
+[  96.990204] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 34 -78.5 65.620000004768372 -180.49581975160672 -1.4433571235353992e-17 -0.078400001525878907 -0.11785904876956997 1
+[  97.002137] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 35 -78.5 65.620000004768372 -180.7116787903627 -1.4433571245253864e-17 -0.078400001525878907 -0.11785904885040857 1
+[  97.069084] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 36 -78.5 65.620000004768372 -180.92753782919954 -1.4433571250659194e-17 -0.078400001525878907 -0.11785904889454644 1
+[  97.080596] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 37 -78.5 65.620000004768372 -181.14339686808052 -1.4433571253610504e-17 -0.078400001525878907 -0.11785904891864574 1
+[  97.154716] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 38 -78.5 65.620000004768372 -181.35925590698557 -1.4433571255221919e-17 -0.078400001525878907 -0.11785904893180393 1
+[  97.236939] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: chunks +1 (-7,-17) in 11.3 ms (unload 0.0), light queue 211, fps 15
+[  97.246201] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 39 -78.5 65.620000004768372 -181.57511494590378 -1.4433571256101752e-17 -0.078400001525878907 -0.11785904893898831 1
+[  97.264171] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 40 -78.489749358966947 65.620000004768372 -181.79043641053795 0.0055968506541360574 -0.078400001525878907 -0.1175655333458072 1
+[  97.338144] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 41 -78.463772875601407 65.620000004768372 -182.00385948216663 0.014183161564999916 -0.078400001525878907 -0.11652901064440922 1
+[  97.347729] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 42 -78.419304264337839 65.620000004768372 -182.21359144138128 0.024279864570077817 -0.078400001525878907 -0.11451366303226761 1
+[  97.430880] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 43 -78.355156201432592 65.620000004768372 -182.41762898608735 0.03502484641449366 -0.078400001525878907 -0.11140451234944679 1
+[  97.444278] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 44 -78.271125932276931 65.620000004768372 -182.61390084919393 0.045880532288139306 -0.078400001525878907 -0.10716444970361901 1
+[  97.526692] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 45 -78.16763940698614 65.620000004768372 -182.80034674821547 0.056503649371820008 -0.078400001525878907 -0.10179947269004315 1
+[  97.546319] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 46 -78.04556003128404 65.620000004768372 -182.97497356752845 0.06665534687554045 -0.078400001525878907 -0.095346254419608895 1
+[  97.622017] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 47 -77.906071049495537 65.620000004768372 -183.13588856708432 0.076160992902824881 -0.078400001525878907 -0.087859599962628349 1
+[  97.631270] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 48 -77.750623086394555 65.620000004768372 -183.28134655300681 0.084874597711542252 -0.078400001525878907 -0.079420069538530397 1
+[  97.709035] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 49 -77.58087644406011 65.620000004768372 -183.40976390552723 0.092681677479824809 -0.078400001525878907 -0.070115882620284023 1
+[  97.791485] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: chunks +1 (-6,-17) in 10.7 ms (unload 0.0), light queue 253, fps 11
+[  97.801638] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 50 -77.3986670702092 65.620000004768372 -183.51973940341384 0.099486329678191807 -0.078400001525878907 -0.060046628820661203 1
+[  97.815891] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 51 -77.20597489368491 65.620000004768372 -183.61006254496164 0.10520994060267638 -0.078400001525878907 -0.049316441013334412 1
+[  97.886733] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 52 -77.004905455296665 65.620000004768372 -183.67974942839521 0.10978392611167305 -0.078400001525878907 -0.038049042774230227 1
+[  97.897248] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 53 -76.797658137463742 65.620000004768372 -183.72803976731177 0.11315704868026376 -0.078400001525878907 -0.026366528110988705 1
+[  97.968172] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 54 -76.586501098797058 65.620000004768372 -183.75440629542277 0.11529175650344962 -0.078400001525878907 -0.014396126020747697 1
+[  97.985189] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 55 -76.373746926598415 65.620000004768372 -183.75856112530118 0.11616379151318709 -0.078400001525878907 -0.0022685373771073403 1
+[  98.075711] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 56 -76.161725596802356 65.620000004768372 -183.74045922025806 0.11576365951490108 -0.078400001525878907 0.0098836413015636424 1
+[  98.094413] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 57 -75.952758988717207 65.620000004768372 -183.70029906622935 0.11409578126701808 -0.078400001525878907 0.021927446646603486 1
+[  98.172841] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 58 -75.749139325776369 65.620000004768372 -183.63851200431642 0.11117634887911874 -0.078400001525878907 0.033735739722952719 1
+[  98.183219] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 59 -75.553095626140134 65.620000004768372 -183.55577898161161 0.10703987243434991 -0.078400001525878907 0.04517223564370846 1
+[  98.249751] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 60 -75.366774304387846 65.620000004768372 -183.45300836000803 0.10173145349312164 -0.078400001525878907 0.056112765913195577 1
+[  98.318136] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: chunks +1 (-5,-17) in 10.6 ms (unload 0.0), light queue 257, fps 11
+[  98.331548] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 61 -75.192215504271786 65.620000004768372 -183.33132684895858 0.095309115933776015 -0.078400001525878907 0.066438112749964653 1
+[  98.361450] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 62 -75.031337643201752 65.620000004768372 -183.19206138958566 0.087839322347008295 -0.078400001525878907 0.076038949649731846 1
+[  98.435854] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 63 -74.88589993489488 65.620000004768372 -183.036740990618 0.079408997959115865 -0.078400001525878907 0.084804947686662038 1
+[  98.449463] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 64 -74.757493653953887 65.620000004768372 -182.86706869217423 0.070109837537221539 -0.078400001525878907 0.09264108571081163 1
+[  98.517211] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 65 -74.647524201150347 65.620000004768372 -182.68490372478959 0.060043328204925708 -0.078400001525878907 0.099462083744787363 1
+[  98.607470] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 66 -74.557204360218279 65.620000004768372 -182.49223869247456 0.049314638876933513 -0.078400001525878907 0.10519511986270079 1
+[  98.619568] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 67 -74.487519278921098 65.620000004768372 -182.29118603432897 0.038048058807641047 -0.078400001525878907 0.10977476409810963 1
+[  98.708090] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 68 -74.439229923971112 65.620000004768372 -182.08394885453566 0.026365990865168609 -0.078400001525878907 0.11315151330998742 1
+[  98.719921] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 69 -74.412863933105939 65.620000004768372 -181.87279735123926 0.014395832684495853 -0.078400001525878907 0.11528873419092768 1
+[  98.795586] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 70 -74.398468100421439 66.03999999165535 -181.65950862706191 0.0078601255587089722 0.33319999363422365 0.11645565692746221 0
+[  98.805946] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 71 -74.390607974862732 66.373199985289574 -181.523452969902 0.0071527144645651608 0.24813599859094576 0.1238106515837291 0
+[  98.896909] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 72 -74.383455260398165 66.621335983880513 -181.3800423180858 0.0065089703503416986 0.16477328182606651 0.13050369691382441 0
+[  98.906709] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 73 -74.376946290047826 66.786109265706585 -181.22993862093952 0.0059231631895154862 0.083077817806467211 0.13659436833974323 0
+[  98.992307] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 74 -74.371023126858304 66.869187083513054 -181.07374425236733 0.0053900786578002288 0.0030162615090425808 0.14213687949706355 0
+[  99.000987] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 75 -74.365633048200507 66.872203345022101 -180.91200737263782 0.0049049717199586467 -0.075444065189486556 0.1471805647955832 0
+[  99.166725] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 76 -74.360728076480555 66.796759279832614 -180.74522680760978 0.0044635243938003707 -0.15233518685055708 0.15177031854951198 0
+[  99.282035] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 77 -74.356264552086756 66.644424092982064 -180.5738564888278 0.0040618073154189234 -0.22768848754498797 0.15594699458595826 0
+[  99.298525] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 78 -74.352202744771333 66.416735605437083 -180.3983094940094 0.0036962447635563566 -0.30153472366278034 0.15974776988866204 0
+[  99.383936] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 79 -74.348506500007773 66.1152008817743 -180.21896172388827 0.0033635828317741612 -0.3739040364667221 0.1632064755138018 0
+[  99.394572] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 80 -74.345142917176005 65.741296845307573 -180.03615524814202 0.0030608604651279569 -0.44482596439492011 0.16635389772338713 0
+[  99.455049] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: chunks +1 (-3,-17) in 10.1 ms (unload 0.0), light queue 45, fps 12
+[  99.467584] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 81 -74.342082056710879 65.620000004768372 -179.85020135018618 0.002785383103540701 -0.078400001525878907 0.16921805201665421 1
+[  99.486909] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 82 -74.339296673607336 66.03999999165535 -179.58298330818312 0.0015208193511803865 0.33319999363422365 0.14590106788047075 0
+[  99.579841] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 83 -74.337775854256151 66.373199985289574 -179.4174822400702 0.0013839456494592266 0.24813599859094576 0.15060597632320352 0
+[  99.589310] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 84 -74.336391908606686 66.621335983880513 -179.24727626351455 0.0012593905773033152 0.16477328182606651 0.15488744312948147 0
+[  99.657979] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 85 -74.335132518029383 66.786109265706585 -179.07278882015262 0.0011460454583748492 0.083077817806467211 0.15878357803548032 0
+[  99.670720] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 86 -74.333986472571013 66.869187083513054 -178.8944052418847 0.0010429013971773511 0.0030162615090425808 0.16232906090211949 0
+[  99.747236] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 87 -74.332943571173828 66.872203345022101 -178.71247618075012 0.00094904029878256711 -0.075444065189486556 0.16555545040374511 0
+[  99.838647] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 88 -74.33199453087505 66.796759279832614 -178.5273207301139 0.00086362669678170844 -0.15233518685055708 0.16849146493483988 0
+[  99.850273] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 89 -74.331130904178266 66.644424092982064 -178.3392292649466 0.00078590031672086619 -0.22768848754498797 0.17116323823513616 0
+[  99.929265] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 90 -74.330345003861552 66.416735605437083 -178.14846602647901 0.00071516930882704432 -0.30153472366278034 0.17359455200847582 0
+[  99.938338] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 91 -74.329629834552719 66.1152008817743 -177.95527147423809 0.00065080408978867188 -0.3739040364667221 0.17580704760597865 0
+[ 100.007585] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: chunks +1 (-2,-17) in 9.5 ms (unload 0.0), light queue 138, fps 11
+[ 100.019238] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 92 -74.328979030462932 65.741296845307573 -177.75986442639964 0.00059223173877570796 -0.44482596439492011 0.17782041865773124 0
+[ 100.038947] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 93 -74.328386798724154 65.296470880912651 -177.56244400750944 0.0005389308978177897 -0.51432945511728256 0.17965258636762885 0
+[ 100.133759] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 94 -74.327847867826335 64.782141425795373 -177.36319142090935 0.00049042713114821391 -0.58244287735087164 0.18131985903168618 0
+[ 100.143255] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 95 -74.327357440695181 64.620000004768372 -177.16227156164521 0.0003923417107649181 -0.02 0.1607358898064668 1
+[ 100.208473] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 96 -74.326965098984417 64.640000003874292 -176.98193567160629 0.00031387337328901216 -0.0040000004768371705 0.14426871418091128 0
+[ 100.278386] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 97 -74.32665122561113 64.6760000025034 -176.81806695719291 0.00025109870237287194 0.0087999993324279525 0.13109497348416282 0
+[ 100.287828] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 98 -74.326400126908752 64.724800000941741 -176.6673719834763 0.00020087896489162736 0.019039999332427938 0.12055598076972082 0
+[ 100.397447] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 99 -74.326199247943862 64.783839999380106 -176.52721600247412 0.00016070317430796576 0.027231999454498234 0.11212478647253264 0
+[ 100.416646] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 100 -74.320158544234161 64.611071995854374 -176.4150912160016 0.0048325630397761492 0.0017855998882293188 0.089699830514657727 0
+[ 100.495485] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 101 -74.309445980658992 64.612857595742611 -176.32539138548694 0.0085700509878436065 -0.018571520068130537 0.071759865481031485 0
+[ 100.519291] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 102 -74.294995929135752 64.594286075674475 -176.25363152000591 0.0115600413908519 -0.0348572162758942 0.057407893240269445 0
+[ 100.590022] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 103 -74.277555887209502 64.559428859398579 -176.19622362676563 0.013952033748901999 -0.047885773436245754 0.04592631527657097 0
+[ 100.657803] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: chunks +1 (-1,-17) in 9.7 ms (unload 0.0), light queue 35, fps 11
+[ 100.665161] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 104 -74.257723852925196 64.51154308596233 -176.15029731148906 0.015865627663856848 -0.058308619319839508 0.036741052768741116 0
+[ 100.684901] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 105 -74.23597822472594 64.453234466642499 -176.11355625872031 0.017396502818632545 -0.066646896150964516 0.029392842652980374 0
+[ 100.766506] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 106 -74.212701721371914 64.420000001788139 -176.08416341606733 0.018621202960702556 -0.02 0.023514274472774287 1
+[ 100.777521] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 107 -74.188200517875813 64.420000001788139 -176.06064914159455 0.019600963088958128 -0.02 0.018811419858531426 1
+[ 100.847913] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 108 -74.162719554251453 64.420000001788139 -176.04183772173602 0.020384771203242238 -0.02 0.015049136111074741 1
+[ 100.918034] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 109 -74.136454782512814 64.420000001788139 -176.02678858562493 0.021011817704013246 -0.02 0.012039309068259474 1
+[ 100.929023] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 110 -74.109562964273408 64.420000001788139 -176.01474927655667 0.021513454912105028 -0.02 0.0096314473981273276 1
+[ 101.005019] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 111 -74.082169508825899 64.420000001788139 -176.00511782915854 0.021914764684558437 -0.02 0.0077051580333176621 1
+[ 101.059541] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 112 -74.054374743605948 64.420000001788139 -175.9974126711252 0.02223581250730515 -0.02 0.0061641265185067712 1
+[ 101.126704] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 113 -74.026258930563245 64.420000001788139 -175.99124854460669 0.022492650769329707 -0.02 0.0049313012882875309 1
+[ 101.138310] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 114 -73.997886279258523 64.420000001788139 -175.98631724331841 0.022698121382011105 -0.02 0.0039450410894157168 1
+[ 101.233682] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 115 -73.969308157341118 64.420000001788139 -175.98237220222899 0.022862497874605623 -0.02 0.0031560329185611282 1
+[ 101.242645] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 116 -73.940565658931106 64.420000001788139 -175.97921616931043 0.022993999070640758 -0.02 0.0025248263724717466 1
+[ 101.322670] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 117 -73.911691659325072 64.420000001788139 -175.97669134293795 0.023099200029036482 -0.02 0.0020198611280756729 1
+[ 101.545705] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 118 -73.882712458760636 64.420000001788139 -175.97467148180988 0.023183360797007155 -0.02 0.0016158889265391592 1
+[ 101.579183] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 119 -73.853649097428232 64.420000001788139 -175.97305559288333 0.023250689412386966 -0.02 0.0012927111604942245 1
+[ 101.672870] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 120 -73.82451840748044 64.420000001788139 -175.97176288172284 0.023304552305493435 -0.02 0.0010341689438056975 1
+[ 101.683747] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 121 -73.795333854639551 64.420000001788139 -175.97072871277902 0.023347642620620706 -0.02 0.00082733516737281245 1
+[ 101.747016] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 122 -73.766106211483532 64.420000001788139 -175.96990137761165 0.023382114873236201 -0.02 0.00066186814376085373 1
+[ 101.821051] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 123 -73.73684409607489 64.420000001788139 -175.96923950946788 0.023409692675739537 -0.02 0.0005294945228987661 1
+[ 101.834525] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 124 -73.707554402863749 64.420000001788139 -175.96871001494497 0.023431754918070959 -0.02 0.00042359562463107947 1
+[ 101.905735] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 125 -73.678242647410286 64.420000001788139 -175.96828641932035 0.023449404712199098 -0.02 0.00033887650475451694 1
+[ 101.965591] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 126 -73.648913242162692 64.420000001788139 -175.96794754281561 0.023463524547712011 -0.02 0.00027110120784333628 1
+[ 101.979991] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 127 -73.619569717079585 64.420000001788139 -175.96767644160778 0.023474820416290662 -0.02 0.00021688096950644726 1
+[ 102.050652] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 128 -73.59021489612789 64.420000001788139 -175.96745956063828 0.023483857111288243 -0.02 0.00017350477819058044 1
+[ 102.102895] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 129 -73.560851038481204 64.420000001788139 -175.96728605586009 0.023491086467394031 -0.02 0.00013880382462080247 1
+[ 102.171247] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 130 -73.531479951478417 64.420000001788139 -175.96714725203546 0.023496869952364843 -0.02 0.00011104306135131251 1
+[ 102.233666] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 131 -73.502103080990651 64.420000001788139 -175.96703620897412 0.023501496740410438 -0.02 8.8834450404786462e-05 1
+[ 102.246778] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 132 -73.472721583714844 64.420000001788139 -175.96694737452373 0.023505198170902068 -0.02 7.106756138281834e-05 1
+[ 102.330440] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 133 -73.443336385008536 64.420000001788139 -175.96687630696235 0.023508159315339498 -0.02 5.6854049953446024e-05 1
+[ 102.344178] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 134 -73.413948225157796 64.420000001788139 -175.9668194529124 0.02351052823092474 -0.02 4.5483240640509911e-05 1
+[ 102.418134] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 135 -73.384557696391468 64.420000001788139 -175.96677396967175 0.023512423363421176 -0.02 3.6386593054610412e-05 1
+[ 102.430971] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 136 -73.355165272492641 64.420000001788139 -175.9667375830787 0.023513939469440914 -0.02 2.9109274877450322e-05 1
+[ 102.500317] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 137 -73.325771332487804 64.420000001788139 -175.96670847380381 0.023515152354274781 -0.02 2.3287420248969856e-05 1
+[ 102.550249] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 138 -73.296376179598127 64.420000001788139 -175.96668518638356 0.02351612266215633 -0.02 1.8629936476783568e-05 1
+[ 102.601115] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 139 -73.26698005640057 64.420000001788139 -175.96666655644708 0.023516898908473138 -0.02 1.4903949403513003e-05 1
+[ 102.667617] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 140 -73.242437622907914 64.53999999910593 -175.9470785991526 0.019633947086696694 -0.02 0.01567036606909681 1
+[ 102.679410] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 141 -73.220755416220214 64.588000003248453 -175.91191574845436 0.017345765608626978 -0.02 0.028130280977774657 1
+[ 102.768782] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 142 -73.200344277561541 64.607200004160404 -175.86442695173716 0.016328911170260474 -0.02 0.037991037939883038 1
+[ 102.786835] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 143 -73.179941277627833 64.614880004432052 -175.80726440390552 0.016322400190187585 -0.02 0.045730038946735843 1
+[ 102.859998] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 144 -73.158547234629026 64.617952004540712 -175.74260238191999 0.017115234654079863 -0.02 0.051729618359246506 1
+[ 102.912568] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 145 -73.135376696591322 64.619180804642383 -175.67223217272911 0.018536430706373102 -0.02 0.056296168191585366 1
+[ 102.967473] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 146 -73.109817891109685 64.619672324712155 -175.59763787219245 0.020447044689991735 -0.02 0.059675441318565954 1
+[ 103.015768] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 147 -73.081398922621375 64.619868932742975 -175.52005765379405 0.022735175129432034 -0.02 0.062064175643537535 1
+[ 103.132028] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 148 -73.049765868331008 64.619947575956758 -175.44053043295577 0.025306443809393536 -0.02 0.06362177761866443 1
+[ 103.162856] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 149 -73.014659967366441 64.619979033242998 -175.35993518406809 0.028084721190144227 -0.02 0.064476200070910983 1
+[ 103.243762] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 150 -72.975901056400119 64.639991615263597 -175.27902158572741 0.031007129235103344 -0.0040000004768371705 0.064730879637112063 0
+[ 103.257472] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 151 -72.933374248296658 64.675996647059122 -175.19843441399152 0.034021446989724431 0.0087999993324279525 0.064469738349372085 0
+[ 103.319399] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 152 -72.887019193074494 64.72479865876403 -175.11873292939325 0.037084044730325713 0.019039999332427938 0.063761188628734117 0
+[ 103.386766] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 153 -72.836821398199334 64.743839463403091 -175.04040626920474 0.040158236498536344 -0.0047680003070831711 0.062661329084524209 0
+[ 103.404918] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 154 -72.782803869208522 64.739071785218655 -174.96388697569392 0.043214023836584577 -0.02381440030250553 0.061215435720823684 0
+[ 103.490994] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 155 -72.725024373812175 64.715257513765209 -174.88955778982827 0.046223597005863287 -0.039051520525894196 0.059463349578603324 0
+[ 103.511646] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 156 -72.663569030557412 64.676206044778937 -174.81776083201723 0.049164275336416124 -0.051241216886245763 0.05743756710471995 0
+[ 103.570680] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 157 -72.598548463122228 64.624964848508554 -174.74880358604415 0.052016454723246945 -0.060992974119839519 0.055165797600493081 0
+[ 103.634279] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 400): heap used 13719 of 71664 KB, linear free 11856 KB
+[ 103.645088] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 158 -72.530094610129211 64.619999999270817 -174.68296359866747 0.054763083210449107 -0.02 0.052671990686214025 1
+[ 103.669936] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 159 -72.458358055649754 64.620000002569341 -174.6204921508261 0.057389244438734853 -0.02 0.049977159017823354 1
+[ 103.735730] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 160 -72.38350576601627 64.620000003888762 -174.56161711264733 0.059881832599092764 -0.02 0.047100031244856351 1
+[ 103.749144] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 161 -72.305719156337361 64.620000004416525 -174.50654515760414 0.062229288670419373 -0.02 0.044057564691052084 1
+[ 103.819926] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 162 -72.225191735321857 64.620000004627627 -174.45546521813782 0.064421937772361465 -0.02 0.040863952181970545 1
+[ 103.891322] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 163 -72.142129206717854 64.620000004712082 -174.40854596257222 0.066450023873381586 -0.02 0.037535405011792422 1
+[ 103.904600] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 164 -72.056747199805685 64.620000004745847 -174.36593891475181 0.068305606547564568 -0.02 0.034085638764242455 1
+[ 103.972336] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 165 -71.969270083366368 64.640000003865282 -174.32777918722411 0.069981694194258884 -0.0040000004768371705 0.030527782477049858 0
+[ 104.026475] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 166 -71.879929873432673 64.676000002499791 -174.29418603169702 0.071472169011978143 0.0087999993324279525 0.026874524822140668 0
+[ 104.082319] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 167 -71.788965219791535 64.724800000940306 -174.26526324727388 0.072771723997289053 0.019039999332427938 0.023138227883296569 0
+[ 104.169393] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 168 -71.696620442449159 64.743840000273593 -174.2410994848064 0.073875822974734121 -0.0047680003070831711 0.019331010262041329 0
+[ 104.185164] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 169 -71.603144619241974 64.739071999966868 -174.22176847454435 0.074780659680072442 -0.02381440030250553 0.015464808440076663 0
+[ 104.251078] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 170 -71.508790807496624 64.715257599664511 -174.20732920068846 0.075483050521064715 -0.039051520525894196 0.011551419256841311 0
+[ 104.265476] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 171 -71.413815074906026 64.676206079138652 -174.19782604103261 0.075980587204682745 -0.051241216886245763 0.0076025278379619624 0
+[ 104.330941] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 172 -71.318475679526614 64.62496486225244 -174.19328888624469 0.07627151744006383 -0.060992974119839519 0.0036297238844175119 0
+[ 104.383077] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 173 -71.300000011920929 64.620000004768372 -174.19373325112372 0 -0.02 -0.00035549190851972521 1
+[ 104.442796] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 174 -71.300000011920929 64.620000004768372 -174.19916038584086 0 -0.02 -0.0043417078384051962 1
+[ 104.455294] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 175 -71.300000011920929 64.620000004768372 -174.20955739706287 0 -0.02 -0.0083176091015610635 1
+[ 104.545603] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 176 -71.300000011920929 64.620000004768372 -174.22489738093969 0 -0.02 -0.012271987284324258 1
+[ 104.601535] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 177 -71.300000011920929 64.620000004768372 -174.24514129202234 0 -0.02 -0.016195129107443772 1
+[ 104.615007] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 178 -71.300000011920929 64.620000004768372 -174.27023430029072 0 -0.02 -0.020074406913839504 1
+[ 104.678445] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 179 -71.300000011920929 64.620000004768372 -174.30010816435973 0 -0.02 -0.023899091611330258 1
+[ 104.722196] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 180 -71.300000011920929 64.640000003874292 -174.33468144574724 0 -0.0040000004768371705 -0.027658625522155578 0
+[ 104.773727] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 181 -71.300000011920929 64.6760000025034 -174.37385975013774 0 0.0087999993324279525 -0.031342643979448935 0
+[ 104.842341] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 182 -71.300000011920929 64.724800000941741 -174.41753600234964 0 0.019039999332427938 -0.034941002290171497 0
+[ 104.855260] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 183 -71.300000011920929 64.743840000274176 -174.46559075478464 0 -0.0047680003070831711 -0.038443802520865919 0
+[ 104.943629] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 184 -71.300000011920929 64.739071999967095 -174.51789384979779 0 -0.02381440030250553 -0.041842476634010591 0
+[ 104.956012] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 185 -71.300000011920929 64.715257599664596 -174.57430179799155 0 -0.039051520525894196 -0.045126359227453977 0
+[ 105.044636] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 186 -71.300000011920929 64.676206079138694 -174.63465990346791 0 -0.051241216886245763 -0.048286485100608581 0
+[ 105.057368] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 187 -71.300000011920929 64.624964862252455 -174.69880268066728 0 -0.060992974119839519 -0.051314222524136838 0
+[ 105.141199] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 188 -71.300000011920929 64.620000004768372 -174.76655430146118 0 -0.02 -0.054201297442789752 1
+[ 105.153876] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 189 -71.300000011920929 64.620000004768372 -174.837729070173 0 -0.02 -0.056939815817910369 1
+[ 105.228120] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 190 -71.300000011920929 64.620000004768372 -174.91213193118566 0 -0.02 -0.05952228969707557 1
+[ 105.296681] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 191 -71.300000011920929 64.620000004768372 -174.98955899796255 0 -0.02 -0.061941654344519523 1
+[ 105.307539] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 192 -71.300000011920929 64.620000004768372 -175.06979878465214 0 -0.02 -0.064191830308212711 1
+[ 105.372476] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 193 -71.300000011920929 64.620000004768372 -175.15263120579198 0 -0.02 -0.066265937899319477 1
+[ 105.426947] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 194 -71.300000011920929 64.620000004768372 -175.23782912673008 0 -0.02 -0.068158337766120403 1
+[ 105.501205] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 195 -71.300000011920929 64.640000003874292 -175.32515897438793 0 -0.0040000004768371705 -0.069863879167347973 0
+[ 105.513650] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 196 -71.300000011920929 64.6760000025034 -175.41438136929472 0 0.0087999993324279525 -0.071377916989044943 0
+[ 105.579281] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 197 -71.300000011920929 64.724800000941741 -175.50525177091291 0 0.019039999332427938 -0.072696322377818923 0
+[ 105.636585] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 198 -71.300000011920929 64.743840000274176 -175.59752114663581 0 -0.0047680003070831711 -0.073815501678259163 0
+[ 105.707090] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 199 -71.300000011920929 64.739071999967095 -175.69093664854654 -1.9202463847881833e-18 -0.02381440030250553 -0.074732402642173387 0
+[ 105.722578] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 200 -71.300000011920929 64.715257599664596 -175.69999998807907 0 -0.039051520525894196 0 0
+[ 105.802400] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 201 -71.300000011920929 64.676206079138694 -175.68585785292089 0 -0.051241216886245763 0.011313708295132341 0
+[ 105.817144] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 202 -71.300000011920929 64.624964862252455 -175.66040200946759 0 -0.060992974119839519 0.020364675066108125 0
+[ 105.892982] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 203 -71.300000011920929 64.620000004768372 -175.6258951992433 0 -0.02 0.027605448590784686 1
+[ 105.936041] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 204 -71.300000011920929 64.620000004768372 -175.58414761549435 0 -0.02 0.033398067496842682 1
+[ 105.999318] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 205 -71.300000011920929 64.620000004768372 -175.53660741283932 0 -0.02 0.038032162690742478 1
+[ 106.014017] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 206 -71.300000011920929 64.620000004768372 -175.4844331149904 0 -0.02 0.041739438901105035 1
+[ 106.085398] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 207 -71.300000011920929 64.620000004768372 -175.4285515409311 0 -0.02 0.044705259913589257 1
+[ 106.150264] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 208 -71.300000011920929 64.620000004768372 -175.36970414585932 0 -0.02 0.047077916758931977 1
+[ 106.163744] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 209 -71.300000011920929 64.620000004768372 -175.30848409394221 0 -0.02 0.048976042263490421 1
+[ 106.234118] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 210 -71.300000011920929 64.620000004768372 -175.24536591652054 0 -0.02 0.050494542689764596 1
+[ 106.283390] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 211 -71.300000011920929 64.620000004768372 -175.1807292386726 0 -0.02 0.051709343048885872 1
+[ 106.350321] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 212 -71.300000011920929 64.620000004768372 -175.11487776046553 0 -0.02 0.052681183350664441 1
+[ 106.376656] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 213 -71.300000011920929 64.620000004768372 -175.04805444195668 0 -0.02 0.053458655603672529 1
+[ 106.450088] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 214 -71.300000011920929 64.620000004768372 -174.98045365119484 0 -0.02 0.054080633415347197 1
+[ 106.463874] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 215 -71.300000011920929 64.620000004768372 -174.91223088262132 0 -0.02 0.054578215672101485 1
+[ 106.546251] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 216 -71.300000011920929 64.620000004768372 -174.84351053179103 0 -0.02 0.054976281483436563 1
+[ 106.624079] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 217 -71.300000011920929 64.620000004768372 -174.7743921151494 0 -0.02 0.055294734137249932 1
+[ 106.640805] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 218 -71.300000011920929 64.620000004768372 -174.70495524585397 0 -0.02 0.055549496264096887 1
+[ 106.717820] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 219 -71.300000011920929 64.620000004768372 -174.63526361443169 0 -0.02 0.055753305968611451 1
+[ 106.731238] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 220 -71.300000011920929 64.620000004768372 -174.5653681733049 0 -0.02 0.055916353734652695 1
+[ 106.796648] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 221 -71.300000011920929 64.620000004768372 -174.49530968441206 0 -0.02 0.056046791949429381 1
+[ 106.868952] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 222 -71.300000011920929 64.620000004768372 -174.42512075730446 0 -0.02 0.056151142522805668 1
+[ 106.882509] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 223 -71.300000011920929 64.620000004768372 -174.35482747962348 0 -0.02 0.056234622982750664 1
+[ 106.948670] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 224 -71.300000011920929 64.620000004768372 -174.28445072148256 0 -0.02 0.056301407351701825 1
+[ 107.003704] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 225 -71.300000011920929 64.620000004768372 -174.21400717897268 0 -0.02 0.056354834847658887 1
+[ 107.066987] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 226 -71.300000011920929 64.620000004768372 -174.14351020896683 0 -0.02 0.056397576845061428 1
+[ 107.083642] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 227 -71.300000011920929 64.620000004768372 -174.07297049696359 0 -0.02 0.056431770443492991 1
+[ 107.146584] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 228 -71.300000011920929 64.620000004768372 -174.00239659136193 0 -0.02 0.056459125322645853 1
+[ 107.198551] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 229 -71.300000011920929 64.620000004768372 -173.9317953308811 0 -0.02 0.056481009226294246 1
+[ 107.248268] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 230 -71.300000011920929 64.620000004768372 -173.86117218649662 0 -0.02 0.056498516349473837 1
+[ 107.303044] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 231 -71.300000011920929 64.620000004768372 -173.79053153498896 0 -0.02 0.05651252204822621 1
+[ 107.366556] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 232 -71.300000011920929 64.620000004768372 -173.71987687778255 0 -0.02 0.056523726607395068 1
+[ 107.379574] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 233 -71.300000011920929 64.620000004768372 -173.64921101601698 0 -0.02 0.056532690254863731 1
+[ 107.467245] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 234 -71.300000011920929 64.620000004768372 -173.57853619060393 0 -0.02 0.056539861172945516 1
+[ 107.480973] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 235 -71.300000011920929 64.620000004768372 -173.5078541942728 0 -0.02 0.056545597907496421 1
+[ 107.554306] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 236 -71.300000011920929 64.620000004768372 -173.43716646120711 0 -0.02 0.056550187295205528 1
+[ 107.621069] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 237 -71.300000011920929 64.620000004768372 -173.36647413875372 0 -0.02 0.056553858805427529 1
+[ 107.634911] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 238 -71.300000011920929 64.620000004768372 -173.29577814479012 0 -0.02 0.056556796013648894 1
+[ 107.711628] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 239 -71.300000011920929 64.620000004768372 -173.2250792136183 0 -0.02 0.056559145780261 1
+[ 109.014039] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: autotest: save and quit (visit 2, heap 13724 KB)
+[ 109.020795] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: leaving: fiber (heap 13724 KB)
+[ 109.029073] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: leaving: fiber stopped (heap 13209 KB)
+[ 109.046802] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: save: containers (heap 13209 KB)
+[ 109.076670] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: save: world (heap 13209 KB)
+[ 113.155757] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: save: player (heap 13485 KB)
+[ 113.173772] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: save: world again (heap 13485 KB)
+[ 113.728497] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: save: done (heap 13486 KB)
+[ 113.757011] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: saved, back to the title (heap used 13486 KB)
+[ 120.443549] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: world: 'World5'
+[ 120.459454] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory: heap used 473 of 71664 KB, linear free 18979 KB
+[ 120.676683] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: created World5 seed 12345 ok 1
+[ 120.760399] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: level read: save=1 player 0.0 0.0 0.0
+[ 121.880132] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: spawn -95 64 -80 after 1077 ms
+[ 121.932605] Kernel <Debug> core/hle/kernel/process.cpp:AllocateThreadLocalStorage:505: Allocating TLS in existing page slot 0
+[ 121.932635] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: terrain worker on core 1: 1
+[ 121.963860] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: bottom init 1
+[ 122.015662] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: player loaded (autotest)
+[ 131.090677] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: built 121 chunks in 9034 ms
+[ 131.123352] Kernel <Debug> core/hle/kernel/process.cpp:AllocateThreadLocalStorage:505: Allocating TLS in existing page slot 0
+[ 131.123401] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: gen fiber: 1
+[ 131.156768] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 1
+[ 131.474661] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 648
+[ 131.491050] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[ 131.541389] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 647 left
+[ 131.591472] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 0 sections 0 tris
+[ 131.641555] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (18)
+[ 131.678041] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[ 131.708335] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 2
+[ 131.741958] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 647
+[ 131.795109] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[ 131.842064] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 646 left
+[ 131.892274] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 0 sections 0 tris
+[ 131.925922] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (18)
+[ 131.962527] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[ 131.992486] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 3
+[ 132.026002] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 646
+[ 132.093744] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[ 132.143804] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 645 left
+[ 132.193129] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 0 sections 0 tris
+[ 132.226744] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (18)
+[ 132.263338] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[ 133.851707] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 60
+[ 133.868948] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  streamed, columns queued 581
+[ 133.898007] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  ticked
+[ 133.919099] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  meshed, 580 left
+[ 133.964922] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  world drawn: 0 sections 0 tris
+[ 133.982564] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  mobs drawn (18)
+[ 134.002453] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190:  frame end
+[ 135.141577] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 100): heap used 12822 of 71664 KB, linear free 17421 KB
+[ 137.943188] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 200): heap used 13166 of 71664 KB, linear free 16290 KB
+[ 140.996514] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 300): heap used 13171 of 71664 KB, linear free 14989 KB
+[ 141.073170] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 0 -94.5 66.620002746582031 -79.519600000232458 -2.1842802930988278e-18 -0.078400001525878907 -0.017836000725567347 0
+[ 141.125550] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 1 -94.5 66.620000004768372 -79.557036001190482 -4.1719754171037915e-18 -0.078400001525878907 -0.034066761853601364 1
+[ 141.173078] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 2 -94.5 66.620000004768372 -79.689102753030497 -8.8307392777055993e-18 -0.078400001525878907 -0.072108454880237996 1
+[ 141.232837] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 3 -94.5 66.620000004768372 -79.699999988079071 -1.1374424641049924e-17 -0.078400001525878907 0 1
+[ 141.288238] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 4 -94.5 66.620000004768372 -79.699999988079071 -1.2763277010754777e-17 -0.078400001525878907 0 1
+[ 141.344211] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 5 -94.5 66.620000004768372 -79.699999988079071 -1.352159049269373e-17 -0.078400001525878907 0 1
+[ 141.356108] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 6 -94.5 66.620000004768372 -79.699999988079071 -1.3935629701924142e-17 -0.078400001525878907 0 1
+[ 141.435874] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 7 -94.5 66.620000004768372 -79.699999988079071 -1.4161695136422041e-17 -0.078400001525878907 0 1
+[ 141.489733] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 8 -94.5 66.620000004768372 -79.699999988079071 -1.4285126877994814e-17 -0.078400001525878907 0 1
+[ 141.529785] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 9 -94.5 66.620000004768372 -79.699999988079071 -1.4352520616721509e-17 -0.078400001525878907 0 1
+[ 141.591892] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 10 -94.5 66.620000004768372 -79.699999988079071 -1.438931760234035e-17 -0.078400001525878907 0 1
+[ 141.606081] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 11 -94.5 66.620000004768372 -79.699999988079071 -1.4409408758821879e-17 -0.078400001525878907 0 1
+[ 141.681721] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 12 -94.5 66.620000004768372 -79.699999988079071 -1.4420378531534961e-17 -0.078400001525878907 0 1
+[ 141.697277] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 13 -94.5 66.620000004768372 -79.699999988079071 -1.4426368028131999e-17 -0.078400001525878907 0 1
+[ 141.763119] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 14 -94.5 66.620000004768372 -79.699999988079071 -1.4429638293653832e-17 -0.078400001525878907 0 1
+[ 141.825589] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 15 -94.5 66.620000004768372 -79.699999988079071 -1.4431423858836151e-17 -0.078400001525878907 0 1
+[ 141.839401] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 16 -94.5 66.620000004768372 -79.699999988079071 -1.4432398777538938e-17 -0.078400001525878907 0 1
+[ 141.909884] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 17 -94.5 66.620000004768372 -79.699999988079071 -1.4432931083212486e-17 -0.078400001525878907 0 1
+[ 141.956937] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 18 -94.5 66.620000004768372 -79.699999988079071 -1.4433221722144003e-17 -0.078400001525878907 0 1
+[ 142.015826] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 19 -94.5 66.620000004768372 -79.699999988079071 -1.4433380411019045e-17 -0.078400001525878907 0 1
+[ 142.082877] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 20 -94.5 66.620000004768372 -79.699999988079071 -1.4433467055154879e-17 -0.078400001525878907 0 1
+[ 142.094162] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 21 -94.5 66.620000004768372 -79.699999988079071 -1.443351436285854e-17 -0.078400001525878907 0 1
+[ 142.157316] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 22 -94.5 66.620000004768372 -79.699999988079071 -1.4433540192867738e-17 -0.078400001525878907 0 1
+[ 142.212962] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 23 -94.5 66.620000004768372 -79.699999988079071 -1.4433554296054399e-17 -0.078400001525878907 0 1
+[ 142.287801] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 24 -94.5 66.620000004768372 -79.699999988079071 -1.4433561996395211e-17 -0.078400001525878907 0 1
+[ 142.308434] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 25 -94.5 66.620000004768372 -79.699999988079071 -1.4433566200781782e-17 -0.078400001525878907 0 1
+[ 142.376123] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 26 -94.5 66.620000004768372 -79.699999988079071 -1.4433568496377117e-17 -0.078400001525878907 0 1
+[ 142.391058] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 27 -94.5 66.620000004768372 -79.699999988079071 -1.4433569749772316e-17 -0.078400001525878907 0 1
+[ 142.459539] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 28 -94.5 66.620000004768372 -79.699999988079071 -1.4433570434126173e-17 -0.078400001525878907 0 1
+[ 142.527705] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 29 -94.5 66.620000004768372 -79.699999988079071 -1.4433570807783422e-17 -0.078400001525878907 0 1
+[ 142.594051] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 30 -94.5 66.620000004768372 -79.699999988079071 -1.4433571011800306e-17 -0.078400001525878907 0 1
+[ 142.607709] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 31 -94.5 66.620000004768372 -79.699999988079071 -1.4433571123193536e-17 -0.078400001525878907 0 1
+[ 142.661067] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 32 -94.5 66.620000004768372 -79.699999988079071 -1.4433571184014246e-17 -0.078400001525878907 0 1
+[ 142.717316] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 33 -94.5 66.620000004768372 -79.699999988079071 -1.443357121722236e-17 -0.078400001525878907 0 1
+[ 142.799769] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 34 -94.5 66.620000004768372 -79.699999988079071 -1.4433571235353992e-17 -0.078400001525878907 0 1
+[ 142.812957] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 35 -94.5 66.620000004768372 -79.699999988079071 -1.4433571245253864e-17 -0.078400001525878907 0 1
+[ 142.887213] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 36 -94.5 66.620000004768372 -79.699999988079071 -1.4433571250659194e-17 -0.078400001525878907 0 1
+[ 142.900665] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 37 -94.5 66.620000004768372 -79.699999988079071 -1.4433571253610504e-17 -0.078400001525878907 0 1
+[ 142.963089] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 38 -94.5 66.620000004768372 -79.699999988079071 -1.4433571255221919e-17 -0.078400001525878907 0 1
+[ 143.022126] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 39 -94.5 66.620000004768372 -79.699999988079071 -1.4433571256101752e-17 -0.078400001525878907 0 1
+[ 143.074973] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 40 -94.489749358966947 66.620000004768372 -79.699999988079071 0.0055968506541360574 -0.078400001525878907 0 1
+[ 143.122119] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 41 -94.463772875601407 66.620000004768372 -79.699999988079071 0.014183161564999916 -0.078400001525878907 0 1
+[ 143.164229] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 42 -94.419304264337839 66.620000004768372 -79.699999988079071 0.024279864570077817 -0.078400001525878907 0 1
+[ 143.213103] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 43 -94.355156201432592 66.620000004768372 -79.699999988079071 0.03502484641449366 -0.078400001525878907 0 1
+[ 143.285823] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 44 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.311567] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 45 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.379242] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 46 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.393691] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 47 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.446599] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 48 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.509440] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 49 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.566857] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 50 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.610452] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 51 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.667198] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 52 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.714112] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 53 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.765880] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 54 -94.300000011920929 66.620000004768372 -79.699999988079071 0 -0.078400001525878907 0 1
+[ 143.827625] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 55 -94.300000011920929 66.620000004768372 -79.689758691936731 0 -0.078400001525878907 0.0055917483432137427 1
+[ 143.844049] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 56 -94.300000011920929 66.620000004768372 -79.66379650117328 0 -0.078400001525878907 0.014175357803353102 1
+[ 143.906905] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 57 -94.300000011920929 66.620000004768372 -79.619344630642786 0 -0.078400001525878907 0.024270724128758372 1
+[ 143.958586] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 58 -94.300000011920929 66.620000004768372 -79.555214291247708 0 -0.078400001525878907 0.035015169376818409 1
+[ 144.013211] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 59 -94.300000011920929 66.620000004768372 -79.471201838889016 0 -0.078400001525878907 0.045870804315859721 1
+[ 144.075021] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 60 -94.300000011920929 66.620000004768372 -79.367732648613298 0 -0.078400001525878907 0.056494184452492935 1
+[ 144.095113] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 61 -94.300000011920929 66.620000004768372 -79.300000011920929 0 -0.078400001525878907 0 1
+[ 144.142168] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 62 -94.300000011920929 66.620000004768372 -79.300000011920929 0 -0.078400001525878907 0 1
+[ 144.195384] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 63 -94.300000011920929 66.620000004768372 -79.300000011920929 0 -0.078400001525878907 0 1
+[ 144.277995] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 64 -94.300000011920929 66.620000004768372 -79.300000011920929 0 -0.078400001525878907 0 1
+[ 144.364995] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 65 -94.300000011920929 66.620000004768372 -79.300000011920929 0 -0.078400001525878907 0 1
+[ 144.381869] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 66 -94.300000011920929 66.620000004768372 -79.300000011920929 0 -0.078400001525878907 0 1
+[ 144.445921] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 67 -94.300000011920929 66.620000004768372 -79.300000011920929 0 -0.078400001525878907 0 1
+[ 144.463420] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 68 -94.300000011920929 66.620000004768372 -79.300000011920929 0 -0.078400001525878907 0 1
+[ 144.565866] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 69 -94.300000011920929 66.620000004768372 -79.300000011920929 0 -0.078400001525878907 0 1
+[ 144.597559] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 70 -94.300000011920929 67.03999999165535 -79.300000011920929 0 0.33319999363422365 0 0
+[ 144.642528] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 71 -94.300000011920929 67.373199985289574 -79.300000011920929 0 0.24813599859094576 0 0
+[ 144.665124] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 72 -94.300000011920929 67.621335983880513 -79.280400011688471 0 0.16477328182606651 0.017836000725567347 0
+[ 144.726771] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 73 -94.300000011920929 67.786109265706585 -79.242964010730446 0 0.083077817806467211 0.034066761853601364 0
+[ 144.847593] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 74 -94.300000011920929 67.869187083513054 -79.189297248644394 0 0.0030162615090425808 0.048836754905780974 0
+[ 144.908790] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 75 -94.300000011920929 67.872203345022101 -79.120860493506157 0 -0.075444065189486556 0.062277448970622901 0
+[ 144.931966] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 76 -94.300000011920929 67.796759279832614 -79.03898304430308 0 -0.15233518685055708 0.074508480922125281 0
+[ 144.998176] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 77 -94.300000011920929 67.644424092982064 -78.944874563148502 0 -0.22768848754498797 0.085638720318764031 0
+[ 145.016281] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 78 -94.300000011920929 67.620000004768372 -78.839635842597275 0 -0.078400001525878907 0.095767238461607437 1
+[ 145.164755] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 79 -94.300000011920929 68.03999999165535 -78.645868614149251 0 0.33319999363422365 0.10579691902121295 0
+[ 145.186678] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 80 -94.300000011920929 68.373199985289574 -78.520471694895576 0 0.24813599859094576 0.11411119980950576 0
+[ 145.250909] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 81 -94.300000011920929 68.621335983880513 -78.386760494853618 0 0.16477328182606651 0.1216771955449029 0
+[ 145.265885] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 82 -94.300000011920929 68.786109265706585 -78.245483299076255 0 0.083077817806467211 0.12856225186254044 0
+[ 145.349096] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 83 -94.300000011920929 68.869187083513054 -78.09732104698125 0 0.0030162615090425808 0.1348276532921584 0
+[ 145.434758] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 84 -94.300000011920929 68.872203345022101 -77.942893393456629 0 -0.075444065189486556 0.14052916875742741 0
+[ 145.497442] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 85 -94.300000011920929 68.796759279832614 -77.782764224466746 0 -0.15233518685055708 0.14571754798035041 0
+[ 145.517012] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 86 -94.300000011920929 68.644424092982064 -77.617446676253934 0 -0.22768848754498797 0.15043897320928101 0
+[ 145.580642] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 87 -94.300000011920929 68.416735605437083 -77.4474077028122 0 -0.30153472366278034 0.15473547029143214 0
+[ 145.648082] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 88 -94.300000011920929 68.1152008817743 -77.300000011920929 0 -0.3739040364667221 0 0
+[ 145.717273] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 89 -94.300000011920929 67.741296845307573 -77.300000011920929 0 -0.44482596439492011 0 0
+[ 145.779689] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 90 -94.300000011920929 67.620000004768372 -77.300000011920929 0 -0.078400001525878907 0 1
+[ 145.801749] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 91 -94.300000011920929 68.03999999165535 -77.300000011920929 0 0.33319999363422365 0 0
+[ 145.851568] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 92 -94.300000011920929 68.373199985289574 -77.300000011920929 0 0.24813599859094576 0 0
+[ 145.897223] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 93 -94.300000011920929 68.621335983880513 -77.280400011688471 0 0.16477328182606651 0.017836000725567347 0
+[ 145.985480] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 94 -94.300000011920929 68.786109265706585 -77.242964010730446 0 0.083077817806467211 0.034066761853601364 0
+[ 146.048598] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 95 -94.300000011920929 68.869187083513054 -77.189297248644394 0 0.0030162615090425808 0.048836754905780974 0
+[ 146.069402] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 96 -94.300000011920929 68.872203345022101 -77.120860493506157 0 -0.075444065189486556 0.062277448970622901 0
+[ 146.133878] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 97 -94.300000011920929 68.796759279832614 -77.03898304430308 0 -0.15233518685055708 0.074508480922125281 0
+[ 146.154917] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 98 -94.300000011920929 68.644424092982064 -76.944874563148502 0 -0.22768848754498797 0.085638720318764031 0
+[ 146.243071] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 99 -94.300000011920929 68.620000004768372 -76.839635842597275 0 -0.078400001525878907 0.095767238461607437 1
+[ 146.254997] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 100 -94.270600013434887 68.420000001788139 -76.74386860413567 0.016052401037907504 -0.078400001525878907 0.052288918273532915 1
+[ 146.339652] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 101 -94.225147613910934 68.420000001788139 -76.691579685862138 0.024817013022637713 -0.078400001525878907 0.028549752693477766 1
+[ 146.351540] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 102 -94.170930602402251 68.420000001788139 -76.663029933168659 0.02960249172214633 -0.078400001525878907 0.015588166781245392 1
+[ 146.421755] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 103 -94.111928112194065 68.420000001788139 -76.647441766387416 0.032215363395569949 -0.078400001525878907 0.0085111400511512642 1
+[ 146.472114] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 104 -94.050312750312457 68.420000001788139 -76.638930626336261 0.033641991494965849 -0.078400001525878907 0.0046470830076994927 1
+[ 146.524209] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 105 -93.987270760331455 68.420000001788139 -76.634283543328564 0.034420930527711828 -0.078400001525878907 0.0025373076169188697 1
+[ 146.604667] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 106 -93.923449831317697 68.420000001788139 -76.631746235711645 0.034846231288990934 -0.078400001525878907 0.0013853701197520825 1
+[ 146.626760] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 107 -93.85920360154266 68.420000001788139 -76.630360865591896 0.035078445531621615 -0.078400001525878907 0.00075641217324389854 1
+[ 146.689890] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 108 -93.794725157524994 68.420000001788139 -76.629604453418651 0.035205234522824848 -0.078400001525878907 0.00041300109456233092 1
+[ 146.703606] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 109 -93.730119924516131 68.420000001788139 -76.629191452324093 0.035274461320062678 -0.078400001525878907 0.00022549862382329036 1
+[ 146.777548] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 110 -93.715445464710029 68.420000001788139 -76.628965953700273 0.035312259155744853 -0.078400001525878907 0.00012312226290849088 1
+[ 146.817621] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 111 -93.700733207068239 68.420000001788139 -76.628842831437368 0.035332896776424434 -0.078400001525878907 6.7224763356368925e-05 1
+[ 146.867503] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 112 -93.700733207068239 68.420000001788139 -76.628775606674012 0.035344164918624306 -0.078400001525878907 3.6704725055927691e-05 1
+[ 146.918483] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 113 -93.700733207068239 68.420000001788139 -76.62873890194895 0.035350317324980056 -0.078400001525878907 2.0040782208326033e-05 1
+[ 146.968073] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 114 -93.700733207068239 68.420000001788139 -76.628718861166746 0.035353676539240486 -0.078400001525878907 1.0942268356719236e-05 1
+[ 147.019281] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 115 -93.700733207068239 68.420000001788139 -76.628707918898385 0.035355510670439717 -0.078400001525878907 5.9744792167201628e-06 1
+[ 147.074200] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 116 -93.700733207068239 68.420000001788139 -76.628701944419163 0.035356512106190813 -0.078400001525878907 3.2620660312267497e-06 1
+[ 147.125101] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 117 -93.700733207068239 68.420000001788139 -76.628698682353132 0.035357058890174424 -0.078400001525878907 1.7810882599278867e-06 1
+[ 147.171532] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 118 -93.700733207068239 68.420000001788139 -76.628696901264874 0.035357357434264158 -0.078400001525878907 9.7247430287607174e-07 1
+[ 147.226714] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 119 -93.700733207068239 68.420000001788139 -76.628695928790577 0.035357520439356083 -0.078400001525878907 5.3097103104401557e-07 1
+[ 147.276842] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 120 -93.700733207068239 68.420000001788139 -76.628695397819541 0.035357609440146605 -0.078400001525878907 2.8991021662386594e-07 1
+[ 147.342260] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 121 -93.700733207068239 68.420000001788139 -76.628695107909323 0.035357658034583871 -0.078400001525878907 1.58290996662546e-07 1
+[ 147.356133] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 122 -93.700733207068239 68.420000001788139 -76.628694949618321 0.035357684567149709 -0.078400001525878907 8.6426894216460973e-08 1
+[ 147.407683] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 123 -93.700733207068239 68.420000001788139 -76.628694863191427 0.035357699053932344 -0.078400001525878907 4.7189089723324459e-08 1
+[ 147.458497] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 124 -93.700733207068239 68.420000001788139 -76.628694816002337 0.035357706963716581 -0.078400001525878907 2.5765245981636175e-08 1
+[ 147.508998] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 125 -93.700733207068239 68.420000001788139 -76.628694790237091 0.035357711282459271 -0.078400001525878907 1.4067825939988299e-08 1
+[ 147.556025] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 126 -93.700733207068239 68.420000001788139 -76.628694776169269 0.035357713640493046 -0.078400001525878907 7.6810338554058762e-09 1
+[ 147.626127] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 127 -93.700733207068239 68.420000001788139 -76.628694768488231 0.035357714927979643 -0.078400001525878907 4.1938449721777218e-09 1
+[ 147.692639] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 128 -93.700733207068239 68.420000001788139 -76.62869476429438 0.03535771563094741 -0.078400001525878907 2.289839620779925e-09 1
+[ 147.720905] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 129 -93.700733207068239 68.420000001788139 -76.628694762004542 0.035357716014767858 -0.078400001525878907 1.2502525781659611e-09 1
+[ 147.773725] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 130 -93.700733207068239 68.420000001788139 -76.628694760754286 0.035357716224333847 -0.078400001525878907 6.8263798696881068e-10 1
+[ 147.840669] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 131 -93.700733207068239 68.420000001788139 -76.628694760071653 0.035357716338756881 -0.078400001525878907 3.7272038417742264e-10 1
+[ 147.857093] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 132 -93.700733207068239 68.420000001788139 -76.628694759698931 0.035357716401231865 -0.078400001525878907 2.0350535339855429e-10 1
+[ 147.922087] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 133 -93.700733207068239 68.420000001788139 -76.628694759495431 0.03535771643534321 -0.078400001525878907 1.1111393586178625e-10 1
+[ 147.997945] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 134 -93.700733207068239 68.420000001788139 -76.628694759384317 0.035357716453968013 -0.078400001525878907 6.0668216027307998e-11 1
+[ 148.011038] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 135 -93.700733207068239 68.420000001788139 -76.62869475932365 0.035357716464137157 -0.078400001525878907 3.3124849798448512e-11 1
+[ 148.074231] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 400): heap used 13177 of 71664 KB, linear free 13173 KB
+[ 148.085690] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 136 -93.700733207068239 68.420000001788139 -76.628694759290525 0.035357716469689507 -0.078400001525878907 1.8086170090709067e-11 1
+[ 148.112588] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 137 -93.700733207068239 68.420000001788139 -76.628694759272435 0.035357716472721089 -0.078400001525878907 9.8750500165401577e-12 1
+[ 148.175697] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 138 -93.700733207068239 68.420000001788139 -76.628694759262558 0.035357716474376334 -0.078400001525878907 5.3917779353001005e-12 1
+[ 148.230480] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 139 -93.700733207068239 68.420000001788139 -76.628694759257172 0.035357716475280097 -0.078400001525878907 2.943911094616864e-12 1
+[ 148.278481] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 140 -93.660247818486937 68.53999999910593 -76.530829505567326 0.022105024732950711 -0.078400001525878907 0.053434434721207451 1
+[ 148.325467] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 141 -93.627901497611646 68.509600001722575 -76.379932655150924 0.017661093249290959 -0.1552320045166016 0.082389689897132218 0
+[ 148.375497] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 142 -93.607175031312309 68.37356799811792 -76.278184449514356 0.018861084875972524 -0.23052736891296399 0.09259086979773444 0
+[ 148.428982] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 143 -93.584239857672884 68.150720629476609 -76.166422069824876 0.020871008613369373 -0.30431682745754424 0.10170376844851446 0
+[ 148.499153] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 144 -93.558297206250899 67.849475802127728 -76.045786318337576 0.023607813474379947 -0.37663049823865513 0.10977853701723925 0
+[ 148.509112] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 145 -93.528634089392895 67.619180804642383 -75.917367190488704 0.026993437118724869 -0.078400001525878907 0.11686140971040339 1
+[ 148.577318] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 146 -93.466528781657502 67.619672324712155 -75.709015132091409 0.033909501962205768 -0.078400001525878907 0.11376023709847037 1
+[ 148.624908] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 147 -93.392759664428979 67.619868932742975 -75.505731013319121 0.040277942685165637 -0.078400001525878907 0.11099314174181171 1
+[ 148.696508] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 148 -93.307992330595724 67.619947575956758 -75.307422654916806 0.04628296964884631 -0.078400001525878907 0.10827637626424758 1
+[ 148.710795] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 149 -93.212712077965008 67.619979033242998 -75.114278927895441 0.052023023978983438 -0.078400001525878907 0.1054564872027159 1
+[ 148.775020] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 150 -93.107318112555689 68.039991603044655 -74.926635466107669 0.057545111797501228 0.33319999363422365 0.1024533420363485 0
+[ 148.824943] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 151 -93.03825332188984 68.373196629845296 -74.808325831972553 0.062848961317223895 0.24813599859094576 0.10766177016574292 0
+[ 148.874850] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 152 -92.963070752340172 68.621334641702802 -74.685432315557904 0.068416140261934197 0.16477328182606651 0.11183310316033661 0
+[ 148.929144] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 153 -92.881540861933402 68.786108728835501 -74.559033740837805 0.074192202408370336 0.083077817806467211 0.11502270631022515 0
+[ 148.977401] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 154 -92.793489367032763 68.869186868764615 -74.430153070101298 0.080126862668825488 0.0030162615090425808 0.11728141375024895 0
+[ 149.028747] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 155 -92.69879703280418 68.872203259122728 -74.29975790620621 0.086170026631420774 -0.075444065189486556 0.11865960256427956 0
+[ 149.080204] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 156 -92.597395259923857 68.796759245472856 -74.168764695409493 0.092275615980460038 -0.15233518685055708 0.11920382526044715 0
+[ 149.141924] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 157 -92.489263351844642 68.644424079238163 -74.038041191280698 0.098400039187962932 -0.22768848754498797 0.11895839218556881 0
+[ 149.187205] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 158 -92.374425914386904 68.416735599939528 -73.90840860931894 0.10450207109827092 -0.30153472366278034 0.11796565298494316 0
+[ 149.203520] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 159 -92.252950372019626 68.115200879575269 -73.780643499178822 0.11054274674004988 -0.3739040364667221 0.11626625357827457 0
+[ 149.275623] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 160 -92.124944580084829 67.741296844427964 -73.655479366439607 0.11648527401774889 -0.44482596439492011 0.11389936407524587 0
+[ 149.323469] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 161 -91.990554528987261 67.620000004416525 -73.533608078566033 0.12229495002330762 -0.078400001525878907 0.11090287516114909 1
+[ 149.375760] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 162 -91.776768930277072 67.620000004627627 -73.387593332788214 0.11672695045390763 -0.078400001525878907 0.079724060454850754 1
+[ 149.424239] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 163 -91.566839031252911 67.620000004712082 -73.277592759606222 0.11462173818080694 -0.078400001525878907 0.060060319933531683 1
+[ 149.488471] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 164 -91.35755738346613 67.620000004745847 -73.192174228423582 0.11426779296409004 -0.078400001525878907 0.046638523442911091 1
+[ 149.503075] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 165 -91.147432052219173 68.03999999164634 -73.125165262560429 0.11472844418685112 0.33319999363422365 0.03658689961094732 0
+[ 149.568619] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 166 -91.01334509229288 68.373199985285964 -73.085512989899428 0.12201913704949624 0.24813599859094576 0.036083569161428838 0
+[ 149.616204] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 167 -90.871833470614234 68.621335983879078 -73.047381161136997 0.12877557943886189 0.16477328182606651 0.034699965173854493 0
+[ 149.674234] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 168 -90.723484837830284 68.786109265706003 -73.011655661378953 0.13499725972398866 0.083077817806467211 0.032510205716756252 0
+[ 149.733376] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 169 -90.568887577873838 68.869187083512827 -72.979145455662191 0.14068351061484105 0.0030162615090425808 0.029584288054862264 0
+[ 149.747069] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 170 -90.408630915193726 68.872203345022015 -72.950586702191515 0.14583356724180577 -0.075444065189486556 0.025988466407297635 0
+[ 149.817587] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 171 -90.243304665882377 68.796759279832571 -72.926646495385214 0.15044689120917812 -0.15233518685055708 0.021785588821590512 0
+[ 149.868480] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 172 -90.073498966498462 68.64442409298205 -72.907926279613676 0.15452319089268748 -0.22768848754498797 0.017035396843060022 0
+[ 149.931714] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 173 -89.899803874558543 68.416735605437083 -72.894964971534066 0.15806253822065977 -0.30153472366278034 0.011794790692372941 0
+[ 149.948099] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 174 -89.722808865286069 68.1152008817743 -72.888241823650304 0.1610654630798283 -0.3739040364667221 0.0061180647505402396 0
+[ 150.019919] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 175 -89.543102230229323 67.741296845307573 -72.888179062283385 0.16353304261463861 -0.44482596439492011 5.7112845544680603e-05 0
+[ 150.086490] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 176 -89.361270382854698 67.296470880912651 -72.895144324213106 0.16546698587963221 -0.51432945511728256 -0.006338388538712829 0
+[ 150.099637] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 177 -89.177897854348089 66.782141425795373 -72.909454636550137 0.16686900575015029 -0.58244287735087164 -0.013022384602005187 0
+[ 150.180546] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 178 -88.993564950311722 66.620000004768372 -72.931374900313088 0.16774294750742286 -0.078400001525878907 -0.019947440599162505 1
+[ 150.224416] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 179 -88.740949958181403 66.620000004768372 -73.000319623894129 0.13792780172383184 -0.078400001525878907 -0.037643823447674155 1
+[ 150.289923] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 180 -88.520830063323643 67.03999999165535 -73.09133438877214 0.1201854765521949 0.33319999363422365 -0.049694067395486922 0
+[ 150.314765] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 181 -88.384787190124115 67.373199985289574 -73.152548135035985 0.12379901817943774 0.24813599859094576 -0.055704510705489048 0
+[ 150.386036] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 182 -88.245755243847427 67.621335983880513 -73.22058625397392 0.12651907475804197 0.16477328182606651 -0.061914690017884799 0
+[ 150.402918] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 183 -88.104669440244152 67.786109265706585 -73.295614694136646 0.12838808497910784 0.083077817806467211 -0.068275882515778069 0
+[ 150.473009] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 184 -87.962422062772774 67.869187083513054 -73.377749869144694 0.12944511722954019 0.0030162615090425808 -0.074743011411404853 0
+[ 150.541308] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 185 -87.819861799345858 67.872203345022101 -73.467058352115856 0.12972984345728783 -0.075444065189486556 -0.081270721845970881 0
+[ 150.550277] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 186 -87.677796887342339 67.796759279832614 -73.563560820210725 0.12927907364900687 -0.15233518685055708 -0.087817248497211259 0
+[ 150.628652] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 187 -87.536996613975219 67.644424092982064 -73.667234360806702 0.1281282524567175 -0.22768848754498797 -0.094342924661281205 0
+[ 150.675745] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 188 -87.398192595944522 67.416735605437083 -73.778014683737752 0.12631166004821354 -0.30153472366278034 -0.10081009677258849 0
+[ 150.739808] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 189 -87.262079850789277 67.1152008817743 -73.895798251779354 0.12386260166096905 -0.3739040364667221 -0.10718305000685299 0
+[ 150.753288] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 190 -87.129317696380696 66.741296845307573 -74.020444346980952 0.12081356399363048 -0.44482596439492011 -0.11342794990242817 0
+[ 150.842339] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 191 -87.000530492161232 66.620000004768372 -74.151777073963203 0.11719635921728577 -0.078400001525878907 -0.11951278499818424 1
+[ 150.851512] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 192 -86.848213492993906 66.620000004768372 -74.362780507648267 0.083165091205202102 -0.078400001525878907 -0.11520788817374719 1
+[ 150.940106] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 193 -86.734762952090136 66.620000004768372 -74.571191344392261 0.061944002528416801 -0.078400001525878907 -0.1137923300795014 1
+[ 150.948711] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 194 -86.647451659780145 66.620000004768372 -74.779643584077746 0.047671971138477744 -0.078400001525878907 -0.11381493608817669 1
+[ 151.039668] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 195 -86.57940005593025 67.03999999165535 -74.989316058448793 0.037156180017826931 0.33319999363422365 -0.11448118430388254 0
+[ 151.050847] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 196 -86.539176646736479 67.373199985289574 -75.123155758492118 0.036603303421228937 0.24813599859094576 -0.12179413054951017 0
+[ 151.140038] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 197 -86.500523214782675 67.621335983880513 -75.264442373670775 0.035174624091686889 0.16477328182606651 -0.12857082351797353 0
+[ 151.150856] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 198 -86.464321179608234 67.786109265706585 -75.412586250533835 0.032943852958182369 0.083077817806467211 -0.1348109318306103 0
+[ 151.228894] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 199 -86.43137732665005 67.869187083513054 -75.566997182596907 0.029978907055932882 0.0030162615090425808 -0.1405139522269801 0
+[ 151.273603] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 200 -86.387256284435935 67.872203345022101 -75.693368999665708 0.040150149571964187 -0.075444065189486556 -0.1149983568468398 0
+[ 151.342254] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 201 -86.332963999705797 67.796759279832614 -75.794225221354367 0.049405980528304125 -0.15233518685055708 -0.091779164381739012 0
+[ 151.351799] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 202 -86.26941588401931 67.644424092982064 -75.871862250577919 0.057828786941317295 -0.22768848754498797 -0.070649698629549743 0
+[ 151.412766] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 203 -86.197444961919814 67.416735605437083 -75.92836981404929 0.065493540998056168 -0.30153472366278034 -0.051421884240915212 0
+[ 151.467534] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 204 -86.11780928576357 67.1152008817743 -75.965649563132018 0.072468467390704713 -0.3739040364667221 -0.033924572642988288 0
+[ 151.523255] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 205 -86.031198683214683 66.741296845307573 -75.985432000616825 0.078815650590939618 -0.44482596439492011 -0.018002018629989527 0
+[ 151.572454] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 206 -85.938240897465562 66.620000004768372 -75.98929188408863 0.084591587469614885 -0.078400001525878907 -0.0035124940605750594 1
+[ 151.648987] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 207 -85.782938643518264 66.620000004768372 -75.922093711671522 0.084795040504389879 -0.078400001525878907 0.036690206401403289 1
+[ 151.662777] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 208 -85.627432936536195 66.620000004768372 -75.814692838792439 0.084906125874279884 -0.078400001525878907 0.058640883403272281 1
+[ 151.746955] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 209 -85.471816144184231 66.620000004768372 -75.685341288911488 0.084966778493284781 -0.078400001525878907 0.070625954438390245 1
+[ 151.757876] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 210 -85.316138699213269 66.620000004768372 -75.544004667995424 0.084999894827108 -0.078400001525878907 0.077169803983649976 1
+[ 151.808209] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 211 -85.160428137908482 66.620000004768372 -75.396124197534093 0.08501797634747571 -0.078400001525878907 0.080742746250368411 1
+[ 151.880563] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 212 -85.004699495083329 66.620000004768372 -75.244670784806047 0.085027848858743191 -0.078400001525878907 0.082693572954590344 1
+[ 151.925554] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 213 -84.848960979746906 66.620000004768372 -75.09126654537377 0.08503323925052135 -0.078400001525878907 0.083758724458815645 1
+[ 151.996766] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 214 -84.693217074018705 66.620000004768372 -74.936797154437272 0.085036182404774091 -0.078400001525878907 0.084340297247673876 1
+[ 152.007125] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 215 -84.537470225136246 66.620000004768372 -74.781746190711914 0.085037789367182731 -0.078400001525878907 0.084657836027273434 1
+[ 152.079818] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 216 -84.381721769291389 66.620000004768372 -74.626377688206958 0.085038666768759763 -0.078400001525878907 0.084831212221072899 1
+[ 152.132004] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 217 -84.225972436044955 66.620000004768372 -74.470835809508202 0.085039145830076462 -0.078400001525878907 0.084925875633882805 1
+[ 152.175846] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 218 -84.070222623737195 66.620000004768372 -74.315199267396636 0.085039407397585767 -0.078400001525878907 0.08497756186328051 1
+[ 152.266846] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 219 -83.914472549861927 66.620000004768372 -74.159511039055673 0.08503955021346242 -0.078400001525878907 0.08500578254780955 1
+[ 152.282052] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 220 -83.75872233317078 66.620000004768372 -74.003794590030182 0.085039628190940145 -0.078400001525878907 0.085021191043352151 1
+[ 152.340728] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 221 -83.602972038502159 66.620000004768372 -73.848062732509149 0.08503967076664791 -0.078400001525878907 0.085029604082895602 1
+[ 152.357701] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 222 -83.447221701257831 66.620000004768372 -73.692322461948578 0.085039694012987069 -0.078400001525878907 0.08503419760301989 1
+[ 152.427050] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 223 -83.300000011920929 66.620000004768372 -73.536577597867876 0 -0.078400001525878907 0.085036705665299056 1
+[ 152.494789] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 224 -83.300000011920929 66.620000004768372 -73.380830225724893 0 -0.078400001525878907 0.08503807506746254 1
+[ 152.506036] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 225 -83.300000011920929 66.620000004768372 -73.225081484179753 0 -0.078400001525878907 0.085038822761130645 1
+[ 152.574864] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 226 -83.300000011920929 66.620000004768372 -73.069331994940939 0 -0.078400001525878907 0.085039231001920859 1
+[ 152.628164] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 227 -83.300000011920929 66.620000004768372 -72.913582097461344 0 -0.078400001525878907 0.085039453901418191 1
+[ 152.678279] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 228 -83.300000011920929 66.620000004768372 -72.757831977082247 0 -0.078400001525878907 0.085039575604557896 1
+[ 152.744632] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 229 -83.300000011920929 66.620000004768372 -72.602081735000013 0 -0.078400001525878907 0.085039642054479878 1
+[ 152.755017] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 230 -83.229289345443249 66.620000004768372 -72.44633142646785 0.038608028381237336 -0.078400001525878907 0.085039678336141497 1
+[ 152.829917] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 231 -83.119970650584335 66.620000004768372 -72.290581081654025 0.059688014325888682 -0.078400001525878907 0.085039698145931042 1
+[ 152.877082] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 232 -82.989571969780769 66.620000004768372 -72.134830717030411 0.071197687988547156 -0.078400001525878907 0.085039708962077395 1
+[ 152.926761] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 233 -82.847663615314545 66.620000004768372 -71.979080341590659 0.077481970538294601 -0.078400001525878907 0.085039714867693988 1
+[ 152.979217] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 234 -82.699470978298564 66.620000004768372 -71.823329960245289 0.080913189209001771 -0.078400001525878907 0.085039718092161015 1
+[ 153.037727] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 235 -82.547847122611884 66.620000004768372 -71.667579575675447 0.082786634820813512 -0.078400001525878907 0.085039719852720214 1
+[ 153.079653] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 236 -82.394349821313384 66.620000004768372 -71.51182918934505 0.083809536243675417 -0.078400001525878907 0.085039720813985656 1
+[ 153.129025] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 237 -82.300000011920929 66.620000004768372 -71.356078802053389 0 -0.078400001525878907 0.085039721338836638 1
+[ 153.179142] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 238 -82.300000011920929 66.620000004768372 -71.200328414236878 0 -0.078400001525878907 0.08503972162540531 1
+[ 153.247856] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: T 239 -82.300000011920929 66.620000004768372 -71.044578026133792 0 -0.078400001525878907 0.085039721781871816 1
+[ 154.033237] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 500): heap used 13182 of 71664 KB, linear free 11575 KB
+[ 157.029842] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: frame 600
+[ 157.041559] Debug.Emulated <Debug> core/hle/kernel/svc.cpp:OutputDebugString:1190: memory (frame 600):
