@@ -50,38 +50,29 @@ void Hud::icon(C3D_Tex* t, float x, float y, int u, int v, int w, int h, bool fl
 }
 
 void Hud::draw(const Player& p, bool inWater, int updateCounter, bool survival) {
-    if (!survival) return; // PlayerControllerCreative.shouldDrawHUD
-    const float W = 400, H = 240;
-#ifdef __ANDROID__
-    // Pocket Edition (Gui::renderHearts): hearts across the top left, armour after them, and
-    // Axeolon's mana mirrored across the top right; air bubbles under the hearts
-    (void)W;
-    (void)H;
-    const float L = edgeL() + 2, R = edgeR() - 2, top = 2;
-#endif
-#ifndef __ANDROID__
-    const float rowHearts = H - 13, rowAbove = rowHearts - 10;
-#endif
+    // NSSS's GuiIngame icons (hearts, half hearts, blinking, NSSS's exhaustion greying the hearts
+    // from the right with icons.png 88/97/106, armour, air), placed like the New 3DS Edition:
+    // hearts across the top left, armour across the top right (where 3DS Edition has hunger),
+    // air bubbles under the hearts
+    if (!survival) return; // isVulnerable
+    const float rowY = 4, L = 4, R = 400 - 4 - 9;
+    int hp = p.health, prev = p.prevHealth;
     bool blink = p.hurtResistantTime / 3 % 2 == 1;
     if (p.hurtResistantTime < 10) blink = false;
-    int hp = p.health, prev = p.prevHealth;
+    double exhaustion = p.exhaustion;
     rand.setSeed(int64_t(updateCounter) * 312871);
     int armour = p.armourValue();
-    int hearts = std::max(10, (p.healthCap() + 1) / 2);
-    for (int i = 0; i < hearts; ++i) {
-#ifdef __ANDROID__
-        float x = L + (i % 10) * 8, y = top + (i / 10) * 10;
-        float ax = L + 84 + i * 8, ay = top;
-#else
-        float x = W / 2 - 91 + i * 8, y = rowHearts;
-        float ax = x, ay = rowAbove;
-#endif
-        if (armour > 0 && i < 10) {
-            if (i * 2 + 1 < armour) icon(icons, ax, ay, 34, 9);
-            if (i * 2 + 1 == armour) icon(icons, ax, ay, 25, 9, 9, 9, true);
-            if (i * 2 + 1 > armour) icon(icons, ax, ay, 16, 9);
+    for (int i = 0; i < 10; ++i) {
+        float y = rowY;
+        if (armour > 0) {
+            float ax = R - i * 8; // right to left, like Java's armour bar
+            if (i * 2 + 1 < armour) icon(icons, ax, rowY, 34, 9);
+            if (i * 2 + 1 == armour) icon(icons, ax, rowY, 25, 9, 9, 9, true); // the half points inward
+            if (i * 2 + 1 > armour) icon(icons, ax, rowY, 16, 9);
         }
-        if (hp <= 4) y += rand.nextInt(2);
+        float x = L + i * 8;
+        int ex = int(exhaustion * 20.0);
+        if (hp <= 4 || exhaustion > 0.8 || p.exhausted) y += rand.nextInt(2);
         icon(icons, x, y, 16 + (blink ? 9 : 0), 0);
         if (blink) {
             if (i * 2 + 1 < prev) icon(icons, x, y, 70, 0);
@@ -89,28 +80,17 @@ void Hud::draw(const Player& p, bool inWater, int updateCounter, bool survival) 
         }
         if (i * 2 + 1 < hp) icon(icons, x, y, 52, 0);
         if (i * 2 + 1 == hp) icon(icons, x, y, 61, 0);
+        if (i * 2 + 1 > 20 - ex) {
+            if (i * 2 + 1 < hp) icon(icons, x, y, 97, 0);
+            else if (i * 2 + 1 <= hp) icon(icons, x, y, 106, 0);
+        }
+        if (i * 2 + 1 == 20 - ex && i * 2 + 1 < hp) icon(icons, x, y, 88, 0);
     }
     if (inWater) {
         int full = int(std::ceil(double(p.air - 2) * 10.0 / 300.0));
         int popping = int(std::ceil(double(p.air) * 10.0 / 300.0)) - full;
-        for (int i = 0; i < full + popping; ++i) {
-#ifdef __ANDROID__
-            float bx = L + i * 8, by = top + ((hearts + 9) / 10) * 10;
-#else
-            float bx = W / 2 + 91 - i * 8 - 9, by = rowAbove;
-#endif
-            icon(icons, bx, by, i < full ? 16 : 25, 18);
-        }
-    }
-    for (int i = 0; i < 10; ++i) { // mana, right to left
-#ifdef __ANDROID__
-        float x = R - 9 - i * 8, y = top;
-#else
-        float x = W / 2 + 91 - i * 8 - 9, y = rowHearts;
-#endif
-        icon(axIcons, x, y, 18, 0);
-        if (i * 2 + 1 < p.mana) icon(axIcons, x, y, 0, 0);
-        if (i * 2 + 1 == p.mana) icon(axIcons, x, y, 9, 0);
+        for (int i = 0; i < full + popping; ++i)
+            icon(icons, L + i * 8, rowY + 10, i < full ? 16 : 25, 18);
     }
 }
 

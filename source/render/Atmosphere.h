@@ -57,12 +57,11 @@ inline uint32_t hsb(float h, float s, float v) {
     return uint32_t(r << 16 | g << 8 | b);
 }
 
-// MobSpawnerBase.getSkyColorByTemp, times the daylight
+// NSSS's World.calculateSkyTopColor: Alpha's fixed skyTopColor 0x88BBFF times the daylight
+// (no biomes, so no temperature; the argument is kept for the callers)
 inline RGB skyColour(float angle, double temperature) {
-    float t = float(temperature) / 3.0f;
-    if (t < -1.0f) t = -1.0f;
-    if (t > 1.0f) t = 1.0f;
-    uint32_t c = hsb(224.0f / 360.0f - t * 0.05f, 0.5f + t * 0.1f, 1.0f);
+    (void)temperature;
+    const uint32_t c = 0x88BBFF;
     float d = daylight(angle);
     return {float(c >> 16 & 255) / 255.0f * d, float(c >> 8 & 255) / 255.0f * d, float(c & 255) / 255.0f * d};
 }

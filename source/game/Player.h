@@ -42,6 +42,8 @@ public:
     int fireResistance = 20;      // EntityPlayer
     int damageRemainder = 0;      // armour's fraction of a point, in 25ths
     int mana = 20, manaRegenTimer = 0;
+    double exhaustion = 0.0; // NSSS's EntityPlayer.getExhaustion (0..1), greys the hearts
+    bool exhausted = false;   // getIsExhausted
     static constexpr int MAX_MANA = 20, MANA_REGEN_TICKS = 80;
     bool invulnerable = false;    // creative: nothing hurts
     bool peaceful = false;        // difficulty 0 heals a point every 12 s

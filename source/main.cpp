@@ -720,9 +720,7 @@ int main() {
     int autosaveTicks = 0;
     bool flying = false;
     // PlayerControllerSP.sendBlockRemoved + Block.harvestBlock
-    auto earn = [&](const std::string& id) { // AxeolonProgress.grant (the Almanac page redraws)
-        if (progress::grant(inv, id)) bottom.markDirty();
-    };
+    auto earn = [&](const std::string& id) { (void)id; }; // NSSS (Alpha): no achievements
     static Mobs* plateMobs;
     static ItemEntities* plateItems;
     static Player* platePlayer;
@@ -2312,7 +2310,7 @@ int main() {
 #endif
         }
         { // the how-to-play hint
-            bool want = !creative && inv.tutorial >= 0 && inv.tutorial < 99 && !cine && !paused && !spellPicker && !player.dead();
+            bool want = false /* NSSS (Alpha): no How to Play hints */ && !creative && inv.tutorial >= 0 && inv.tutorial < 99 && !cine && !paused && !spellPicker && !player.dead();
             tutFade += ((want ? 1.0f : 0.0f) - tutFade) * 0.15f;
             if (tutFade > 0.01f && inv.tutorial >= 0 && inv.tutorial < 99) {
                 const char* look = xboxLayout ? (isNew3DS ? "the C-Stick" : "the Circle Pad Pro's stick") : "A, B, X and Y";
@@ -2361,18 +2359,7 @@ int main() {
             hud.drawChat();
             hud.drawRecordPlaying(partial);
         }
-        {
-            Mobs::BossInfo bi = mobs.bossInfo();
-            if (bi.active) hud.drawBoss(bi.cutscene, bi.elapsed, bi.left, bi.titleTick, bi.health, bi.enraged, bi.name, bi.title);
-        }
-        if (spellPicker) {
-            const ItemStack& b = inv.held();
-            std::vector<uint8_t> ids = spells::spellsIn(b);
-            std::vector<int> uses;
-            for (size_t i = 0; i < ids.size(); ++i) uses.push_back(spells::usesOf(b, int(i)));
-            hud.drawSpellPicker(ids, uses, spells::selectedIndex(b), pickerCursor, player.mana, creative);
-        }
-        hud.drawToasts();
+        // (NSSS is Alpha: no boss bars, spell picker or achievement toasts)
         if (player.dead()) hud.drawGameOver(gameOverSel, player.deathTime >= 20, 0);
         if (paused) hud.drawPause(pauseSel);
         if (savingFrames > 0) hud.drawSaving(frameNo);

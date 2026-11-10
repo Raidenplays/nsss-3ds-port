@@ -29,8 +29,8 @@ constexpr int CSLOT = 20, CONT_X = 70; // chests: 9 columns of 20 px (a large ch
 
 // Map tab
 constexpr int MAP_X = 8, MAP_Y = 68, MAP_PX = 168; // the home view's map (New 3DS Edition layout)
-constexpr float PE_HOTBAR_S = 1.75f;                 // PE gui.png's 182x22 hotbar at 1.75x: 318 px
-constexpr float PE_HOTBAR_X = 1.0f, PE_HOTBAR_Y = 2.0f;
+constexpr float HOME_SLOT = 32, HOME_SLOT_PITCH = 34.5f, HOME_SLOT_Y = 5; // nine slots: 2..316 px
+constexpr float HOME_SLOT_X = (320 - 8 * HOME_SLOT_PITCH - HOME_SLOT) / 2;
 constexpr int HOME_BTN_X = 188, HOME_BTN_W = 124, HOME_BTN_H = 52, HOME_BTN_Y0 = 68, HOME_BTN_STEP = 58;
 constexpr int PE_X_BTN = 286; // the header's close button (spritesheet's 18x18 X at 1.75x)
 constexpr int MENU_Y0 = 25, MENU_ROW = 22, MENU_H = 20; // the Menu tab's rows
@@ -966,13 +966,16 @@ void BottomScreen::drawPeHeader(const char* title, bool craftButton) {
 void BottomScreen::drawHome() {
     // PE's dirt behind everything
     C2D_DrawRectSolid(0, 0, 0.4f, 320, 240, rgb(0x3B2C20));
-    // the hotbar: PE gui.png (0,0,182,22) with the selection frame (0,22,24,24)
-    sprite(peGui, 256, 256, 0, 0, 182, 22, PE_HOTBAR_X, PE_HOTBAR_Y, PE_HOTBAR_S);
-    for (int i = 0; i < Inventory::HOTBAR; i++)
-        itemIcon(inv->main[i], PE_HOTBAR_X + (3 + 20 * i) * PE_HOTBAR_S - 3, PE_HOTBAR_Y + 3 * PE_HOTBAR_S - 3, PE_HOTBAR_S);
+    // the hotbar, New 3DS Edition style: nine grey PE slots (spritesheet 8,32) with PE's green
+    // selection frame (spritesheet 10,42) around the held one
+    for (int i = 0; i < Inventory::HOTBAR; i++) {
+        float x = HOME_SLOT_X + i * HOME_SLOT_PITCH;
+        ninePatch(peSheet, 128, 128, 8, 32, 8, 8, 2, x, HOME_SLOT_Y, HOME_SLOT, HOME_SLOT);
+        itemIcon(inv->main[i], x + (HOME_SLOT - 24) / 2 - 3, HOME_SLOT_Y + (HOME_SLOT - 24) / 2 - 3, 1.5f);
+    }
     if (inv->currentItem < Inventory::HOTBAR)
-        sprite(peGui, 256, 256, 0, 22, 24, 24, PE_HOTBAR_X + (20 * inv->currentItem - 1) * PE_HOTBAR_S,
-               PE_HOTBAR_Y - PE_HOTBAR_S, PE_HOTBAR_S);
+        ninePatch(peSheet, 128, 128, 10, 42, 16, 16, 3, HOME_SLOT_X + inv->currentItem * HOME_SLOT_PITCH - 2,
+                  HOME_SLOT_Y - 2, HOME_SLOT + 4, HOME_SLOT + 4);
     // the coordinates bar
     C2D_DrawRectSolid(0, 44, 0.5f, 320, 20, rgb(0x2B2B2B));
     char buf[64];
@@ -1000,7 +1003,7 @@ void BottomScreen::drawHome() {
 
 void BottomScreen::touchHome(int x, int y) {
     if (y < 44) { // the hotbar
-        int i = int((x - PE_HOTBAR_X) / (20 * PE_HOTBAR_S));
+        int i = int((x - HOME_SLOT_X) / HOME_SLOT_PITCH);
         if (i >= 0 && i < Inventory::HOTBAR) inv->currentItem = i;
         return;
     }
