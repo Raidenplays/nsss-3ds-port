@@ -267,7 +267,7 @@ bool isCaveFloor(int id) { return id == STONE || id == COBBLE || id == GRAVEL ||
 
 bool growsOn(int plant, int below) { // canThisPlantGrowOnThisBlockID
     switch (BP[plant].cls) {
-    case BC::Mushroom: return opaque(below);
+    case BC::Mushroom: return BP[below].opaqueLookup; // NSSS: Block.opaqueCubeLookup
     case BC::DeadBush: return below == SAND || below == GRASS || below == DIRT;
     case BC::Crops: return below == TILLED;
     case BC::AxeolonFlower: case BC::DoublePlant:
@@ -340,9 +340,9 @@ bool cactusStay(World& w, int x, int y, int z) {
 bool reedPlace(World& w, int x, int y, int z) {
     int b = w.blockAt(x, y - 1, z);
     if (b == REED) return true;
-    if (b != GRASS && b != DIRT && b != SAND && b != GRAVEL) return false;
-    return w.materialAt(x - 1, y - 1, z) == Mat::water || w.materialAt(x + 1, y - 1, z) == Mat::water ||
-           w.materialAt(x, y - 1, z - 1) == Mat::water || w.materialAt(x, y - 1, z + 1) == Mat::water;
+    if (b != GRASS && b != DIRT) return false; // NSSS BlockReed.canPlace: grass or dirt, by water or ice
+    auto wet = [&](int a, int c) { Mat m = w.materialAt(a, y - 1, c); return m == Mat::water || m == Mat::ice; };
+    return wet(x - 1, z) || wet(x + 1, z) || wet(x, z - 1) || wet(x, z + 1);
 }
 
 bool snowPlace(World& w, int x, int y, int z) {
@@ -426,8 +426,8 @@ void dropBlockAsItem(World& w, int x, int y, int z, int id, int meta) {
     }
 }
 
-bool needsLight(World& w, int x, int y, int z) {
-    return flowerGenerating && w.getBlockLightValue(x, y, z) < 8 && !w.canBlockSeeTheSky(x, y, z);
+bool needsLight(World& w, int x, int y, int z) { // NSSS BlockFlower.canBlockStay: always checked
+    return w.getBlockLightValue(x, y, z) < 8 && !w.canBlockSeeTheSky(x, y, z);
 }
 
 bool isNaturalStone(int id) { return id >= STONE_TYPES && id <= STONE_TYPES + 6; }
@@ -642,10 +642,7 @@ void onBlockRemoval(World& w, int x, int y, int z, int id) {
         return;
     }
     switch (BP[id].cls) {
-    case BC::Leaves:
-        leafDecayMark(w, x, y, z, 1, false);
-        break;
-    case BC::Log: leafDecayMark(w, x, y, z, 4, true); break;
+    case BC::Leaves: case BC::Log: break; // NSSS (Alpha): leaves have no decay metadata
     case BC::Ice: {
         if (iceCollecting) break;
         Mat m = w.materialAt(x, y - 1, z);
@@ -726,6 +723,21 @@ void onNeighborBlockChange(World& w, int x, int y, int z, int id, int neighbour)
 namespace {
 // BlockLeaves.updateTick: a marked leaf with no log within 4 (through leaves) decays
 int leafScratch[32 * 32 * 32];
+// NSSS BlockLeaves.updateTick: no log (or mossy brick) within 4 blocks and the leaf goes, dropping a
+// sapling 1 in 40, an apple 1 in 128 and a golden apple 1 in 10000 (dropChance outside season cycles)
+void nsssLeavesTick(World& w, int x, int y, int z, JavaRandom& r) {
+    for (int x1 = x - 4; x1 <= x + 4; ++x1)
+        for (int z1 = z - 4; z1 <= z + 4; ++z1)
+            for (int y1 = y - 4; y1 <= y + 4; ++y1) {
+                int id = w.blockAt(x1, y1, z1);
+                if (id == LOG || id == 93) return; // getConnectLog: wood or brickMossy
+            }
+    w.setBlockWithNotify(x, y, z, 0);
+    if (r.nextInt(40) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 6, 1, 0});
+    if (r.nextInt(128) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 260, 1, 0});
+    if (r.nextInt(10000) == 0) w.drops.push_back(World::Drop{double(x), double(y), double(z), 322, 1, 0});
+}
+
 void leavesTick(World& w, int x, int y, int z, int id) {
     int meta = w.metaAt(x, y, z);
     if ((meta & 4) == 0) return;
@@ -869,7 +881,7 @@ void updateTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
         break;
     case BC::Reed: growColumn(w, x, y, z, id); break;
     case BC::Cactus: growColumn(w, x, y, z, id); break;
-    case BC::Leaves: leavesTick(w, x, y, z, id); break;
+    case BC::Leaves: nsssLeavesTick(w, x, y, z, r); break;
     case BC::Snow: case BC::SnowBlock: // melt by torchlight
         if (w.getSavedLightValue(Sky::Block, x, y, z) > 11) {
             dropBlockAsItem(w, x, y, z, id, w.metaAt(x, y, z));

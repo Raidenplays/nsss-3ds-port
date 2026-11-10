@@ -80,6 +80,7 @@ public:
     void provideChunk(int cx, int cz, uint8_t* out);
     // ChunkProviderGenerate.populate (Populate.cpp)
     void populate(World& w, int cx, int cz);
+    void alphaPopulate(World& w, int cx, int cz); // NSSS: ChunkProviderGenerate.generateStructures
     int64_t seed;
     Blend blend;
     std::unique_ptr<Peaks> peaks;

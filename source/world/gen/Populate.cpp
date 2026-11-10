@@ -1678,12 +1678,397 @@ static bool lairSite(World& w, ChunkManager& cm, int64_t seed, int& sx, int& sz)
 
 // ================================================================ ChunkProviderGenerate.populate
 
+
+// ================================================================ NSSS (Alpha a1.1.12) populate
+// ChunkProviderGenerate.generateStructures and its WorldGen* classes from the a1.1.12 jar, line by
+// line. Checked against the jar with tools/host/alphapop.cpp vs tools/nsss/AlphaPopDump.java.
+namespace nsss {
+constexpr int BRICK = 45, MOSSY_COBBLE = 48, CRATE_ID = 54, SPONGE = 19, BRICK_MOSSY = 93, WEB = 95, CLAY_RED = 103,
+              DIRT_ID = 3, GRAVEL_ID = 13, SAND_ID = 12, CLAY_ID = 82, COPPER_ORE = 89, PYRAMIDION = 99,
+              BLUE_ROSE = 88, ITEM_RECORD13 = 2256;
+inline float asin_(float v) { return alpha::sin(v); }
+inline float acos_(float v) { return alpha::cos(v); }
+
+void minable(World& w, JR& r, int id, int n, int x, int y, int z) { // WorldGenMinable
+    float f = r.nextFloat() * 3.141593f;
+    double d = double(float(x + 8) + asin_(f) * float(n) / 8.0f);
+    double d1 = double(float(x + 8) - asin_(f) * float(n) / 8.0f);
+    double d2 = double(float(z + 8) + acos_(f) * float(n) / 8.0f);
+    double d3 = double(float(z + 8) - acos_(f) * float(n) / 8.0f);
+    double d4 = y + r.nextInt(3) + 2;
+    double d5 = y + r.nextInt(3) + 2;
+    for (int l = 0; l <= n; ++l) {
+        double d6 = d + (d1 - d) * l / n, d7 = d4 + (d5 - d4) * l / n, d8 = d2 + (d3 - d2) * l / n;
+        double d9 = r.nextDouble() * n / 16.0;
+        double d10 = double(asin_(float(l) * 3.141593f / float(n)) + 1.0f) * d9 + 1.0;
+        double d11 = double(asin_(float(l) * 3.141593f / float(n)) + 1.0f) * d9 + 1.0;
+        for (double i1 = d6 - d10 / 2.0; i1 <= d6 + d10 / 2.0; i1++)
+            for (double j1 = d7 - d11 / 2.0; j1 <= int(d7 + d11 / 2.0); j1++)
+                for (double k1 = d8 - d10 / 2.0; k1 <= int(d8 + d10 / 2.0); k1++) {
+                    double d12 = (std::floor(i1) + 0.5 - d6) / (d10 / 2.0);
+                    double d13 = (std::floor(j1) + 0.5 - d7) / (d11 / 2.0);
+                    double d14 = (std::floor(k1) + 0.5 - d8) / (d10 / 2.0);
+                    int bx = int(std::floor(i1)), by = int(std::floor(j1)), bz = int(std::floor(k1));
+                    if (d12 * d12 + d13 * d13 + d14 * d14 < 1.0 && w.blockAt(bx, by, bz) == STONE) w.setBlock(bx, by, bz, id);
+                }
+    }
+}
+
+// WorldGenClay (sand/gravel -> clay, under sand) and WorldGenClayRed (dirt -> red clay, in the ground):
+// the same shape; Alpha's check is "< 100", not "< 1", so the blobs are boxes
+void clayLike(World& w, JR& r, int n, int x, int y, int z, Mat need, int out, bool red) {
+    if (w.materialAt(x, y, z) != need) return;
+    float f = r.nextFloat() * 3.141593f;
+    double d = double(float(x + 8) + asin_(f) * float(n) / 8.0f);
+    double d1 = double(float(x + 8) - asin_(f) * float(n) / 8.0f);
+    double d2 = double(float(z + 8) + acos_(f) * float(n) / 8.0f);
+    double d3 = double(float(z + 8) - acos_(f) * float(n) / 8.0f);
+    double d4 = y + r.nextInt(3) + 2;
+    double d5 = y + r.nextInt(3) + 2;
+    for (int l = 0; l <= n; ++l) {
+        double d6 = d + (d1 - d) * l / n, d7 = d4 + (d5 - d4) * l / n, d8 = d2 + (d3 - d2) * l / n;
+        double d9 = r.nextDouble() * n / 16.0;
+        double d10 = double(asin_(float(l) * 3.141593f / float(n)) + 1.0f) * d9 + 1.0;
+        double d11 = double(asin_(float(l) * 3.141593f / float(n)) + 1.0f) * d9 + 1.0;
+        for (double i1 = d6 - d10 / 2.0; i1 <= d6 + d10 / 2.0; i1++)
+            for (double j1 = d7 - d11 / 2.0; j1 <= d7 + d11 / 2.0; j1++)
+                for (double k1 = d8 - d10 / 2.0; k1 <= d8 + d10 / 2.0; k1++) {
+                    double d12 = (std::floor(i1) + 0.5 - d6) / (d10 / 2.0);
+                    double d13 = (std::floor(j1) + 0.5 - d7) / (d11 / 2.0);
+                    double d14 = (std::floor(k1) + 0.5 - d8) / (d10 / 2.0);
+                    if (!(d12 * d12 + d13 * d13 + d14 * d14 >= 100.0)) {
+                        int bx = int(std::floor(i1)), by = int(std::floor(j1)), bz = int(std::floor(k1));
+                        int here = w.blockAt(bx, by, bz);
+                        bool take = red ? here == DIRT_ID : (here == GRAVEL_ID || here == SAND_ID);
+                        if (take) w.setBlock(bx, by, bz, out);
+                    }
+                }
+    }
+}
+
+const char* spawnerMob(JR& r) { // func_531_b
+    int i = r.nextInt(4);
+    if (i == 0) return "Skeleton";
+    if (i == 1 || i == 2) return "Zombie";
+    return i == 3 ? "Spider" : "";
+}
+
+Stack dungeonLoot(JR& r) { // WorldGenDungeons.chestLoot
+    int i = r.nextInt(11);
+    if (i == 0) return {329, 1, 0};                                 // saddle
+    if (i == 1) return {265, r.nextInt(4) + 1, 0};                  // iron
+    if (i == 2) return {297, 1, 0};                                 // bread
+    if (i == 3) return {296, r.nextInt(4) + 1, 0};                  // wheat
+    if (i == 4) return {289, r.nextInt(4) + 1, 0};                  // gunpowder
+    if (i == 5) return {287, r.nextInt(4) + 1, 0};                  // string
+    if (i == 6) return {325, 1, 0};                                 // bucket
+    if (i == 7 && r.nextInt(100) == 0) return {322, 1, 0};          // golden apple
+    if (i == 8 && r.nextInt(2) == 0) return {331, r.nextInt(4) + 1, 0}; // redstone
+    if (i == 9 && r.nextInt(10) == 0) return {ITEM_RECORD13 + r.nextInt(13), 1, 0};
+    return i == 10 ? Stack{364, 3, 0} : Stack{0, 0, 0};             // cocoa
+}
+
+Stack waterLoot(JR& r) { // WorldGenWaterDungeons.chestLoot
+    int i = r.nextInt(11);
+    if (i == 0) return {SPONGE, r.nextInt(4) + 1, 0};
+    if (i == 1 && r.nextInt(10) == 0) return {266, r.nextInt(4) + 1, 0}; // gold
+    if (i == 2) return {339, r.nextInt(4) + 1, 0};                  // paper
+    if (i == 3) return {338, r.nextInt(4) + 1, 0};                  // reeds
+    if (i == 4) return {318, r.nextInt(4) + 1, 0};                  // flint
+    if (i == 5) {
+        int roll = r.nextInt(4);
+        return {302 + roll, 1, 0};                                  // chain helmet/plate/legs/boots
+    }
+    if (i == 6) return {326, 1, 0};                                 // water bucket
+    if (i == 7 && r.nextInt(100) == 0) return {322, 1, 0};
+    if (i == 8 && r.nextInt(2) == 0) return {331, r.nextInt(4) + 1, 0};
+    return i == 9 && r.nextInt(1000) == 0 ? Stack{264, 1, 0} : Stack{0, 0, 0}; // diamond
+}
+
+void fillChest(World& w, JR& r, int x, int y, int z, bool water) {
+    for (int k = 0; k < 8; ++k) {
+        Stack s = water ? waterLoot(r) : dungeonLoot(r);
+        if (s.id != 0) putInChest(w, x, y, z, r.nextInt(27), s);
+    }
+}
+
+bool dungeon(World& w, JR& r, int i, int j, int k) { // WorldGenDungeons
+    const int H = 3;
+    int l = r.nextInt(2) + 2, i1 = r.nextInt(2) + 2, spots = 0;
+    for (int a = i - l - 1; a <= i + l + 1; ++a)
+        for (int b = j - 1; b <= j + H + 1; ++b)
+            for (int c = k - i1 - 1; c <= k + i1 + 1; ++c) {
+                Mat m = w.materialAt(a, b, c);
+                if (b == j - 1 && !matSolid(m)) return false;
+                if (b == j + H + 1 && !matSolid(m)) return false;
+                if ((a == i - l - 1 || a == i + l + 1 || c == k - i1 - 1 || c == k + i1 + 1) && b == j &&
+                    w.blockAt(a, b, c) == 0 && w.blockAt(a, b + 1, c) == 0)
+                    ++spots;
+            }
+    if (!(spots >= 1 && spots <= 5)) return false;
+    for (int a = i - l - 1; a <= i + l + 1; ++a)
+        for (int b = j + H; b >= j - 1; --b)
+            for (int c = k - i1 - 1; c <= k + i1 + 1; ++c) {
+                if (a != i - l - 1 && b != j - 1 && c != k - i1 - 1 && a != i + l + 1 && b != j + H + 1 && c != k + i1 + 1)
+                    w.setBlockWithNotify(a, b, c, 0);
+                else if (b >= 0 && !matSolid(w.materialAt(a, b - 1, c)))
+                    w.setBlockWithNotify(a, b, c, 0);
+                else if (matSolid(w.materialAt(a, b, c))) {
+                    if (b == j - 1 && r.nextInt(4) != 0) w.setBlockWithNotify(a, b, c, MOSSY_COBBLE);
+                    else w.setBlockWithNotify(a, b, c, COBBLE);
+                }
+            }
+    for (int i2 = 0; i2 < 2; ++i2)
+        for (int l2 = 0; l2 < 3; ++l2) {
+            int k3 = i + r.nextInt(l * 2 + 1) - l;
+            int i4 = k + r.nextInt(i1 * 2 + 1) - i1;
+            if (w.blockAt(k3, j, i4) != 0) continue;
+            int n = 0;
+            if (matSolid(w.materialAt(k3 - 1, j, i4))) ++n;
+            if (matSolid(w.materialAt(k3 + 1, j, i4))) ++n;
+            if (matSolid(w.materialAt(k3, j, i4 - 1))) ++n;
+            if (matSolid(w.materialAt(k3, j, i4 + 1))) ++n;
+            if (n == 1) {
+                w.setBlockWithNotify(k3, j, i4, CRATE_ID);
+                fillChest(w, r, k3, j, i4, false);
+                break;
+            }
+        }
+    w.setBlockWithNotify(i, j, k, SPAWNER);
+    const char* mob = spawnerMob(r);
+    if (nbt::Tag* te = w.tileEntityAt(i, j, k)) te->setString("EntityId", mob);
+    return true;
+}
+
+bool waterDungeon(World& w, JR& r, int x, int y, int z) { // WorldGenWaterDungeons
+    const int H = 3;
+    int rx = r.nextInt(2) + 2, rz = r.nextInt(2) + 2, spots = 0;
+    for (int a = x - rx - 1; a <= x + rx + 1; ++a)
+        for (int b = y - 1; b <= y + H + 1; ++b)
+            for (int c = z - rz - 1; c <= z + rz + 1; ++c)
+                if ((a == x - rx - 1 || a == x + rx + 1 || c == z - rz - 1 || c == z + rz + 1) && b == y &&
+                    w.blockAt(a, b, c) != 9 && w.blockAt(a, b + 1, c) == 9 && w.blockAt(a, b + 2, c) == 9 &&
+                    w.blockAt(a, b + 3, c) == 9 && w.blockAt(a, b + 4, c) == 9 && w.blockAt(a, b + 5, c) == 9 &&
+                    w.blockAt(a, b + 6, c) == 9)
+                    ++spots;
+    if (!(spots >= 1 && spots <= 50 && r.nextInt(100) <= 25)) return false;
+    auto brick = [&](int a, int b, int c) { w.setBlockWithNotify(a, b, c, r.nextInt(4) < 2 ? BRICK_MOSSY : BRICK); };
+    for (int a = x - rx - 1; a <= x + rx + 1; ++a)
+        for (int b = y + H; b >= y - 1; --b)
+            for (int c = z - rz - 1; c <= z + rz + 1; ++c) {
+                if (a != x - rx - 1 && b != y - 1 && c != z - rz - 1 && a != x + rx + 1 && b != y + H + 1 && c != z + rz + 1) {
+                    if (w.blockAt(a, b, c) != 0 && b < 64) {
+                        w.setBlockWithNotify(a, b, c, 0);
+                        brick(a, y + H, c);
+                    }
+                } else if (b >= 0 && !matSolid(w.materialAt(a, b - 1, c))) {
+                    if (w.blockAt(a, b, c) != 0 && b < 64) brick(a, b, c);
+                } else if (w.materialAt(a, b, c) == Mat::water && b == y - 1) {
+                    brick(a, b, c);
+                }
+            }
+    for (int i2 = 0; i2 < 2; ++i2)
+        for (int l2 = 0; l2 < 3; ++l2) {
+            int k3 = x + r.nextInt(rx * 2 + 1) - rx;
+            int i4 = z + r.nextInt(rz * 2 + 1) - rz;
+            if (w.blockAt(k3, y, i4) == 9) continue;
+            int n = 0;
+            if (matSolid(w.materialAt(k3 - 1, y, i4))) ++n;
+            if (matSolid(w.materialAt(k3 + 1, y, i4))) ++n;
+            if (matSolid(w.materialAt(k3, y, i4 - 1))) ++n;
+            if (matSolid(w.materialAt(k3, y, i4 + 1))) ++n;
+            if (n == 1) {
+                w.setBlockWithNotify(k3, y, i4, CRATE_ID);
+                fillChest(w, r, k3, y, i4, true);
+                break;
+            }
+        }
+    w.setBlockWithNotify(x, y, z, SPAWNER);
+    w.setBlockWithNotify(x, y - 1, z, SPONGE);
+    w.notifyBlocksOfNeighborChange(x, y - 1, z, 1);
+    const char* mob = spawnerMob(r);
+    if (nbt::Tag* te = w.tileEntityAt(x, y, z)) te->setString("EntityId", mob);
+    return true;
+}
+
+bool cobweb(World& w, int x, int y, int z) { // WorldGenCobWebs
+    if (w.blockAt(x, y, z) == 0 && w.blockAt(x, y + 1, z) == STONE) {
+        w.setBlockWithNotify(x, y, z, WEB);
+        return true;
+    }
+    return false;
+}
+
+bool oakTree(World& w, JR& r, int i, int j, int k) { // WorldGenTrees
+    int l = r.nextInt(3) + 4;
+    bool flag = true;
+    if (!(j >= 1 && j + l + 1 <= 128)) return false;
+    for (int i1 = j; i1 <= j + 1 + l; ++i1) {
+        int b = 1;
+        if (i1 == j) b = 0;
+        if (i1 >= j + 1 + l - 2) b = 2;
+        for (int i2 = i - b; i2 <= i + b && flag; ++i2)
+            for (int l2 = k - b; l2 <= k + b && flag; ++l2) {
+                if (i1 >= 0 && i1 < 128) {
+                    int id = w.blockAt(i2, i1, l2);
+                    if (id != 0 && id != LEAVES) flag = false;
+                } else flag = false;
+            }
+    }
+    if (!flag) return false;
+    int below = w.blockAt(i, j - 1, k);
+    if (!((below == GRASS || below == DIRT_ID) && j < 128 - l - 1)) return false;
+    w.setBlock(i, j - 1, k, DIRT_ID);
+    for (int k1 = j - 3 + l; k1 <= j + l; ++k1) {
+        int j2 = k1 - (j + l);
+        int i3 = 1 - j2 / 2;
+        for (int k3 = i - i3; k3 <= i + i3; ++k3) {
+            int l3 = k3 - i;
+            for (int i4 = k - i3; i4 <= k + i3; ++i4) {
+                int j4 = i4 - k;
+                bool place = std::abs(l3) != i3 || std::abs(j4) != i3;
+                if (!place) place = r.nextInt(2) != 0 && j2 != 0; // Java: a || (rand && j2 != 0), rand only if !a
+                if (place && !BP[w.blockAt(k3, k1, i4)].opaqueLookup) w.setBlock(k3, k1, i4, LEAVES);
+            }
+        }
+    }
+    for (int l1 = 0; l1 < l; ++l1) {
+        int id = w.blockAt(i, j + l1, k);
+        if (id == 0 || id == LEAVES) w.setBlock(i, j + l1, k, LOG);
+    }
+    return true;
+}
+
+void flowers(World& w, JR& r, int id, int i, int j, int k) { // WorldGenFlowers
+    for (int l = 0; l < 64; ++l) {
+        int a = r.nextInt(8); int i1 = i + a - r.nextInt(8);
+        a = r.nextInt(4); int j1 = j + a - r.nextInt(4);
+        a = r.nextInt(8); int k1 = k + a - r.nextInt(8);
+        if (w.blockAt(i1, j1, k1) == 0 && Blocks::canBlockStay(w, id, i1, j1, k1)) w.setBlock(i1, j1, k1, id);
+    }
+}
+
+void reeds(World& w, JR& r, int i, int j, int k) { // WorldGenReed
+    for (int l = 0; l < 20; ++l) {
+        int a = r.nextInt(4); int i1 = i + a - r.nextInt(4);
+        a = r.nextInt(4); int k1 = k + a - r.nextInt(4);
+        if (w.blockAt(i1, j, k1) == 0 &&
+            (w.materialAt(i1 - 1, j - 1, k1) == Mat::water || w.materialAt(i1 + 1, j - 1, k1) == Mat::water ||
+             w.materialAt(i1, j - 1, k1 - 1) == Mat::water || w.materialAt(i1, j - 1, k1 + 1) == Mat::water)) {
+            int n = 2 + r.nextInt(r.nextInt(3) + 1);
+            for (int i2 = 0; i2 < n; ++i2)
+                if (Blocks::canBlockStay(w, REED, i1, j + i2, k1)) w.setBlock(i1, j + i2, k1, REED);
+        }
+    }
+}
+
+void cactus(World& w, JR& r, int i, int j, int k) { // WorldGenCactus
+    for (int l = 0; l < 10; ++l) {
+        int a = r.nextInt(8); int i1 = i + a - r.nextInt(8);
+        a = r.nextInt(4); int j1 = j + a - r.nextInt(4);
+        a = r.nextInt(8); int k1 = k + a - r.nextInt(8);
+        if (w.blockAt(i1, j1, k1) == 0) {
+            int n = 1 + r.nextInt(r.nextInt(3) + 1);
+            for (int i2 = 0; i2 < n; ++i2)
+                if (Blocks::canBlockStay(w, CACTUS, i1, j1 + i2, k1)) w.setBlock(i1, j1 + i2, k1, CACTUS);
+        }
+    }
+}
+
+void liquids(World& w, int id, int i, int j, int k) { // WorldGenLiquids: Alpha only places the source
+    if (w.blockAt(i, j + 1, k) != STONE) return;
+    if (w.blockAt(i, j - 1, k) != STONE) return;
+    if (w.blockAt(i, j, k) != 0 && w.blockAt(i, j, k) != STONE) return;
+    int l = 0, i1 = 0;
+    if (w.blockAt(i - 1, j, k) == STONE) ++l;
+    if (w.blockAt(i + 1, j, k) == STONE) ++l;
+    if (w.blockAt(i, j, k - 1) == STONE) ++l;
+    if (w.blockAt(i, j, k + 1) == STONE) ++l;
+    if (w.blockAt(i - 1, j, k) == 0) ++i1;
+    if (w.blockAt(i + 1, j, k) == 0) ++i1;
+    if (w.blockAt(i, j, k - 1) == 0) ++i1;
+    if (w.blockAt(i, j, k + 1) == 0) ++i1;
+    if (l == 3 && i1 == 1) w.setBlockWithNotify(i, j, k, id);
+}
+} // namespace nsss
+
+void ChunkGenerator::alphaPopulate(World& w, int i, int j) { // ChunkProviderGenerate.generateStructures
+    using namespace nsss;
+    Blocks::sandFallInstantly = true;
+    JR& r = alphaTerrain->genRandom;
+    int tryX = i * 16, tryZ = j * 16;
+    r.setSeed(seed);
+    int64_t l1 = r.nextLong() / 2 * 2 + 1;
+    int64_t l2 = r.nextLong() / 2 * 2 + 1;
+    r.setSeed(add(mul(i, l1), mul(j, l2)) ^ seed);
+    int x, y, z;
+    auto at8 = [&](int range) { x = tryX + r.nextInt(16) + 8; y = r.nextInt(range); z = tryZ + r.nextInt(16) + 8; };
+    auto at0 = [&](int range) { x = tryX + r.nextInt(16); y = r.nextInt(range); z = tryZ + r.nextInt(16); };
+    for (int n = 0; n < 8; ++n) { at8(128); nsss::dungeon(w, r, x, y, z); }
+    if ((tryX > 3000 || tryX < -3000 || tryZ > 3000 || tryZ < -3000) && r.nextInt(10000) == 2) {
+        at8(128);
+        // aaa.generate: the shell (random picks mossy bricks one time in four), then the pyramidion
+        for (int py = 95; py > 0; --py)
+            for (int px = x - py; px < x + py - 1; ++px)
+                for (int pz = z - py; pz < z + py - 1; ++pz)
+                    if (!BP[w.blockAt(px, 128 - py, pz)].opaqueCube &&
+                        (px == x - py || px == x + py - 2 || pz == z - py || pz == z + py - 2))
+                        w.setBlock(px, 128 - py, pz, r.nextInt(4) != 0 ? BRICK : BRICK_MOSSY);
+        w.setBlock(x - 1, 127, z - 1, PYRAMIDION);
+    }
+    for (int n = 0; n < 8; ++n) { at8(512); nsss::waterDungeon(w, r, x, y, z); }
+    for (int n = 0; n < 128; ++n) { at8(128); nsss::cobweb(w, x, y, z); }
+    for (int n = 0; n < 10; ++n) { at0(64); nsss::clayLike(w, r, 8, x, y, z, Mat::sand, CLAY_ID, false); }
+    for (int n = 0; n < 10; ++n) { at0(64); nsss::clayLike(w, r, 4, x, y, z, Mat::ground, CLAY_RED, true); }
+    for (int n = 0; n < 20; ++n) { at0(128); nsss::minable(w, r, DIRT_ID, 32, x, y, z); }
+    for (int n = 0; n < 10; ++n) { at0(128); nsss::minable(w, r, GRAVEL_ID, 32, x, y, z); }
+    for (int n = 0; n < 20; ++n) { at0(128); nsss::minable(w, r, COAL_ORE, 16, x, y, z); }
+    for (int n = 0; n < 20; ++n) { at0(64); nsss::minable(w, r, IRON_ORE, 8, x, y, z); }
+    for (int n = 0; n < 2; ++n) { at0(32); nsss::minable(w, r, GOLD_ORE, 8, x, y, z); }
+    for (int n = 0; n < 6; ++n) { at0(32); nsss::minable(w, r, COPPER_ORE, 8, x, y, z); }
+    for (int n = 0; n < 8; ++n) { at0(16); nsss::minable(w, r, REDSTONE_ORE, 7, x, y, z); }
+    for (int n = 0; n < 1; ++n) { at0(16); nsss::minable(w, r, DIAMOND_ORE, 7, x, y, z); }
+    double d = 0.5;
+    int trees = int((alphaTerrain->treeNoise.getVal(tryX * d, tryZ * d) / 8.0 + r.nextDouble() * 4.0 + 4.0) / 3.0);
+    if (trees < 0) trees = 0;
+    if (r.nextInt(10) == 0) ++trees;
+    bool big = r.nextInt(10) == 0; // one generator object for every tree in the chunk
+    BigTree bigTree;
+    for (int n = 0; n < trees; ++n) {
+        int tx = tryX + r.nextInt(16) + 8;
+        int tz = tryZ + r.nextInt(16) + 8;
+        if (big) bigTree.generate(w, r, tx, w.getHeightValue(tx, tz), tz);
+        else nsss::oakTree(w, r, tx, w.getHeightValue(tx, tz), tz);
+    }
+    for (int n = 0; n < 2; ++n) { at8(128); nsss::flowers(w, r, FLOWER_Y, x, y, z); }
+    if (r.nextInt(2) == 0) { at8(128); nsss::flowers(w, r, FLOWER_R, x, y, z); }
+    if (r.nextInt(1) == 0) { at8(128); nsss::flowers(w, r, BLUE_ROSE, x, y, z); }
+    if (r.nextInt(4) == 0) { at8(128); nsss::flowers(w, r, MUSH_B, x, y, z); }
+    if (r.nextInt(8) == 0) { at8(128); nsss::flowers(w, r, MUSH_R, x, y, z); }
+    for (int n = 0; n < 10; ++n) { at8(128); nsss::reeds(w, r, x, y, z); }
+    for (int n = 0; n < 1; ++n) { at8(128); nsss::cactus(w, r, x, y, z); }
+    for (int n = 0; n < 50; ++n) {
+        x = tryX + r.nextInt(16) + 8;
+        y = r.nextInt(r.nextInt(120) + 8);
+        z = tryZ + r.nextInt(16) + 8;
+        nsss::liquids(w, WATER, x, y, z);
+    }
+    for (int n = 0; n < 20; ++n) {
+        x = tryX + r.nextInt(16) + 8;
+        y = r.nextInt(r.nextInt(r.nextInt(112) + 8) + 8);
+        z = tryZ + r.nextInt(16) + 8;
+        nsss::liquids(w, LAVA, x, y, z);
+    }
+    // the snow layer only falls in winter worlds (snowCovered / winter after the first snow)
+    Blocks::sandFallInstantly = false;
+}
+
 void ChunkGenerator::populate(World& w, int cx, int cz) {
     if (hell) {
         populateHell(w, hell->hellRNG, cx, cz);
         return;
     }
-    if (alphaTerrain) return; // NSSS: Alpha's populate step (ChunkProviderGenerate.generateStructures) is next to port
+    if (alphaTerrain) { alphaPopulate(w, cx, cz); return; }
     Blocks::sandFallInstantly = true;
     Blocks::flowerGenerating = true;
     int bx = cx * 16, bz = cz * 16;

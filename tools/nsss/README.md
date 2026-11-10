@@ -17,3 +17,10 @@ Terrain parity (from the repo root):
 `generated/blocks.tsv` columns: id, class, material, opacity, light, opaqueCube, normal,
 renderType, pass, hardness, resistance, tickRate, tickOnLoad, container, bounds, textures
 (16 metadata × 6 sides).
+
+Populated-world parity (generation + decoration, same chunk order on both sides):
+
+    java -cp "out:$JAR" com.mojang.minecraft.core.level.AlphaPopDump <seed> <tmpdir> cx cz loadR reportR java.bin
+    g++ -std=gnu++17 -O1 -ffp-contract=off -Isource -Iandroid/shim tools/host/alphapop.cpp \
+        source/world/*.cpp source/world/gen/*.cpp source/game/SurvivalData.cpp -o alphapop -lz
+    ./alphapop <seed> <emptydir> cx cz loadR reportR cpp.bin && cmp java.bin cpp.bin

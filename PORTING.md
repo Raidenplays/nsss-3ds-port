@@ -1,5 +1,30 @@
 # Porting plan: Not So Seecret Saturday a1.1.12 → 3DS (C++ / citro3d)
 
+## The rule: 1:1 with the jar
+The game under the hood is NSSS, translated line by line from the a1.1.12 jar's own classes. The
+Axeolon engine supplies only the 3DS layers (citro3d drawing, input, sound, files) and the PE 0.5.0
+look of the screens. Anything that behaves like Beta or Axeolon instead of NSSS is a bug.
+
+Every ported system is checked against the real jar running headless (NSSS's `World` constructs fine
+with no Minecraft window): same seed, same chunk order, then every block and metadata value compared.
+`tools/nsss/AlphaPopDump.java` (Java, the jar) vs `tools/host/alphapop.cpp` (C++, the 3DS code).
+
+### Status
+| System | State |
+|---|---|
+| Terrain, beaches, soil, caves (`AlphaGen`) | ✅ byte-identical |
+| Populate: dungeons, water dungeons, cobwebs, clay, red clay, dirt/gravel, ores incl. copper, trees, big trees, flowers incl. blue rose, mushrooms, reeds, cactus, springs, the pyramid | ✅ identical on 6 seeds (near spawn and ±4800 blocks) |
+| Leaves (no decay metadata; log or mossy brick within 4) | ✅ NSSS's |
+| Flower/mushroom/reed placement rules | ✅ NSSS's |
+| Block/item/recipe/smelting tables | ✅ from the jar |
+| Every other block behaviour (66 tile classes) | ⏳ next: port each class, test with block-update dumps |
+| Entities and mobs (38 + 34 item classes) | ⏳ |
+| Player, exhaustion, inventory, crafting | ⏳ |
+| World ticking, lighting, seasons, weather, day length | ⏳ |
+| Other world types (Floating, Corruption, Desert, Old-Timey) | ⏳ |
+| Remove what Alpha doesn't have (Nether, Axeolon blocks/mobs) | ⏳ |
+
+
 Source of truth: the `a1.1.12.jar` jarmod from `NSSS_a1.1.12.zip` (MultiMC instance).
 It is a **full replacement jar** (591 classes, already deobfuscated, `com.mojang.minecraft.*`
 packages), so it decompiles straight to readable Java with Vineflower. No vanilla a1.1.2_01
