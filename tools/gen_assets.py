@@ -9,7 +9,7 @@ Inputs (made by the Java tools in tools/java, run against your Axeolon build):
 
 Outputs:
   source/world/BlockTable.cpp  block table compiled into the game
-  romfs/textures/*.rgba        raw RGBA images ("AXTX" header) - no PNG decoder needed on 3DS
+  romfs/textures/*.rgba        raw RGBA images ("RGBA" header) - no PNG decoder needed on 3DS
   romfs/sound/...              .ogg files, same paths the Java SoundManager uses
 """
 import json, os, shutil, struct, sys
@@ -21,7 +21,7 @@ def write_rgba(img, path):
     img = img.convert('RGBA')
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'wb') as f:
-        f.write(b'AXTX' + struct.pack('<HH', img.width, img.height))
+        f.write(b'RGBA' + struct.pack('<HH', img.width, img.height))
         f.write(img.tobytes())
 
 def biome_colour(png, temp, rain):
@@ -95,18 +95,17 @@ def gen_block_table(blocks):
         if b['normal']: f.append('BF_CUBE')
         if b['liquid']: f.append('BF_LIQUID')
         cls = b['cls']
-        if cls in ('BlockGlass', 'BlockIce', 'BlockBreakable', 'BlockTintedGlass', 'BlockIceBricks', 'BlockPortal'):
+        if cls in ('BlockGlass', 'BlockIce', 'BlockBreakable'):
             f.append('BF_CULL_SAME')
         if cls in ('BlockLeaves', 'BlockLeavesBase'): f.append('BF_LEAVES')
         if cls == 'BlockStep' and b['bounds'][4] < 1.0: f.append('BF_SLAB')  # half slab: meta & 8 = top half
         mt = b['tex']
-        if cls == 'BlockTintedGlass':  # each colour on its own baked tile
-            mt = [[TINTED_GLASS_TILES[i]] * 6 for i in range(16)]
-        tex = ','.join('{' + ','.join(str(max(t, 0)) for t in m) + '}' for m in mt)
+        # getBlockTextureFromSideAndMetadata; negative = drawn mirrored (BlockDoor), -1 = threw
+        tex = ','.join('{' + ','.join(str(0 if t == -1 else t) for t in m) + '}' for m in mt)
         bounds = ','.join('%.6ff' % v for v in b['bounds'])
         name = b['disp'] or b['name']
-        out.append('    {"%s", %d, %s, %d, %d, %d, {%s}, {%s}},' % (
-            name.replace('"', "'"), b['render'] & 0xFF, '|'.join(f), b['pass'], b['opacity'], b['light'], bounds, tex))
+        out.append('    {"%s", %d, %s, %d, %d, %d, %d, {%s}, {%s}},' % (
+            name.replace('"', "'"), b['render'] & 0xFF, '|'.join(f), b['pass'], b['opacity'], b['light'], b.get('index', 0), bounds, tex))
     out.append('};')
     return '\n'.join(out) + '\n'
 

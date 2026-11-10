@@ -3,6 +3,8 @@
 #include "world/World.h"
 #include "world/Blocks.h"
 #include "world/BlockProps.h"
+#include "render/ChunkMesh.h"
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -47,6 +49,25 @@ int main(int argc, char** argv) {
                             int id = w.blockAt(x, y, z);
                             if (id > 0 && BP[id].tickOnLoad) Blocks::updateTick(w, x, y, z, id, w.rand);
                         }
+        } else if (!strcmp(cmd, "sub")) {
+            w.skylightSubtracted = v[0];
+        } else if (!strcmp(cmd, "render")) {
+            // the quads, as BlockSimDump's shadow Tessellator writes them (big-endian ints)
+            auto be = [&](uint32_t u) { uint8_t b[4] = {uint8_t(u >> 24), uint8_t(u >> 16), uint8_t(u >> 8), uint8_t(u)}; fwrite(b, 1, 4, out); };
+            int sub = w.skylightSubtracted;
+            ChunkMesher::recordQuad = [&](int x, int y, int z, const float q[4][5], float factor, int light) {
+                be(uint32_t(x)); be(uint32_t(y)); be(uint32_t(z));
+                for (int k = 0; k < 4; k++)
+                    for (int a = 0; a < 5; a++) { uint32_t u; memcpy(&u, &q[k][a], 4); be(u); }
+                int lv = std::max((light >> 4) - sub, 0);
+                lv = std::max(lv, light & 15);
+                float c = factor * ChunkMesher::LIGHT_BRIGHTNESS[lv];
+                int ci = std::min(255, std::max(0, int(c * 255.0f)));
+                be(uint32_t(ci << 16 | ci << 8 | ci));
+            };
+            MeshData md;
+            ChunkMesher::buildSection(w, v[0], v[1], v[2], md);
+            ChunkMesher::recordQuad = nullptr;
         } else if (!strcmp(cmd, "dump")) {
             for (int x = v[0]; x <= v[3]; x++)
                 for (int z = v[2]; z <= v[5]; z++)

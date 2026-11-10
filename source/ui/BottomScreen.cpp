@@ -63,10 +63,10 @@ bool BottomScreen::init(Renderer& r, Camera& c, Inventory& i, Minimap& m) {
     measureBuf = C2D_TextBufNew(256);
     if (!target || !textBuf || !measureBuf) return false;
 
-    // One sub-texture per atlas tile (terrain.png then terrain2.png), and per gui/items.png icon
-    for (int t = 0; t < 512; t++) {
+    // One sub-texture per terrain.png tile, and per gui/items.png icon
+    for (int t = 0; t < 256; t++) {
         int tx = t & 15, ty = t >> 4;
-        tileSub[t] = {16, 16, tx / 16.0f, 1.0f - ty / 64.0f, (tx + 1) / 16.0f, 1.0f - (ty + 1) / 64.0f};
+        tileSub[t] = {16, 16, tx / 16.0f, 1.0f - ty / 16.0f, (tx + 1) / 16.0f, 1.0f - (ty + 1) / 16.0f};
     }
     for (int t = 0; t < 256; t++) {
         int tx = t & 15, ty = t >> 4;
@@ -336,8 +336,7 @@ void BottomScreen::itemIcon(const ItemStack& st, float x, float y, float scale) 
     if (st.id < 256) {
         int tile = info && info->icon >= 0 ? info->icon : 0;
         if (info && (info->flags & IF_BLOCK3D)) tile = BLOCKS[st.id].tex[st.damage & 15][2];
-        else if (info && (info->flags & IF_TERRAIN2)) tile = 256 + (tile & 255);
-        draw(renderer->terrainTexture(), &tileSub[tile & 511], 0xFFFFFF); // atlas is pre-tinted
+        draw(renderer->terrainTexture(), &tileSub[tile & 255], 0xFFFFFF); // atlas is pre-tinted
     } else if (info && info->icon >= 0) {
         draw(itemsTex, &itemSub[info->icon & 255], info->colour);
         if (info->overlay >= 0) draw(itemsTex, &itemSub[info->overlay & 255], info->overlayColour);

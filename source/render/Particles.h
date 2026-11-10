@@ -3,7 +3,7 @@
 // or while you dig, smoke, flames, explosions, lava pops and bubbles, plus World.randomDisplay-
 // Updates (torch flames, fire smoke, lava). Billboards facing the camera, like Beta's.
 #include <vector>
-#include "model/AxmModel.h"
+#include "render/Vertex.h"
 #include "world/JavaRandom.h"
 
 class World;
@@ -38,7 +38,7 @@ private:
     };
     std::vector<P> list;
     JavaRandom rand{0x9A57};
-    std::vector<axm::ModelVertex> quads[2];
+    std::vector<QuadVertex> quads[2];
     P make(Type t, double x, double y, double z, double mx, double my, double mz);
     void move(const World& w, P& p);
     double rnd() { return rand.nextDouble(); }

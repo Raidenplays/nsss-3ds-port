@@ -2,7 +2,7 @@
 // TileEntitySignRenderer: the sign board (and post) with its four lines of text.
 #include <string>
 #include <vector>
-#include "model/AxmModel.h"
+#include "render/Vertex.h"
 #include "ui/Font.h"
 
 class World;
@@ -20,5 +20,5 @@ private:
     struct Sign { int x, y, z, meta; bool post; std::string text[4]; };
     std::vector<Sign> signs;
     bool dirty = true;
-    std::vector<axm::ModelVertex> board, text;
+    std::vector<QuadVertex> board, text;
 };

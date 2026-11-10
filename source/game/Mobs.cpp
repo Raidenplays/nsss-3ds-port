@@ -259,7 +259,7 @@ void Mobs::render(const World& w, Renderer& r, float partial, float camX, float 
         main->setRotationAnglesAndRender(scratch, t, f9, f8, f5, f3 - f2, f4, f7, bright);
         r.drawTriangles(scratch, tex);
         // func_166_a: the second pass (pass 0 only)
-        std::vector<axm::ModelVertex> second;
+        std::vector<QuadVertex> second;
         if (m.kind == PIG && m.saddle) {
             pass->setRotationAnglesAndRender(second, t, f9, f8, f5, f3 - f2, f4, f7, bright);
             r.drawTriangles(second, r.texture("romfs:/textures/mob/saddle.rgba"));
@@ -282,7 +282,7 @@ void Mobs::render(const World& w, Renderer& r, float partial, float camX, float 
         }
         if ((j >> 24 & 0xFF) > 0 || m.hurtTime > 0 || m.deathTime > 0) {
             // the shapes again, lit but untextured, in the flash's colour (glColor4f with the lights on)
-            std::vector<axm::ModelVertex> both;
+            std::vector<QuadVertex> both;
             main->setRotationAnglesAndRender(both, t, f9, f8, f5, f3 - f2, f4, f7, 1.0f);
             if (!second.empty() && m.kind != SPIDER) pass->setRotationAnglesAndRender(both, t, f9, f8, f5, f3 - f2, f4, f7, 1.0f);
             if (m.hurtTime > 0 || m.deathTime > 0) {
@@ -307,7 +307,7 @@ void Mobs::renderTnt(const World& w, Renderer& r, float partial) {
         {{-1, 1, -1}, {-1, 1, 1}, {-1, -1, 1}, {-1, -1, -1}}, {{1, 1, 1}, {1, 1, -1}, {1, -1, -1}, {1, -1, 1}}};
     static const float SH[6] = {0.5f, 1.0f, 0.8f, 0.8f, 0.6f, 0.6f};
     static const int TILE[6] = {10, 9, 8, 8, 8, 8}; // TNT: bottom, top, sides
-    std::vector<axm::ModelVertex> tris;
+    std::vector<QuadVertex> tris;
     for (const PrimedTnt& t : tnts) {
         tris.clear();
         float x = float(t.px + (t.x - t.px) * partial), y = float(t.py + (t.y - t.py) * partial),
@@ -325,10 +325,10 @@ void Mobs::renderTnt(const World& w, Renderer& r, float partial) {
         float shade = w.getBrightness(int(std::floor(x)), int(std::floor(y)), int(std::floor(z)));
         for (int f = 0; f < 6; ++f) {
             int tile = TILE[f];
-            float u0 = (tile & 15) / 16.0f, v0 = (tile >> 4) * 16.0f / 1024.0f;
-            float u1 = u0 + 1 / 16.0f, v1 = v0 + 16.0f / 1024.0f;
+            float u0 = (tile & 15) / 16.0f, v0 = (tile >> 4) / 16.0f;
+            float u1 = u0 + 1 / 16.0f, v1 = v0 + 1 / 16.0f;
             const float uv[4][2] = {{u0, v0}, {u1, v0}, {u1, v1}, {u0, v1}};
-            axm::ModelVertex q[4];
+            QuadVertex q[4];
             for (int k = 0; k < 4; ++k) {
                 q[k].x = x + F[f][k][0] * h;
                 q[k].y = y + F[f][k][1] * h;
@@ -351,7 +351,7 @@ void Mobs::renderTnt(const World& w, Renderer& r, float partial) {
 // RenderSnowball: the item's icon facing the camera
 void Mobs::renderThrown(Renderer& r, float partial, float yaw, float pitch) {
     if (thrown.empty()) return;
-    std::vector<axm::ModelVertex> q;
+    std::vector<QuadVertex> q;
     float cy = MathHelper::cos(yaw * BOLT_PI / 180.0f), sy = MathHelper::sin(yaw * BOLT_PI / 180.0f);
     float sp = MathHelper::sin(pitch * BOLT_PI / 180.0f), cp = MathHelper::cos(pitch * BOLT_PI / 180.0f);
     float rx = cy, rz = sy, ux = -sy * sp, uy = cp, uz = cy * sp;
@@ -363,9 +363,9 @@ void Mobs::renderThrown(Renderer& r, float partial, float yaw, float pitch) {
         float v0 = float(icon / 16 * 16) / 256.0f, v1 = v0 + 1.0f / 16.0f;
         const float s = 0.25f;
         auto at = [&](float a, float c, float u, float v) {
-            return axm::ModelVertex{x + (rx * a + ux * c) * s, y + (uy * c) * s, z + (rz * a + uz * c) * s, 1.0f, u, v};
+            return QuadVertex{x + (rx * a + ux * c) * s, y + (uy * c) * s, z + (rz * a + uz * c) * s, 1.0f, u, v};
         };
-        axm::ModelVertex v[4] = {at(-1, -1, u0, v1), at(1, -1, u1, v1), at(1, 1, u1, v0), at(-1, 1, u0, v0)};
+        QuadVertex v[4] = {at(-1, -1, u0, v1), at(1, -1, u1, v1), at(1, 1, u1, v0), at(-1, 1, u0, v0)};
         static const int T[6] = {0, 1, 2, 0, 2, 3};
         for (int i : T) q.push_back(v[i]);
     }
@@ -380,16 +380,16 @@ void Mobs::renderFalling(const World& w, Renderer& r, float partial) {
         {{1, 1, -1}, {-1, 1, -1}, {-1, -1, -1}, {1, -1, -1}}, {{-1, 1, 1}, {1, 1, 1}, {1, -1, 1}, {-1, -1, 1}},
         {{-1, 1, -1}, {-1, 1, 1}, {-1, -1, 1}, {-1, -1, -1}}, {{1, 1, 1}, {1, 1, -1}, {1, -1, -1}, {1, -1, 1}}};
     static const float SH[6] = {0.5f, 1.0f, 0.8f, 0.8f, 0.6f, 0.6f};
-    std::vector<axm::ModelVertex> tris;
+    std::vector<QuadVertex> tris;
     for (const Falling& f : falling) {
         float x = float(f.px + (f.x - f.px) * partial), y = float(f.py + (f.y - f.py) * partial), z = float(f.pz + (f.z - f.pz) * partial);
         float shade = w.getBrightness(int(std::floor(x)), int(std::floor(y)), int(std::floor(z)));
         for (int s = 0; s < 6; ++s) {
             int tile = BLOCKS[f.id].tex[0][s];
-            float u0 = (tile & 15) / 16.0f, v0 = (tile >> 4) * 16.0f / 1024.0f;
-            float u1 = u0 + 1 / 16.0f, v1 = v0 + 16.0f / 1024.0f;
+            float u0 = (tile & 15) / 16.0f, v0 = (tile >> 4) / 16.0f;
+            float u1 = u0 + 1 / 16.0f, v1 = v0 + 1 / 16.0f;
             const float uv[4][2] = {{u0, v0}, {u1, v0}, {u1, v1}, {u0, v1}};
-            axm::ModelVertex q[4];
+            QuadVertex q[4];
             for (int k = 0; k < 4; ++k) {
                 q[k].x = x + F[s][k][0] * 0.5f;
                 q[k].y = y + F[s][k][1] * 0.5f;

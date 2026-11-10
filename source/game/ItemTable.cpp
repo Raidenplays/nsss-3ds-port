@@ -19,7 +19,7 @@ const ItemInfo ITEMS[] = {
     {15, 0, 33, 0xFFFFFF, -1, 0xFFFFFF, 1, "Iron Ore"},
     {16, 0, 34, 0xFFFFFF, -1, 0xFFFFFF, 1, "Coal Ore"},
     {17, 0, 20, 0xFFFFFF, -1, 0xFFFFFF, 1, "Wood"},
-    {18, 0, 52, 0xFFFFFF, -1, 0xFFFFFF, 1, "Leaves"},
+    {18, 0, 105, 0xFFFFFF, -1, 0xFFFFFF, 1, "Leaves"},
     {19, 0, 48, 0xFFFFFF, -1, 0xFFFFFF, 1, "Sponge"},
     {20, 0, 49, 0xFFFFFF, -1, 0xFFFFFF, 1, "Glass"},
     {21, 0, 144, 0xFFFFFF, -1, 0xFFFFFF, 1, "Cloth_red"},

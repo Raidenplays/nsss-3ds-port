@@ -2,7 +2,6 @@
 #include <cmath>
 #include <cstring>
 #include "Renderer.h"
-#include "model/BlockModels.h"
 #include "world/Chunk.h"
 #include "world/World.h"
 
@@ -32,8 +31,8 @@ struct M4 {
     }
 };
 
-void quad(std::vector<axm::ModelVertex>& out, const M4& t, const float p[4][3], const float uv[4][2], float shade) {
-    axm::ModelVertex v[4];
+void quad(std::vector<QuadVertex>& out, const M4& t, const float p[4][3], const float uv[4][2], float shade) {
+    QuadVertex v[4];
     for (int k = 0; k < 4; ++k) {
         float o[3];
         t.apply(p[k], o);
@@ -44,7 +43,7 @@ void quad(std::vector<axm::ModelVertex>& out, const M4& t, const float p[4][3], 
 }
 
 // ModelRenderer.addBox + render(1/16): a textured box in a 64 x 32 texture
-void box(std::vector<axm::ModelVertex>& out, const M4& t, float x0, float y0, float z0, int w, int h, int d, int u, int v,
+void box(std::vector<QuadVertex>& out, const M4& t, float x0, float y0, float z0, int w, int h, int d, int u, int v,
          float shade) {
     const float s = 1.0f / 16.0f;
     float x1 = x0 + w, y1 = y0 + h, z1 = z0 + d;

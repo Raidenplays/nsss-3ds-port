@@ -5,8 +5,7 @@
 #include <string>
 #include "ItemEntities.h"
 #include "Inventory.h"
-#include "model/AxmModel.h"
-#include "model/BlockModels.h"
+#include "render/Vertex.h"
 #include "render/Renderer.h"
 #include "world/BlockProps.h"
 #include "world/Chunk.h"
@@ -230,7 +229,7 @@ void Paintings::render(const World& w, Renderer& r) { // RenderPainting
     if (list.empty()) return;
     C3D_Tex* tex = r.texture("romfs:/textures/art/kz.rgba");
     if (!tex) return;
-    std::vector<axm::ModelVertex> tris;
+    std::vector<QuadVertex> tris;
     for (const P& p : list) {
         const Art& a = ARTS[p.art];
         float yaw = float(p.dir * 90) * 3.1415927f / 180.0f, c = std::cos(yaw), s = std::sin(yaw);
@@ -239,16 +238,16 @@ void Paintings::render(const World& w, Renderer& r) { // RenderPainting
             lx /= 16.0f;
             ly /= 16.0f;
             lz /= 16.0f;
-            return axm::ModelVertex{float(p.x) + lx * c + lz * s, float(p.y) + ly, float(p.z) - lx * s + lz * c, shade, u, v};
+            return QuadVertex{float(p.x) + lx * c + lz * s, float(p.y) + ly, float(p.z) - lx * s + lz * c, shade, u, v};
         };
         float x0 = -a.w / 2.0f, x1 = a.w / 2.0f, y0 = -a.h / 2.0f, y1 = a.h / 2.0f;
         float u0 = float(a.u + a.w) / 256.0f, u1 = float(a.u) / 256.0f; // x0 -> the art's right edge
         float v0 = float(a.v + a.h) / 256.0f, v1 = float(a.v) / 256.0f; // y0 -> its bottom
         // the picture (facing -Z in its own frame) and the wooden back
-        axm::ModelVertex f[4] = {at(x1, y0, -0.5f, u1, v0), at(x0, y0, -0.5f, u0, v0), at(x0, y1, -0.5f, u0, v1), at(x1, y1, -0.5f, u1, v1)};
+        QuadVertex f[4] = {at(x1, y0, -0.5f, u1, v0), at(x0, y0, -0.5f, u0, v0), at(x0, y1, -0.5f, u0, v1), at(x1, y1, -0.5f, u1, v1)};
         tris.insert(tris.end(), {f[0], f[1], f[2], f[0], f[2], f[3]});
         const float bu0 = 12.0f / 16.0f, bu1 = 13.0f / 16.0f, bv0 = 0.0f, bv1 = 1.0f / 16.0f;
-        axm::ModelVertex b[4] = {at(x1, y1, 0.5f, bu0, bv0), at(x0, y1, 0.5f, bu1, bv0), at(x0, y0, 0.5f, bu1, bv1), at(x1, y0, 0.5f, bu0, bv1)};
+        QuadVertex b[4] = {at(x1, y1, 0.5f, bu0, bv0), at(x0, y1, 0.5f, bu1, bv0), at(x0, y0, 0.5f, bu1, bv1), at(x1, y0, 0.5f, bu0, bv1)};
         for (auto& v : b) v.shade *= 0.8f;
         tris.insert(tris.end(), {b[0], b[1], b[2], b[0], b[2], b[3]});
     }

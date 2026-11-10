@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include "model/AxmModel.h"
+#include "render/Vertex.h"
 #include "world/JavaRandom.h"
 #include "world/Nbt.h"
 #include "world/Physics.h"
@@ -157,7 +157,7 @@ private:
     void tickTnt(World& w, Player& p, ItemEntities& items, bool editWorld);
     std::mt19937 rng{12345};
     JavaRandom jr{0xA11CE};       // Entity.rand stand-in (one for all mobs)
-    std::vector<axm::ModelVertex> scratch;
+    std::vector<QuadVertex> scratch;
     std::vector<AABB> boxes;
 
     bool fromTag(std::shared_ptr<nbt::Tag> tag, Mob& m);

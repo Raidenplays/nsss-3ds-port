@@ -54,8 +54,8 @@ struct Lava { // TextureLavaFX / TextureLavaFlowFX
         for (int x = 0; x < 16; ++x)
             for (int y = 0; y < 16; ++y) {
                 float s = 0.0f;
-                int ox = int(MathHelper::sin(float(y) * 3.1415927f * 2.0f / 16.0f) * 1.2f);
-                int oy = int(MathHelper::sin(float(x) * 3.1415927f * 2.0f / 16.0f) * 1.2f);
+                int ox = int(MathHelper::sin(float(y) * 3.141593f * 2.0f / 16.0f) * 1.2f);
+                int oy = int(MathHelper::sin(float(x) * 3.141593f * 2.0f / 16.0f) * 1.2f);
                 for (int a = x - 1; a <= x + 1; ++a)
                     for (int b = y - 1; b <= y + 1; ++b) s += g[((a + ox) & 15) + ((b + oy) & 15) * 16];
                 int n = x + y * 16;
@@ -108,55 +108,99 @@ struct Flames { // TextureFlamesFX
     }
 };
 
-struct Portal { // TexturePortalFX: 32 frames made up front
-    uint8_t frames[32][1024];
-    int tick = 0;
-    Portal() {
-        JavaRandom r(100);
-        for (int f = 0; f < 32; ++f)
-            for (int x = 0; x < 16; ++x)
-                for (int y = 0; y < 16; ++y) {
-                    float v = 0.0f;
-                    for (int k = 0; k < 2; ++k) {
-                        float o = float(k * 8);
-                        float a = (float(x) - o) / 16.0f * 2.0f, b = (float(y) - o) / 16.0f * 2.0f;
-                        if (a < -1.0f) a += 2.0f;
-                        if (a >= 1.0f) a -= 2.0f;
-                        if (b < -1.0f) b += 2.0f;
-                        if (b >= 1.0f) b -= 2.0f;
-                        float d = a * a + b * b;
-                        float t = float(std::atan2(double(b), double(a))) +
-                                  (float(f) / 32.0f * 3.1415927f * 2.0f - d * 10.0f + float(k * 2)) * float(k * 2 - 1);
-                        t = (MathHelper::sin(t) + 1.0f) / 2.0f;
-                        t /= d + 1.0f;
-                        v += t * 0.5f;
-                    }
-                    v += r.nextFloat() * 0.1f;
-                    int n = y * 16 + x;
-                    frames[f][n * 4 + 0] = uint8_t(int(v * v * 200.0f + 55.0f));
-                    frames[f][n * 4 + 1] = uint8_t(int(v * v * v * v * 255.0f));
-                    frames[f][n * 4 + 2] = uint8_t(int(v * 100.0f + 155.0f));
-                    frames[f][n * 4 + 3] = uint8_t(int(v * 100.0f + 155.0f));
+// a romfs .rgba ("RGBA", width, height, RGBA rows), as Java's getRGB ints (ARGB)
+bool readArgb(const char* path, int w, int h, uint32_t* out) {
+    FILE* f = std::fopen(path, "rb");
+    if (!f) return false;
+    char magic[4];
+    uint16_t wh[2];
+    bool ok = std::fread(magic, 1, 4, f) == 4 && std::memcmp(magic, "RGBA", 4) == 0 && std::fread(wh, 2, 2, f) == 2 &&
+              wh[0] == w && wh[1] == h;
+    for (int n = 0; ok && n < w * h; ++n) {
+        uint8_t p[4];
+        ok = std::fread(p, 1, 4, f) == 4;
+        out[n] = uint32_t(p[3]) << 24 | uint32_t(p[0]) << 16 | uint32_t(p[1]) << 8 | p[2];
+    }
+    std::fclose(f);
+    return ok;
+}
+// a pixel into the tile as the FX classes write it: alpha all or nothing (>>> 24 > 128)
+void putArgb(uint8_t* out, int n, uint32_t c) {
+    out[n * 4 + 0] = uint8_t(c >> 16);
+    out[n * 4 + 1] = uint8_t(c >> 8);
+    out[n * 4 + 2] = uint8_t(c);
+    out[n * 4 + 3] = (c >> 24) > 128 ? 255 : 0;
+}
+
+// TextureGearFX (the turning gear, tiles gear + 16 and + 17, one each way) and TextureGearIdleFX
+// (gear + 0 and + 1, standing still): misc/gear.png turned about the middle, misc/gearmiddle.png over it
+uint32_t gear[1024], gearMiddle[256];
+int gearLoaded = 0; // 0 not tried, 1 ok, -1 missing
+struct Gear {
+    int tickCounter = 2, step;
+    bool idle;
+    Gear(int n, bool idle) : step((n << 1) - 1), idle(idle) {}
+    void tick(uint8_t* out) {
+        tickCounter = idle ? (1 + step) & 63 : (tickCounter + step) & 63;
+        float a = MathHelper::sin(float(tickCounter) / 64.0f * 3.1415927f * 2.0f);
+        float b = MathHelper::cos(float(tickCounter) / 64.0f * 3.1415927f * 2.0f);
+        for (int i = 0; i < 16; ++i)
+            for (int j = 0; j < 16; ++j) {
+                float n = (float(i) / 15.0f - 0.5f) * 31.0f, n2 = (float(j) / 15.0f - 0.5f) * 31.0f;
+                float n3 = b * n - a * n2;
+                n = b * n2 + a * n;
+                int n4 = int(n3 + 16.0f), n5 = int(n + 16.0f);
+                uint32_t c = 0;
+                if (n4 >= 0 && n5 >= 0 && n4 < 32 && n5 < 32) {
+                    c = gear[n4 + (n5 << 5)];
+                    if ((gearMiddle[i + (j << 4)] >> 24) > 128) c = gearMiddle[i + (j << 4)];
                 }
+                putArgb(out, i + (j << 4), c);
+            }
+    }
+};
+
+// TextureLeavesFX (tiles 105 and 106): leaves.png's leaf shapes, filled with the season's colours from
+// buds.png - winter the bare first frame, spring a frame further on each eighth of the season, summer
+// the last, fall leaves.png's own colours
+uint32_t leaves[512], buds[4096];
+int leavesLoaded = 0;
+struct Leaves {
+    int n;
+    int shown = -1; // what the tile holds now (season * 16 + bud frame), to upload only on a change
+    explicit Leaves(int n) : n(n) {}
+    bool tick(int season, float progress, uint8_t* out) {
+        int frame = season == 0 ? 7 : season == 2 ? 0 : season == 3 ? int(std::floor(progress * 8.0f)) : 0;
+        int key = season * 16 + frame;
+        if (key == shown) return false;
+        shown = key;
+        for (int u = 0; u < 16; ++u)
+            for (int v = 0; v < 16; ++v) {
+                uint32_t leaf = leaves[n * 16 + u + v * 32], c = 0;
+                if ((leaf >> 24) > 128) {
+                    c = leaf;
+                    if (season >= 0 && season != 1) c = buds[n * 16 + u + (v + 16 * frame) * 32];
+                }
+                putArgb(out, u + (v << 4), c);
+            }
+        return true;
     }
 };
 
 Fluid water, waterFlow;
 Lava lava, lavaFlow;
 Flames flames0, flames1;
-Portal* portal = nullptr;
+Gear gearTurning0(16, false), gearTurning1(17, false), gearIdle0(0, true), gearIdle1(1, true);
+Leaves leaves0(0), leaves1(1);
 uint8_t buf[1024];
 } // namespace
 
-void tick(const std::function<void(int, const uint8_t*)>& upload) {
+void tick(int season, float seasonProgress, const std::function<void(int, const uint8_t*)>& upload) {
     // the same order as Minecraft.startGame registers them
     lava.tick(false, buf);
     upload(237, buf);
     water.tick(false, buf);
     upload(205, buf);
-    if (!portal) portal = new Portal();
-    ++portal->tick;
-    upload(14, portal->frames[portal->tick & 31]);
     waterFlow.tick(true, buf);
     for (int t : {206, 207, 222, 223}) upload(t, buf);
     lavaFlow.tick(true, buf);
@@ -165,16 +209,37 @@ void tick(const std::function<void(int, const uint8_t*)>& upload) {
     upload(31, buf);
     flames1.tick(buf);
     upload(47, buf);
+    if (gearLoaded == 0)
+        gearLoaded = readArgb("romfs:/textures/misc/gear.rgba", 32, 32, gear) &&
+                     readArgb("romfs:/textures/misc/gearmiddle.rgba", 16, 16, gearMiddle) ? 1 : -1;
+    if (gearLoaded > 0) {
+        const int GEAR = 62; // Block.gear.blockIndexInTexture
+        gearTurning0.tick(buf);
+        upload(GEAR + 16, buf);
+        gearTurning1.tick(buf);
+        upload(GEAR + 17, buf);
+        gearIdle0.tick(buf);
+        upload(GEAR + 0, buf);
+        gearIdle1.tick(buf);
+        upload(GEAR + 1, buf);
+    }
+    if (leavesLoaded == 0)
+        leavesLoaded = readArgb("romfs:/textures/misc/leaves.rgba", 32, 16, leaves) &&
+                       readArgb("romfs:/textures/misc/buds.rgba", 32, 128, buds) ? 1 : -1;
+    if (leavesLoaded > 0) {
+        if (leaves0.tick(season, seasonProgress, buf)) upload(105, buf);
+        if (leaves1.tick(season, seasonProgress, buf)) upload(106, buf);
+    }
 }
 
 namespace {
-// a 16x16 piece of a romfs .rgba ("AXTX", width, height, RGBA rows)
+// a 16x16 piece of a romfs .rgba ("RGBA", width, height, RGBA rows)
 bool readPiece(const char* path, int tile, uint8_t* out) {
     FILE* f = std::fopen(path, "rb");
     if (!f) return false;
     char magic[4];
     uint16_t wh[2];
-    bool ok = std::fread(magic, 1, 4, f) == 4 && std::memcmp(magic, "AXTX", 4) == 0 && std::fread(wh, 2, 2, f) == 2;
+    bool ok = std::fread(magic, 1, 4, f) == 4 && std::memcmp(magic, "RGBA", 4) == 0 && std::fread(wh, 2, 2, f) == 2;
     if (ok) {
         int x0 = (tile & 15) * 16, y0 = (tile >> 4) * 16;
         if (wh[0] < 16) x0 = 0;
@@ -197,26 +262,23 @@ void swing(Needle& n, double want) {
     n.vel *= 0.8;
     n.rot += n.vel;
 }
-uint8_t compassBase[1024], clockBase[1024], dial[1024];
+uint8_t compassBase[1024];
 int itemsLoaded = 0; // 0 not tried, 1 ok, -1 missing
-Needle compass, clock;
+Needle compass;
 } // namespace
 
 void tickItems(const ItemView& v, const std::function<void(int, const uint8_t*)>& upload) {
-    const int COMPASS = 54, CLOCK = 70; // Item.compass, Item.pocketSundial
-    if (itemsLoaded == 0) {
-        bool ok = readPiece("romfs:/textures/gui/items.rgba", COMPASS, compassBase) &&
-                  readPiece("romfs:/textures/gui/items.rgba", CLOCK, clockBase) && readPiece("romfs:/textures/misc/dial.rgba", 0, dial);
-        itemsLoaded = ok ? 1 : -1;
-    }
+    const int COMPASS = 54; // Item.compass
+    if (itemsLoaded == 0) itemsLoaded = readPiece("romfs:/textures/gui/items.rgba", COMPASS, compassBase) ? 1 : -1;
     if (itemsLoaded < 0) return;
-    // TextureCompassFX: the plain face, then the needle
+    // TextureCompassFX: the plain face, then the needle - to the spawn, or (yellow) to the block the
+    // player is measuring from
     std::memcpy(buf, compassBase, sizeof buf);
     double want = 0.0;
     if (v.inWorld) {
-        double dx = double(v.spawnX) - v.px, dz = double(v.spawnZ) - v.pz;
+        double dx = v.measuring ? v.measureX + 0.5 - v.px : v.spawnX + 0.5 - v.px;
+        double dz = v.measuring ? v.measureZ + 0.5 - v.pz : v.spawnZ + 0.5 - v.pz;
         want = double(v.yaw - 90.0f) * 3.141592653589793 / 180.0 - std::atan2(dz, dx);
-        if (v.nether) want = rnd() * double(3.1415927f) * 2.0;
     }
     swing(compass, want);
     double sn = std::sin(compass.rot), cs = std::cos(compass.rot);
@@ -227,35 +289,8 @@ void tickItems(const ItemView& v, const std::function<void(int, const uint8_t*)>
     for (int i = -4; i <= 4; ++i) put(int(8.5 + cs * i * 0.3), int(7.5 - sn * i * 0.3 * 0.5), 100, 100, 100);
     for (int i = -8; i <= 16; ++i) {
         bool tip = i >= 0;
-        put(int(8.5 + sn * i * 0.3), int(7.5 + cs * i * 0.3 * 0.5), tip ? 255 : 100, tip ? 20 : 100, tip ? 20 : 100);
+        put(int(8.5 + sn * i * 0.3), int(7.5 + cs * i * 0.3 * 0.5), tip ? 255 : 100, tip ? (v.measuring ? 255 : 20) : 100, tip ? 20 : 100);
     }
     upload(COMPASS, buf);
-    // TextureWatchFX: the dial seen through the clock's window, turned to the sun's angle
-    want = 0.0;
-    if (v.inWorld) {
-        want = double(-v.celestial * 3.1415927f * 2.0f);
-        if (v.nether) want = rnd() * double(3.1415927f) * 2.0;
-    }
-    swing(clock, want);
-    sn = std::sin(clock.rot);
-    cs = std::cos(clock.rot);
-    for (int n = 0; n < 256; ++n) {
-        int a = clockBase[n * 4 + 3], r = clockBase[n * 4 + 0], g = clockBase[n * 4 + 1], b = clockBase[n * 4 + 2];
-        if (r == b && g == 0 && b > 0) {
-            double u = -(double(n % 16) / 15.0 - 0.5), w = double(n / 16) / 15.0 - 0.5;
-            int k = r;
-            int dx = int((u * cs + w * sn + 0.5) * 16.0), dy = int((w * cs - u * sn + 0.5) * 16.0);
-            int d = (dx & 15) + (dy & 15) * 16;
-            a = dial[d * 4 + 3];
-            r = dial[d * 4 + 0] * r / 255;
-            g = dial[d * 4 + 1] * k / 255;
-            b = dial[d * 4 + 2] * k / 255;
-        }
-        buf[n * 4 + 0] = uint8_t(r);
-        buf[n * 4 + 1] = uint8_t(g);
-        buf[n * 4 + 2] = uint8_t(b);
-        buf[n * 4 + 3] = uint8_t(a);
-    }
-    upload(CLOCK, buf);
 }
 } // namespace texfx

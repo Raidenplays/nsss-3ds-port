@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstring>
 #include <vector>
-#include "model/AxmModel.h"
+#include "render/Vertex.h"
 
 namespace boxmodel {
 
@@ -33,8 +33,8 @@ struct M4 {
     }
 };
 
-inline void quad(std::vector<axm::ModelVertex>& out, const M4& t, const float p[4][3], const float uv[4][2], float shade) {
-    axm::ModelVertex v[4];
+inline void quad(std::vector<QuadVertex>& out, const M4& t, const float p[4][3], const float uv[4][2], float shade) {
+    QuadVertex v[4];
     for (int k = 0; k < 4; ++k) {
         float o[3];
         t.apply(p[k], o);
@@ -45,7 +45,7 @@ inline void quad(std::vector<axm::ModelVertex>& out, const M4& t, const float p[
 }
 
 // ModelBox(u, v, x0, y0, z0, w, h, d) drawn at render(1/16) under t
-inline void box(std::vector<axm::ModelVertex>& out, const M4& t, float x0, float y0, float z0, int w, int h, int d, int u,
+inline void box(std::vector<QuadVertex>& out, const M4& t, float x0, float y0, float z0, int w, int h, int d, int u,
                 int v, float shade, float texW = 64.0f, float texH = 32.0f) {
     const float s = 1.0f / 16.0f;
     float x1 = x0 + w, y1 = y0 + h, z1 = z0 + d;

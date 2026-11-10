@@ -19,7 +19,7 @@ include $(DEVKITARM)/3ds_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	nsss3ds
 BUILD		:=	build
-SOURCES		:=	source source/world source/render source/client source/game source/ui source/model source/audio source/shaders source/world/gen
+SOURCES		:=	source source/world source/render source/client source/game source/ui source/audio source/shaders source/world/gen
 DATA		:=	data
 INCLUDES	:=	source
 ROMFS		:=	romfs

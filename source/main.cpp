@@ -65,7 +65,6 @@
 #include "game/Survival.h"
 #include "game/Containers.h"
 #include "game/Player.h"
-#include "model/BlockModels.h"
 #include "ui/BottomScreen.h"
 #include "ui/TitleScreen.h"
 #include "world/gen/TerrainWorker.h"
@@ -175,11 +174,6 @@ struct RebuildQueue {
 };
 RebuildQueue rebuild;
 
-void hookMarkDirty(int x0, int y0, int z0, int x1, int y1, int z1) {
-    for (int sx = x0 >> 4; sx <= x1 >> 4; sx++)
-        for (int sy = (y0 < 0 ? 0 : y0) >> 4; sy <= (y1 > 255 ? 255 : y1) >> 4; sy++)
-            for (int sz = z0 >> 4; sz <= z1 >> 4; sz++) rebuild.push(sx, sy, sz, true);
-}
 bool xboxLayout = false; // second-stick look, A jump, B sneak
 bool zButtons = false;   // New 3DS: ZR break, ZL use, L/R hotbar (Old 3DS + Circle Pad Pro keeps R/L)
 
@@ -199,24 +193,22 @@ void drawCracks(Renderer& r, int x, int y, int z, int stage) {
     if (stage < 0) return;
     if (stage > 9) stage = 9;
     int tile = 240 + stage;
-    float u0 = (tile & 15) / 16.0f, v0 = (tile >> 4) * 16.0f / 1024.0f, u1 = u0 + 1 / 16.0f, v1 = v0 + 16.0f / 1024.0f;
+    float u0 = (tile & 15) / 16.0f, v0 = (tile >> 4) / 16.0f, u1 = u0 + 1 / 16.0f, v1 = v0 + 1 / 16.0f;
     const float e = 0.002f;
     float a0 = x - e, b0 = y - e, c0 = z - e, a1 = x + 1 + e, b1 = y + 1 + e, c1 = z + 1 + e;
     float F[6][4][3] = {{{a0, b0, c0}, {a1, b0, c0}, {a1, b0, c1}, {a0, b0, c1}}, {{a0, b1, c1}, {a1, b1, c1}, {a1, b1, c0}, {a0, b1, c0}},
                         {{a1, b1, c0}, {a0, b1, c0}, {a0, b0, c0}, {a1, b0, c0}}, {{a0, b1, c1}, {a1, b1, c1}, {a1, b0, c1}, {a0, b0, c1}},
                         {{a0, b1, c0}, {a0, b1, c1}, {a0, b0, c1}, {a0, b0, c0}}, {{a1, b1, c1}, {a1, b1, c0}, {a1, b0, c0}, {a1, b0, c1}}};
     const float uv[4][2] = {{u0, v0}, {u1, v0}, {u1, v1}, {u0, v1}};
-    std::vector<axm::ModelVertex> tris;
+    std::vector<QuadVertex> tris;
     for (auto& f : F) {
-        axm::ModelVertex q[4];
+        QuadVertex q[4];
         for (int k = 0; k < 4; ++k) q[k] = {f[k][0], f[k][1], f[k][2], 1.0f, uv[k][0], uv[k][1]};
         tris.insert(tris.end(), {q[0], q[1], q[2], q[0], q[2], q[3]});
     }
     const float tint[4] = {1, 1, 1, 0.5f};
     r.drawTriangles(tris, r.terrainTexture(), tint, 1);
 }
-
-bool hookChunkPending(int x, int y, int z) { return rebuild.has(x >> 4, y >> 4, z >> 4); }
 
 // ---------------------------------------------------------------- world list
 // ---------------------------------------------------------------- player <-> save
@@ -278,7 +270,6 @@ bool isDoorId(int id) { return id == 64 || id == 71; }
 
 // Right-click on a block (Block.blockActivated).
 // Returns true if the block took the click (nothing gets placed).
-struct OpenChest { int x, y, z; bool open = false; } chest;
 
 bool useBlock(World& w, int x, int y, int z, bool emptyHand) {
     int id = w.getBlockId(x, y, z);
@@ -289,7 +280,6 @@ bool useBlock(World& w, int x, int y, int z, bool emptyHand) {
             if (w.getBlockId(x, y - 1, z) == id) return useBlock(w, x, y - 1, z, emptyHand);
             return true;
         }
-        BlockModels::door(w, x, y, z, meta);
         sound::play(w.rand.nextFloat() < 0.5f ? "random.door_open" : "random.door_close", x + 0.5, y + 0.5, z + 0.5, 1.0f,
                     w.rand.nextFloat() * 0.1f + 0.9f);
         if (w.getBlockId(x, y + 1, z) == id) w.setBlockAndMetadata(x, y + 1, z, uint8_t(id), (meta ^ 4) + 8);
@@ -300,12 +290,6 @@ bool useBlock(World& w, int x, int y, int z, bool emptyHand) {
     }
     // levers and buttons (they power things, so they live with redstone)
     if (Redstone::blockActivated(w, x, y, z, emptyHand)) return true;
-    if (id == 54) { // chest: the lid opens while it's "open"
-        if (chest.open) { chest.open = false; return true; }
-        BlockModels::openContainer(w, x, y, z);
-        chest = {x, y, z, true};
-        return true;
-    }
     return false;
 }
 } // namespace
@@ -352,8 +336,6 @@ int main() {
         C2D_Fini(); C3D_Fini(); romfsExit(); gfxExit();
         return 0;
     }
-    BlockModels::markDirty = hookMarkDirty;
-    BlockModels::chunkPending = hookChunkPending;
 
     // Automatic test (sdmc:/3ds/nsss3ds/autotest.txt present): the title screen for a few
     // seconds, then World1, replaying tools/java/SimPlayer's input script with every tick logged.
@@ -688,8 +670,6 @@ int main() {
     bool autotestDusk = false;
     float fpsTimer = 0, breakTimer = 0, placeTimer = 0, tickAcc = 0;
     int frames = 0;
-    std::vector<axm::ModelVertex> animQuads;
-    std::vector<BlockModels::Batch> animBatches;
 
     auto saveGame = [&]() {
         if (!world.canSave()) return;
@@ -908,7 +888,7 @@ int main() {
             tickAcc -= 0.05f;
             ticks++;
             world.info.time++;
-            texfx::tick([&](int tile, const uint8_t* rgba) { renderer.updateTerrainTile(tile, rgba); });
+            texfx::tick(world.currentSeason(), world.seasonProgress(), [&](int tile, const uint8_t* rgba) { renderer.updateTerrainTile(tile, rgba); });
             {
                 texfx::ItemView iv;
                 iv.inWorld = true;
@@ -917,7 +897,6 @@ int main() {
                 iv.yaw = player.rotationYaw;
                 iv.spawnX = world.info.spawnX;
                 iv.spawnZ = world.info.spawnZ;
-                iv.celestial = atmosphere::celestialAngle(world.info.time, 1.0f, false);
                 C3D_Tex* itemsTex = renderer.texture("romfs:/textures/gui/items.rgba");
                 texfx::tickItems(iv, [&](int tile, const uint8_t* rgba) { renderer.updateTile(itemsTex, tile, rgba); });
             }
@@ -939,10 +918,6 @@ int main() {
                 world.tickBlocks(player.posX, player.posY, player.posZ);
             }
             if (!player.dead() && !flying) Redstone::entityTouching(world, player.boundingBox, true); // pressure plates
-            if (chest.open) { // walked away: the lid comes down
-                float dx = cam.x - (chest.x + 0.5f), dz = cam.z - (chest.z + 0.5f);
-                if (dx * dx + dz * dz > 36.0f) chest.open = false;
-            }
             if (!flying && world.isChunkLoaded(int(std::floor(player.posX)) >> 4, int(std::floor(player.posZ)) >> 4)) {
                 // EntityPlayerSP input: Circle Pad forward/back and sideways (left is +strafe)
                 auto clamp1 = [](float v) { return v > 1.0f ? 1.0f : v < -1.0f ? -1.0f : v; };
@@ -995,7 +970,7 @@ int main() {
                 };
                 for (ItemStack& st : inv.main) scatter(st);
                 for (ItemStack& st : inv.armour) scatter(st);
-                if (inv.containerKind != Inventory::NONE) { containers::close(world, inv); chest.open = false; }
+                if (inv.containerKind != Inventory::NONE) { containers::close(world, inv); }
                 if (inv.tableOpen) inv.closeTable();
                 for (ItemStack& st : inv.craft) scatter(st);
                 scatter(inv.cursor);
@@ -1008,7 +983,6 @@ int main() {
                 sound::play(e.name, player.posX, player.posY - double(Player::YOFFSET), player.posZ, e.volume, e.pitch);
             player.sounds.clear();
             sound::tick();
-            BlockModels::tick(world, chest.open);
             player.difficulty = gOptions.difficulty;
             player.peaceful = gOptions.difficulty == 0;
             mobs.tick(world, player, itemEntities, !genFiber.busy(), player.peaceful);
@@ -1061,7 +1035,6 @@ int main() {
                 if (gone || dx * dx + dy * dy + dz * dz > 64.0 || bottom.tab() != BottomScreen::Tab::Items) {
                     containers::close(world, inv);
                     inv.returnCursor();
-                    chest.open = false;
                 }
             }
             itemEntities.spawnFromWorld(world);
@@ -1322,10 +1295,6 @@ int main() {
                 int useId = world.getBlockId(hit.x, hit.y, hit.z);
                 if (containers::isContainer(useId) && !player.isSneaking()) {
                     if (containers::open(world, inv, hit.x, hit.y, hit.z)) {
-                        if (useId == 54) { // the lid opens while it's open
-                            BlockModels::openContainer(world, hit.x, hit.y, hit.z);
-                            chest = {hit.x, hit.y, hit.z, true};
-                        }
                         bottom.setTab(BottomScreen::Tab::Items);
                         bottom.markDirty();
                     }
@@ -1527,9 +1496,6 @@ int main() {
 
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
         renderer.beginFrame();
-        animQuads.clear();
-        animBatches.clear();
-        BlockModels::render(world, partial, animQuads, animBatches);
         // 3D slider: 0 draws one picture; up draws one per eye (twice the GPU work)
         float slider = osGet3DSliderState();
         int eyes = slider > 0.0f ? 2 : 1;
@@ -1537,7 +1503,6 @@ int main() {
         renderer.setEye(eye, slider / 4.0f);
         renderer.renderWorld(view, frustum, cam.x, cam.y, cam.z);
         if (trace) dbg(" world drawn: %d sections %d tris", renderer.lastDrawnSections(), renderer.lastDrawnTriangles());
-        renderer.drawAtlasQuads(animQuads, animBatches);
         mobs.render(world, renderer, partial, cam.x, cam.y, cam.z, renderer.renderDistance);
         itemEntities.render(world, renderer, partial, cam.yaw, cam.pitch);
         mobs.renderTnt(world, renderer, partial);
@@ -1589,14 +1554,12 @@ int main() {
     bottom.shutdown();
     renderer.clearWorld();
     rebuild = RebuildQueue();
-    BlockModels::clear();
     gParticles = nullptr;
     Blocks::onTntIgnited = nullptr;
     Redstone::anythingOn = nullptr;
     world.onParticle = nullptr;
     world.onFallingBlock = nullptr;
     paintings.clear();
-    chest.open = false;
     delete save;
     if (!leftToTitle) appRunning = false;
     } // world session

@@ -8,11 +8,11 @@
 // RenderHelper's two standard lights (fixed in the world) and multiplied by the brightness.
 #include <cstring>
 #include <vector>
-#include "model/AxmModel.h"
+#include "render/Vertex.h"
 
 namespace alphamodel {
 
-using Vertex = axm::ModelVertex;
+using Vertex = QuadVertex;
 
 struct M4 { // a GL matrix stack entry: every call multiplies on the right (row-major, column vectors)
     float m[16];

@@ -5,7 +5,10 @@ import java.io.*;
 import java.util.*;
 // java BlockSimDump <seed> <tmpdir> <script> <out>
 // Script lines: "load cx cz R" (ring-load chunks), "set x y z id meta" (setBlockAndMetadataWithNotify),
-// "tick n" (n x: worldTime++, tickUpdates(false)), "dump x0 y0 z0 x1 y1 z1" (id+meta, x then z then y).
+// "tick n" (n x: worldTime++, tickUpdates(false)), "dump x0 y0 z0 x1 y1 z1" (id+meta, x then z then y),
+// "sub n" (skyLightSubtracted), "render cx sy cz" (WorldRenderer.updateRenderer on that 16x16x16
+// section: the quads RenderBlocks makes, through tools/nsss/shadow's Tessellator - so that has to come
+// before the jar on the classpath).
 // Same script runs on tools/host/blocksim.cpp; the outputs must be identical.
 public class BlockSimDump {
   public static void main(String[] a) throws Exception {
@@ -39,6 +42,29 @@ public class BlockSimDump {
                   com.mojang.minecraft.core.level.tile.Block.allBlocks[id].updateTick(w, x, y, z, w.rand);
               }
             break;
+          case "sub": w.skyLightSubtracted = v[0]; break;
+          case "render": {
+            com.mojang.minecraft.client.render.Tessellator t = com.mojang.minecraft.client.render.Tessellator.instance;
+            com.mojang.minecraft.client.render.Tessellator.out = o;
+            com.mojang.minecraft.core.level.tile.Block.leaves.setFastOrFancy(3); // RenderGlobal.loadRenderers, leafLevel 3
+            int x0 = v[0] * 16, y0 = v[1] * 16, z0 = v[2] * 16;
+            ChunkCache cache = new ChunkCache(w, x0 - 1, y0 - 1, z0 - 1, x0 + 17, y0 + 17, z0 + 17);
+            com.mojang.minecraft.client.render.RenderBlocks rb = new com.mojang.minecraft.client.render.RenderBlocks(cache);
+            t.startDrawingQuads();
+            for (int pass = 0; pass < 2; pass++)
+              for (int y = y0; y < y0 + 16; y++) for (int z = z0; z < z0 + 16; z++) for (int x = x0; x < x0 + 16; x++) {
+                int id = cache.getBlockId(x, y, z);
+                if (id <= 0) continue;
+                com.mojang.minecraft.core.level.tile.Block b = com.mojang.minecraft.core.level.tile.Block.allBlocks[id];
+                if (b.getRenderBlockPass() != pass) continue;
+                com.mojang.minecraft.client.render.Tessellator.bx = x;
+                com.mojang.minecraft.client.render.Tessellator.by = y;
+                com.mojang.minecraft.client.render.Tessellator.bz = z;
+                rb.renderBlockByRenderType(b, x, y, z);
+              }
+            t.draw();
+            break;
+          }
           case "dump":
             for (int x = v[0]; x <= v[3]; x++) for (int z = v[2]; z <= v[5]; z++) for (int y = v[1]; y <= v[4]; y++) {
               o.writeByte(w.getBlockId(x, y, z)); o.writeByte(w.getBlockMetadata(x, y, z));

@@ -39,7 +39,7 @@ struct M4 {
 } // namespace
 
 void FirstPerson::addQuad(const float m[16], const float p[4][3], const float uv[4][2], float shade) {
-    axm::ModelVertex v[4];
+    QuadVertex v[4];
     for (int k = 0; k < 4; ++k) {
         const float* q = p[k];
         v[k].x = m[0] * q[0] + m[1] * q[1] + m[2] * q[2] + m[3];
@@ -158,11 +158,11 @@ void FirstPerson::draw(Renderer& r, const Player& p, const Camera& cam, float pa
             };
             for (int side = 0; side < 6; ++side) {
                 int tile = BLOCKS[shown.id].tex[meta][side];
-                float u0 = float(tile & 15) / 16.0f, v0 = float(tile >> 4) / 64.0f;
+                float u0 = float(tile & 15) / 16.0f, v0 = float(tile >> 4) / 16.0f;
                 float uv[4][2];
                 for (int k = 0; k < 4; ++k) {
                     uv[k][0] = u0 + UV[side][k][0] * (15.99f / 256.0f);
-                    uv[k][1] = v0 + UV[side][k][1] * (15.99f / 1024.0f);
+                    uv[k][1] = v0 + UV[side][k][1] * (15.99f / 256.0f);
                 }
                 addQuad(t.m, P[side], uv, bright * FACE[side]);
             }
@@ -172,11 +172,11 @@ void FirstPerson::draw(Renderer& r, const Player& p, const Camera& cam, float pa
             float u0, u1, v0, v1;
             if (shown.id < 256) {
                 tex = r.terrainTexture();
-                int tile = (info->flags & IF_TERRAIN2) ? 256 + icon : icon;
+                int tile = icon;
                 u0 = float(tile & 15) * 16.0f / 256.0f;
                 u1 = (float(tile & 15) * 16.0f + 15.99f) / 256.0f;
-                v0 = float(tile >> 4) * 16.0f / 1024.0f;
-                v1 = (float(tile >> 4) * 16.0f + 15.99f) / 1024.0f;
+                v0 = float(tile >> 4) * 16.0f / 256.0f;
+                v1 = (float(tile >> 4) * 16.0f + 15.99f) / 256.0f;
             } else {
                 tex = r.texture("romfs:/textures/gui/items.rgba");
                 u0 = float(icon % 16 * 16) / 256.0f;
@@ -240,7 +240,7 @@ void FirstPerson::draw(Renderer& r, const Player& p, const Camera& cam, float pa
     for (size_t i = 0; i < order.size(); ++i)
         order[i] = {tris[i * 3].z + tris[i * 3 + 1].z + tris[i * 3 + 2].z, int(i)};
     std::sort(order.begin(), order.end(), [](const Tri& a, const Tri& b) { return a.z < b.z; });
-    std::vector<axm::ModelVertex> sorted;
+    std::vector<QuadVertex> sorted;
     sorted.reserve(tris.size());
     for (const Tri& t : order)
         for (int k = 0; k < 3; ++k) sorted.push_back(tris[t.i * 3 + k]);

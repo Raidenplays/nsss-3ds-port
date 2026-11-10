@@ -202,10 +202,10 @@ void Mobs::renderBobber(Renderer& r, const Player& p, float partial, float camYa
     float u0 = 8.0f / 128.0f, u1 = 16.0f / 128.0f, v0 = 16.0f / 128.0f, v1 = 24.0f / 128.0f;
     const float s = 0.5f;
     auto at = [&](float a, float c, float u, float v) {
-        return axm::ModelVertex{x + (rx * a + ux * c) * s, y + (uy * c) * s, z + (rz * a + uz * c) * s, 1.0f, u, v};
+        return QuadVertex{x + (rx * a + ux * c) * s, y + (uy * c) * s, z + (rz * a + uz * c) * s, 1.0f, u, v};
     };
-    std::vector<axm::ModelVertex> q;
-    axm::ModelVertex v[4] = {at(-0.5f, -0.5f, u0, v1), at(0.5f, -0.5f, u1, v1), at(0.5f, 0.5f, u1, v0), at(-0.5f, 0.5f, u0, v0)};
+    std::vector<QuadVertex> q;
+    QuadVertex v[4] = {at(-0.5f, -0.5f, u0, v1), at(0.5f, -0.5f, u1, v1), at(0.5f, 0.5f, u1, v0), at(-0.5f, 0.5f, u0, v0)};
     static const int T[6] = {0, 1, 2, 0, 2, 3};
     for (int i : T) q.push_back(v[i]);
     r.drawTriangles(q, r.texture("romfs:/textures/particles.rgba"));
@@ -225,9 +225,9 @@ void Mobs::renderBobber(Renderer& r, const Player& p, float partial, float camYa
         float ax = x + float(dx) * f0, ay = y + float(dy * double(f0 * f0 + f0) * 0.5) + 0.25f, az = z + float(dz) * f0;
         float bx = x + float(dx) * f1, by = y + float(dy * double(f1 * f1 + f1) * 0.5) + 0.25f, bz = z + float(dz) * f1;
         // a thin strip turned to the camera
-        axm::ModelVertex l[4] = {{ax - ux * wdt, ay - uy * wdt, az - uz * wdt, 0.0f, 0, 0}, {ax + ux * wdt, ay + uy * wdt, az + uz * wdt, 0.0f, 0, 0},
+        QuadVertex l[4] = {{ax - ux * wdt, ay - uy * wdt, az - uz * wdt, 0.0f, 0, 0}, {ax + ux * wdt, ay + uy * wdt, az + uz * wdt, 0.0f, 0, 0},
                                  {bx + ux * wdt, by + uy * wdt, bz + uz * wdt, 0.0f, 0, 0}, {bx - ux * wdt, by - uy * wdt, bz - uz * wdt, 0.0f, 0, 0}};
-        axm::ModelVertex l2[4] = {{ax - rx * wdt, ay, az - rz * wdt, 0.0f, 0, 0}, {ax + rx * wdt, ay, az + rz * wdt, 0.0f, 0, 0},
+        QuadVertex l2[4] = {{ax - rx * wdt, ay, az - rz * wdt, 0.0f, 0, 0}, {ax + rx * wdt, ay, az + rz * wdt, 0.0f, 0, 0},
                                   {bx + rx * wdt, by, bz + rz * wdt, 0.0f, 0, 0}, {bx - rx * wdt, by, bz - rz * wdt, 0.0f, 0, 0}};
         for (int k : T) q.push_back(l[k]);
         for (int k : T) q.push_back(l2[k]);

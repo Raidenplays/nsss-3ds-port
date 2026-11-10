@@ -3,7 +3,7 @@
 // right corner, swinging when you dig, hit or place, dipping when you change items, bobbing as
 // you walk (EntityRenderer.setupViewBobbing).
 #include <vector>
-#include "model/AxmModel.h"
+#include "render/Vertex.h"
 #include "game/Inventory.h"
 
 class Renderer;
@@ -22,6 +22,6 @@ private:
     ItemStack shown;       // itemToRender
     int shownSlot = -1;    // field_20099_f
     float equipped = 0, prevEquipped = 0;
-    std::vector<axm::ModelVertex> tris;
+    std::vector<QuadVertex> tris;
     void addQuad(const float m[16], const float p[4][3], const float uv[4][2], float shade);
 };

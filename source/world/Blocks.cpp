@@ -766,6 +766,14 @@ void onBlockAdded(World& w, int x, int y, int z, int id) {
         break;
     case BC::Stationary: checkForHarden(w, x, y, z, id); break;
     case BC::Sponge: spongeAdded(w, x, y, z); break;
+    case BC::BurntCloth: // BlockBurntCloth.onBlockAdded: melts the snow and ice two blocks around
+        for (int i = x - 2; i <= x + 2; i++)
+            for (int j = y - 2; j <= y + 2; j++)
+                for (int k = z - 2; k <= z + 2; k++) {
+                    int n = w.blockAt(i, j, k);
+                    if (n == 78 || n == 79) w.setBlockWithNotify(i, j, k, 0);
+                }
+        break;
     case BC::SpongeInactive: wetSpongeAdded(w, x, y, z); break;
     case BC::Torch: torchAddedNsss(w, x, y, z, id); break;
     case BC::Sand: case BC::Gravel: w.scheduleBlockUpdate(x, y, z, id); break;
@@ -845,6 +853,7 @@ void onNeighborBlockChange(World& w, int x, int y, int z, int id, int neighbour)
         if (matSolid(w.materialAt(x, y + 1, z))) w.setBlockWithNotify(x, y, z, DIRT);
         break;
     case BC::LightBulb: lightBulbNeighbourChange(w, x, y, z, neighbour); break;
+    case BC::BurntCloth: w.setBlock(x, y, z, redPowerAround(w, x, y, z, neighbour) ? 106 : 105); break; // (setBlock, no notify)
     case BC::Sponge: // powered: wet sponge (the water around runs back)
         if (redPowerAround(w, x, y, z, neighbour)) {
             spongeDestroyed(w, x, y, z);

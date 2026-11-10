@@ -75,6 +75,8 @@ public class DumpNsss {
   public static void main(String[] a) throws Exception {
     Class.forName("com.mojang.minecraft.core.level.tile.Block");
     Class.forName("com.mojang.minecraft.core.entity.item.Item");
+    // RenderGlobal.loadRenderers, as soon as a world loads: leaves move to the TextureLeavesFX tile
+    Block.leaves.setFastOrFancy(3);
     File dir = new File(a[0]); dir.mkdirs();
     Map<Object, String> mats = new IdentityHashMap<>();
     for (Field fl : Material.class.getDeclaredFields()) if (Modifier.isStatic(fl.getModifiers()) && fl.getType() == Material.class) mats.put(fl.get(null), fl.getName());
@@ -109,6 +111,7 @@ public class DumpNsss {
           + ",\"opacity\":" + Block.lightOpacity[id] + ",\"light\":" + Block.lightValue[id]
           + ",\"liquid\":" + (mat == Material.water || mat == Material.lava)
           + ",\"bounds\":[" + f(b,"minX") + "," + f(b,"minY") + "," + f(b,"minZ") + "," + f(b,"maxX") + "," + f(b,"maxY") + "," + f(b,"maxZ") + "]"
+          + ",\"index\":" + b.blockIndexInTexture
           + ",\"tex\":" + tex + "}");
         StepSound ss = b.stepSound;
         String step = ss == null ? "step.stone" : "step." + ss.field_1678_a, brk = ss == null ? "step.stone" : ss.stepSoundDir();

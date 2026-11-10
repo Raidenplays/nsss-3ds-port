@@ -31,4 +31,6 @@ bool tryToCreatePortal(World& w, int x, int y, int z);      // BlockPortal (fire
 bool isNaturalStone(int id);                                  // AxeolonStone.isNatural
 int oreKind(int id);
 void torchAdded(World& w, int i, int j, int k, int id); // BlockTorch.onBlockAdded (NSSS)                                          // BlockOreVariant.kindOf
+// BlockFire.chanceToEncourageFire (> 0: fire spreads to it; RenderBlocks.renderFire leans flames on it)
+int fireEncourage(int id);
 } // namespace Blocks

@@ -13,8 +13,7 @@
 #include "ChunkMesh.h"
 #include "Frustum.h"
 #include "world/Chunk.h"
-#include "model/AxmModel.h"
-#include "model/BlockModels.h"
+#include "render/Vertex.h"
 #include <string>
 
 struct GpuMesh {
@@ -70,13 +69,10 @@ public:
     void beginFrame();
     void renderWorld(const C3D_Mtx& view, const Frustum& frustum, float camX, float camY, float camZ);
     // ---- models (after renderWorld, before prepare2D) ----
-    // Quads (4 vertices each) in world coordinates, textured from the terrain atlas
-    // (animating model blocks).
-    void drawAtlasQuads(const std::vector<axm::ModelVertex>& quads, const std::vector<BlockModels::Batch>& batches);
     // Triangles in world coordinates with their own texture (mobs). Culling off, like RenderLiving.
     // tint multiplies the colour (glColor4f); blend: 0 opaque (alpha test), 1 alpha blend, 2 additive
     // (glowing eyes); depthEqual draws only over what's already there (the red hurt flash).
-    void drawTriangles(const std::vector<axm::ModelVertex>& tris, C3D_Tex* tex, const float tint[4] = nullptr,
+    void drawTriangles(const std::vector<QuadVertex>& tris, C3D_Tex* tex, const float tint[4] = nullptr,
                        int blend = 0, bool depthEqual = false, bool untextured = false);
     // romfs .rgba texture, loaded on first use (e.g. "romfs:/textures/mob/pig.rgba"). Null if missing.
     C3D_Tex* texture(const std::string& path);
@@ -87,7 +83,7 @@ public:
     // Triangles with their own projection (view = identity), positions as given, UV 0..1 from the
     // top of the texture. blend: 0 opaque (alpha test), 1 alpha, 2 additive (alpha, one),
     // 3 (src colour, one). area: 0 whole screen, 1 top half only (the logo's viewport).
-    void drawFree(const C3D_Mtx& proj, const std::vector<axm::ModelVertex>& tris, C3D_Tex* tex, int blend,
+    void drawFree(const C3D_Mtx& proj, const std::vector<QuadVertex>& tris, C3D_Tex* tex, int blend,
                   bool cull, int area = 0);
 
     // The current eye's projection (for the first-person hand)

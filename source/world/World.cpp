@@ -965,6 +965,11 @@ int World::currentSeason() const {
     return int(info.time % (span * 4) / span);
 }
 
+float World::seasonProgress() const {
+    int timeOfSeason = int(info.time % (int64_t(24000) * daysInSeason) / 24000);
+    return float(timeOfSeason) / float(daysInSeason);
+}
+
 float World::mobRatio() const {
     static const float RATIO[4] = {1.0f, 0.6f, 0.2f, 1.5f}; // summer, fall, winter, spring
     int s = currentSeason();

@@ -146,12 +146,12 @@ void Hud::drawOverlays(float brightness, bool underwater, bool burning, float ya
     if (burning) {
         C3D_Tex* atlas = r.terrainTexture();
         const int tile = 31;
-        float u0 = float(tile & 15) / 16.0f, v0 = 1.0f - float(tile >> 4) / 64.0f;
-        Tex3DS_SubTexture sub = {16, 16, u0, v0, u0 + 1.0f / 16.0f, v0 - 1.0f / 64.0f};
+        float u0 = float(tile & 15) / 16.0f, v0 = 1.0f - float(tile >> 4) / 16.0f;
+        Tex3DS_SubTexture sub = {16, 16, u0, v0, u0 + 1.0f / 16.0f, v0 - 1.0f / 16.0f};
         C2D_ImageTint t;
         C2D_AlphaImageTint(&t, 0.9f);
         C2D_DrawImageAt({atlas, &sub}, edgeL() - 20, 70, 0.5f, &t, 11.0f, 11.0f);
-        Tex3DS_SubTexture flip = {16, 16, u0 + 1.0f / 16.0f, v0, u0, v0 - 1.0f / 64.0f};
+        Tex3DS_SubTexture flip = {16, 16, u0 + 1.0f / 16.0f, v0, u0, v0 - 1.0f / 16.0f};
         C2D_DrawImageAt({atlas, &flip}, edgeR() - 156, 70, 0.5f, &t, 11.0f, 11.0f);
     }
 }
@@ -274,9 +274,8 @@ void Hud::itemIcon(int id, int damage, float x, float y) { // RenderItem.renderI
     if (id < 256) {
         tile = info && info->icon >= 0 ? info->icon : 0;
         if (info && (info->flags & IF_BLOCK3D)) tile = BLOCKS[id].tex[damage & 15][2];
-        else if (info && (info->flags & IF_TERRAIN2)) tile = 256 + (tile & 255);
         tex = renderer ? renderer->terrainTexture() : nullptr;
-        th = 1024.0f;
+        th = 256.0f;
     } else {
         if (!info || info->icon < 0) return;
         tile = info->icon;

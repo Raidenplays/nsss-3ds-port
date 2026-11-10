@@ -1,7 +1,8 @@
 #!/bin/sh
 # Parity: the same scenarios on the NSSS jar (Java, headless) and on the port's world code (host
 # build), outputs compared byte for byte. Needs the jar (NSSS_JAR) and the Java tools compiled to
-# NSSS_TOOLS (javac -cp $NSSS_JAR -d $NSSS_TOOLS tools/nsss/...).
+# NSSS_TOOLS (javac -cp $NSSS_JAR -d $NSSS_TOOLS tools/nsss/...), and tools/nsss/shadow (the
+# recording Tessellator for the render scripts) to $NSSS_TOOLS/../shadow.
 #   tools/host/parity.sh            terrain, populate and the block scripts
 set -e
 cd "$(dirname "$0")/../.."
@@ -11,10 +12,13 @@ OUT=${PARITY_OUT:-/tmp/parity}
 mkdir -p "$OUT"
 CXX="g++ -std=gnu++17 -O1 -ffp-contract=off -w -Isource -Itools/host/shim"
 SRC="source/world/*.cpp source/world/gen/*.cpp source/game/SurvivalData.cpp"
-for t in alphagen alphapop blocksim; do
+for t in alphagen alphapop; do
     $CXX tools/host/$t.cpp $SRC -o "$OUT/$t" -lz
 done
-J() { java -cp "$JAR:$TOOLS" "$@"; }
+$CXX tools/host/blocksim.cpp $SRC source/render/ChunkMesh.cpp -o "$OUT/blocksim" -lz
+# tools/nsss/shadow's Tessellator (compiled to $TOOLS/../shadow) stands in for the jar's
+SHADOW=${NSSS_SHADOW:-$TOOLS/../shadow}
+J() { java -cp "$SHADOW:$JAR:$TOOLS" "$@"; }
 fail=0
 same() { if cmp -s "$1" "$2"; then echo "  same: $3"; else echo "  DIFFERENT: $3"; fail=1; fi; }
 

@@ -2,7 +2,7 @@
 // Every item's GUI icon, as Axeolon's RenderItem draws it (dumped by tools/java/DumpItems).
 #include <cstdint>
 
-enum ItemFlags { IF_BLOCK3D = 1, IF_TERRAIN2 = 2, IF_ITEM = 4 };
+enum ItemFlags { IF_BLOCK3D = 1, IF_ITEM = 4 };
 
 struct ItemInfo {
     uint16_t id, damage;

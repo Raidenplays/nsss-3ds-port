@@ -8,7 +8,6 @@
 #include "world/BlockTable.h"
 #include "world/Chunk.h"
 #include "world/World.h"
-#include "model/BlockModels.h"
 
 namespace {
 const double HALF = 0.125; // setSize(0.25, 0.25)
@@ -151,7 +150,7 @@ void ItemEntities::render(World& w, Renderer& r, float partial, float camYaw, fl
     // camera right / up for the billboards (RenderItem turns flat items to face the viewer)
     float rx = std::cos(camYaw), rz = std::sin(camYaw);
     float ux = std::sin(camPitch) * std::sin(camYaw), uy = std::cos(camPitch), uz = -std::sin(camPitch) * std::cos(camYaw);
-    std::vector<axm::ModelVertex> tris;
+    std::vector<QuadVertex> tris;
     for (const ItemEntity& e : items) {
         double x = e.px + (e.x - e.px) * partial, y = e.py + (e.y - e.py) * partial, z = e.pz + (e.z - e.pz) * partial;
         float t = float(e.age) + partial;
@@ -177,10 +176,10 @@ void ItemEntities::render(World& w, Renderer& r, float partial, float camYaw, fl
             static const float SH[6] = {0.5f, 1.0f, 0.8f, 0.8f, 0.6f, 0.6f};
             for (int f = 0; f < 6; ++f) {
                 int tile = BLOCKS[e.item.id].tex[e.item.damage & 15][f];
-                float u0 = (tile & 15) / 16.0f, v0 = (tile >> 4) * 16.0f / 1024.0f;
-                float u1 = u0 + 1 / 16.0f, v1 = v0 + 16.0f / 1024.0f;
+                float u0 = (tile & 15) / 16.0f, v0 = (tile >> 4) / 16.0f;
+                float u1 = u0 + 1 / 16.0f, v1 = v0 + 1 / 16.0f;
                 const float uv[4][2] = {{u0, v0}, {u1, v0}, {u1, v1}, {u0, v1}};
-                axm::ModelVertex q[4];
+                QuadVertex q[4];
                 for (int k = 0; k < 4; ++k) {
                     P(F[f][k][0] * h, F[f][k][1] * h, F[f][k][2] * h, q[k].x, q[k].y, q[k].z);
                     q[k].shade = shade * SH[f];
@@ -198,9 +197,8 @@ void ItemEntities::render(World& w, Renderer& r, float partial, float camYaw, fl
         float vScale;
         if (e.item.id < 256) {
             icon = info && info->icon >= 0 ? info->icon : BLOCKS[e.item.id].tex[e.item.damage & 15][2];
-            if (info && (info->flags & IF_TERRAIN2)) icon = 256 + (icon & 255);
             tex = r.terrainTexture();
-            vScale = 16.0f / 1024.0f;
+            vScale = 16.0f / 256.0f;
         } else {
             if (!info || info->icon < 0) continue;
             icon = info->icon;
@@ -211,7 +209,7 @@ void ItemEntities::render(World& w, Renderer& r, float partial, float camYaw, fl
         float u0 = (icon & 15) / 16.0f, v0 = (icon >> 4) * vScale, u1 = u0 + 1 / 16.0f, v1 = v0 + vScale;
         float s = 0.25f;
         float bx = float(x), by = cy, bz = float(z);
-        axm::ModelVertex q[4] = {
+        QuadVertex q[4] = {
             {bx - rx * s - ux * s, by - uy * s, bz - rz * s - uz * s, shade, u0, v1},
             {bx + rx * s - ux * s, by - uy * s, bz + rz * s - uz * s, shade, u1, v1},
             {bx + rx * s + ux * s, by + uy * s, bz + rz * s + uz * s, shade, u1, v0},

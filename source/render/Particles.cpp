@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <cmath>
 #include "Renderer.h"
-#include "model/BlockModels.h"
 #include "world/BlockProps.h"
 #include "world/BlockTable.h"
 #include "world/MathHelper.h"
@@ -404,8 +403,8 @@ void Particles::render(const World& w, Renderer& r, float partial, float yaw, fl
             int tile = p.tex;
             u0 = (float(tile & 15) + p.jx / 4.0f) / 16.0f;
             u1 = u0 + 0.999f / 64.0f;
-            v0 = (float(tile >> 4) * 16.0f + p.jy * 4.0f) / 1024.0f;
-            v1 = v0 + 3.996f / 1024.0f;
+            v0 = (float(tile >> 4) * 16.0f + p.jy * 4.0f) / 256.0f;
+            v1 = v0 + 3.996f / 256.0f;
         } else {
             layer = 0;
             u0 = float(p.tex % 16) / 16.0f;
@@ -413,7 +412,7 @@ void Particles::render(const World& w, Renderer& r, float partial, float yaw, fl
             v0 = float(p.tex / 16) / 16.0f;
             v1 = v0 + 0.999f / 16.0f;
         }
-        axm::ModelVertex q[4] = {
+        QuadVertex q[4] = {
             {x - f1 * sz - f3 * sz, y - f5 * sz, z - f2 * sz - f4 * sz, shade, u1, v1},
             {x - f1 * sz + f3 * sz, y + f5 * sz, z - f2 * sz + f4 * sz, shade, u1, v0},
             {x + f1 * sz + f3 * sz, y + f5 * sz, z + f2 * sz + f4 * sz, shade, u0, v0},

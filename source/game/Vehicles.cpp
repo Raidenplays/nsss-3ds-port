@@ -7,7 +7,6 @@
 #include "Mobs.h"
 #include "Player.h"
 #include "audio/Sound.h"
-#include "model/BlockModels.h"
 #include "render/BoxModel.h"
 #include "render/Particles.h"
 #include "render/Renderer.h"
@@ -880,7 +879,7 @@ void Vehicles::cartCollisions(Player& p, Mobs* mobsIn) {
 
 void Vehicles::render(const World& w, Renderer& r, float partial) {
     using namespace boxmodel;
-    std::vector<axm::ModelVertex> q;
+    std::vector<QuadVertex> q;
     {
         for (const Boat& b : boats) {
             if (b.dead) continue;
@@ -912,7 +911,7 @@ void Vehicles::render(const World& w, Renderer& r, float partial) {
 
 namespace {
 // RenderBlocks.func_1227_a: a block as a cube round the origin, its inventory faces
-void blockCube(std::vector<axm::ModelVertex>& q, const boxmodel::M4& t, int id, float light) {
+void blockCube(std::vector<QuadVertex>& q, const boxmodel::M4& t, int id, float light) {
     static const float C[6][4][3] = {
         {{-.5f, -.5f, -.5f}, {.5f, -.5f, -.5f}, {.5f, -.5f, .5f}, {-.5f, -.5f, .5f}}, // bottom
         {{-.5f, .5f, .5f}, {.5f, .5f, .5f}, {.5f, .5f, -.5f}, {-.5f, .5f, -.5f}},     // top
@@ -925,7 +924,7 @@ void blockCube(std::vector<axm::ModelVertex>& q, const boxmodel::M4& t, int id, 
     for (int side = 0; side < 6; ++side) {
         int tile = BLOCKS[id].tex[0][side];
         float u0 = float(tile & 15) / 16.0f, u1 = u0 + 1.0f / 16.0f;
-        float v0 = float(tile >> 4) * 16.0f / 1024.0f, v1 = v0 + 16.0f / 1024.0f;
+        float v0 = float(tile >> 4) / 16.0f, v1 = v0 + 1.0f / 16.0f;
         float uv[4][2] = {{u0, v1}, {u1, v1}, {u1, v0}, {u0, v0}};
         boxmodel::quad(q, t, C[side], uv, light * SHADE[side]);
     }
@@ -935,7 +934,7 @@ void blockCube(std::vector<axm::ModelVertex>& q, const boxmodel::M4& t, int id, 
 void Vehicles::renderCarts(const World& w, Renderer& r, float partial) {
     using namespace boxmodel;
     if (carts.empty()) return;
-    std::vector<axm::ModelVertex> body, blocks;
+    std::vector<QuadVertex> body, blocks;
     for (const Cart& k : carts) {
         if (k.dead) continue;
         double x = k.px + (k.x - k.px) * partial, y = k.py + (k.y - k.py) * partial, z = k.pz + (k.z - k.pz) * partial;

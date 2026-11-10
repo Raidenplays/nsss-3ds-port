@@ -58,7 +58,7 @@ private:
     C3D_RenderTarget* target = nullptr;
     C2D_TextBuf textBuf = nullptr;
     C2D_TextBuf measureBuf = nullptr; // scratch for measuring words while wrapping
-    Tex3DS_SubTexture tileSub[512];  // terrain.png + terrain2.png tiles in the 256x1024 atlas
+    Tex3DS_SubTexture tileSub[256];  // terrain.png's tiles
     Tex3DS_SubTexture itemSub[256];  // gui/items.png
     C3D_Tex* itemsTex = nullptr;
     C3D_Tex* peSheet = nullptr; // PE spritesheet.png (128x128)

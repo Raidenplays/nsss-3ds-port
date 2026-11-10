@@ -46,6 +46,7 @@ public:
     float getBrightness(int x, int y, int z) const;    // World.getBrightness (lightBrightnessTable)
     int currentSeason() const;                         // getCurrentSeason (a CYCLE world turns every daysInSeason days)
     float mobRatio() const;                            // EnumSeason.getMobRatio
+    float seasonProgress() const;                      // getSeasonProgress: whole days into the season / daysInSeason
     bool setBlockAndMetadata(int x, int y, int z, uint8_t id, int meta); // player edits: ...WithNotify
     int getTopY(int x, int z) const;
     Chunk* getChunk(int cx, int cz) const {

@@ -1,12 +1,13 @@
 #pragma once
-// Beta's MathHelper: sine and cosine come from a 65536-entry table, and world generation and
-// movement both depend on getting the same values as Java.
+// The jar's (Alpha's) MathHelper: sine and cosine come from a 65536-entry table indexed with
+// 10430.38F (Beta's 10430.378F is a different float), and world generation, movement and rendering
+// all depend on getting the same values as Java.
 #include <cmath>
 
 namespace MathHelper {
 const float* sinTable(); // 65536 floats, built on first use
-inline float sin(float v) { return sinTable()[int(v * 10430.378f) & 0xFFFF]; }
-inline float cos(float v) { return sinTable()[int(v * 10430.378f + 16384.0f) & 0xFFFF]; }
+inline float sin(float v) { return sinTable()[int(v * 10430.38f) & 0xFFFF]; }
+inline float cos(float v) { return sinTable()[int(v * 10430.38f + 16384.0f) & 0xFFFF]; }
 inline float sqrt_float(float v) { return float(std::sqrt(double(v))); }
 inline float sqrt_double(double v) { return float(std::sqrt(v)); }
 inline int floor_double(double v) {
