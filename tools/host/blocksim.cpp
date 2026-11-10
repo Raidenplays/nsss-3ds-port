@@ -1,6 +1,7 @@
 // Block behaviour parity: runs a block script on the 3DS World, like tools/nsss/BlockSimDump.java.
 // usage: blocksim <seed> <emptyDir> <script> <out>   (script format: see BlockSimDump.java)
 #include "world/World.h"
+#include "world/Blocks.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -16,6 +17,7 @@ int main(int argc, char** argv) {
     w.rand.setSeed(777);
     // like the Java side, falling sand becomes an entity that this test never ticks
     w.onFallingBlock = [](int, int, int, int) {};
+    Blocks::onTntIgnited = [](int, int, int) {}; // EntityTNTPrimed: spawned, never ticked here
     w.info.time = 0;
     FILE* in = fopen(argv[3], "r");
     FILE* out = fopen(argv[4], "wb");

@@ -323,6 +323,83 @@ void lightBulbNeighbourChange(World& w, int i, int j, int k, int neighbour) { //
     w.setBlock(i, j, k, redPowerAround(w, i, j, k, neighbour) ? 98 : 97);
 }
 
+// ---------------------------------------------------------------- attached blocks (NSSS / Alpha)
+// Alpha torches and buttons turn to face a solid neighbour whenever they're added; NSSS torches
+// can also hang off its sideways slabs (stepSingle with metadata 1..5).
+
+constexpr int STEP_SINGLE = 44, FENCE_ID = 85, GLASS_ID = 20;
+bool normalCube(World& w, int x, int y, int z) { return w.isBlockOpaqueCube(x, y, z); } // World.isBlockNormalCube
+bool slabFacing(World& w, int x, int y, int z, int m) { return w.blockAt(x, y, z) == STEP_SINGLE && w.metaAt(x, y, z) == m; }
+
+bool torchCanPlace(World& w, int x, int y, int z) { // BlockTorch.canPlace
+    int below = w.blockAt(x, y - 1, z);
+    if (below == FENCE_ID || below == GLASS_ID) return true;
+    if (normalCube(w, x - 1, y, z) || slabFacing(w, x - 1, y, z, 4)) return true;
+    if (normalCube(w, x + 1, y, z) || slabFacing(w, x + 1, y, z, 5)) return true;
+    if (normalCube(w, x, y, z - 1) || slabFacing(w, x, y, z - 1, 2)) return true;
+    if (normalCube(w, x, y, z + 1) || slabFacing(w, x, y, z + 1, 3)) return true;
+    return normalCube(w, x, y - 1, z) || slabFacing(w, x, y - 1, z, 1);
+}
+
+void torchAddedNsss(World& w, int i, int j, int k, int id) { // BlockTorch.onBlockAdded
+    if (normalCube(w, i - 1, j, k)) w.setBlockMetadataWithNotify(i, j, k, 1);
+    else if (normalCube(w, i + 1, j, k)) w.setBlockMetadataWithNotify(i, j, k, 2);
+    else if (normalCube(w, i, j, k - 1)) w.setBlockMetadataWithNotify(i, j, k, 3);
+    else if (normalCube(w, i, j, k + 1)) w.setBlockMetadataWithNotify(i, j, k, 4);
+    else if (normalCube(w, i, j - 1, k)) w.setBlockMetadataWithNotify(i, j, k, 5);
+    if (!torchCanPlace(w, i, j, k)) { // isInLegalPosition
+        dropBlockAsItem(w, i, j, k, id, w.metaAt(i, j, k));
+        w.setBlockWithNotify(i, j, k, 0);
+    }
+}
+
+void torchNeighbourChange(World& w, int x, int y, int z, int id) { // BlockTorch.onNeighborBlockChange
+    if (!torchCanPlace(w, x, y, z)) {
+        dropBlockAsItem(w, x, y, z, id, w.metaAt(x, y, z));
+        w.setBlockWithNotify(x, y, z, 0);
+        return;
+    }
+    int m = w.metaAt(x, y, z);
+    bool drop = false;
+    if (!normalCube(w, x - 1, y, z) && !slabFacing(w, x - 1, y, z, 4) && m == 1) drop = true;
+    if (!normalCube(w, x + 1, y, z) && !slabFacing(w, x + 1, y, z, 5) && m == 2) drop = true;
+    if (!normalCube(w, x, y, z - 1) && !slabFacing(w, x, y, z - 1, 2) && m == 3) drop = true;
+    if (!normalCube(w, x, y, z + 1) && !slabFacing(w, x, y, z + 1, 3) && m == 4) drop = true;
+    if (!normalCube(w, x, y - 1, z) && !slabFacing(w, x, y - 1, z, 1) && m == 5 && w.blockAt(x, y - 1, z) != FENCE_ID) drop = true;
+    if (drop) {
+        dropBlockAsItem(w, x, y, z, id, m);
+        w.setBlockWithNotify(x, y, z, 0);
+    }
+}
+
+void ladderNeighbourChange(World& w, int i, int j, int k, int id) { // BlockLadder.onNeighborBlockChange
+    int m = w.metaAt(i, j, k);
+    bool ok = (m == 2 && normalCube(w, i, j, k + 1)) || (m == 3 && normalCube(w, i, j, k - 1)) ||
+              (m == 4 && normalCube(w, i + 1, j, k)) || (m == 5 && normalCube(w, i - 1, j, k));
+    if (!ok) {
+        dropBlockAsItem(w, i, j, k, id, m);
+        w.setBlockWithNotify(i, j, k, 0);
+    }
+}
+
+void signNeighbourChange(World& w, int i, int j, int k, int id) { // BlockSign.onNeighborBlockChange
+    bool drop;
+    if (id == SIGN) { // the sign post: on something solid
+        drop = !matSolid(w.materialAt(i, j - 1, k));
+    } else {
+        int m = w.metaAt(i, j, k);
+        drop = true;
+        if (m == 2 && matSolid(w.materialAt(i, j, k + 1))) drop = false;
+        if (m == 3 && matSolid(w.materialAt(i, j, k - 1))) drop = false;
+        if (m == 4 && matSolid(w.materialAt(i + 1, j, k))) drop = false;
+        if (m == 5 && matSolid(w.materialAt(i - 1, j, k))) drop = false;
+    }
+    if (drop) {
+        dropBlockAsItem(w, i, j, k, id, w.metaAt(i, j, k));
+        w.setBlockWithNotify(i, j, k, 0);
+    }
+}
+
 // ---------------------------------------------------------------- sand / gravel
 
 bool canFallBelow(World& w, int x, int y, int z) {
@@ -687,6 +764,7 @@ void onBlockAdded(World& w, int x, int y, int z, int id) {
     case BC::Stationary: checkForHarden(w, x, y, z, id); break;
     case BC::Sponge: spongeAdded(w, x, y, z); break;
     case BC::SpongeInactive: wetSpongeAdded(w, x, y, z); break;
+    case BC::Torch: torchAddedNsss(w, x, y, z, id); break;
     case BC::Sand: case BC::Gravel: w.scheduleBlockUpdate(x, y, z, id); break;
     case BC::Frozen:
         if (id == COMPACTED_ICE) w.scheduleBlockUpdate(x, y, z, id);
@@ -769,6 +847,12 @@ void onNeighborBlockChange(World& w, int x, int y, int z, int id, int neighbour)
         break;
     case BC::Sand: case BC::Gravel: w.scheduleBlockUpdate(x, y, z, id); break;
     case BC::Gear: gearNeighbourChange(w, x, y, z, id); break;
+    case BC::Torch: torchNeighbourChange(w, x, y, z, id); break;
+    case BC::Ladder: ladderNeighbourChange(w, x, y, z, id); break;
+    case BC::Sign: signNeighbourChange(w, x, y, z, id); break;
+    case BC::Soil: // BlockSoil.onNeighborBlockChange: something solid on top makes it dirt
+        if (matSolid(w.materialAt(x, y + 1, z))) w.setBlockWithNotify(x, y, z, DIRT);
+        break;
     case BC::LightBulb: lightBulbNeighbourChange(w, x, y, z, neighbour); break;
     case BC::Sponge: // powered: wet sponge (the water around runs back)
         if (redPowerAround(w, x, y, z, neighbour)) {
@@ -1062,6 +1146,8 @@ bool canPlaceBlockAt(World& w, int id, int x, int y, int z) {
         }
     }
 }
+
+void torchAdded(World& w, int i, int j, int k, int id) { torchAddedNsss(w, i, j, k, id); }
 
 bool canBlockStay(World& w, int id, int x, int y, int z) {
     if (isPlant(id)) return plantStay(w, id, x, y, z);

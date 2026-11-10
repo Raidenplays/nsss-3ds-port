@@ -29,5 +29,6 @@ bool needsLight(World& w, int x, int y, int z); // BlockFlower.needsLight
 bool placeCattail(World& w, int x, int y, int z, bool notify); // BlockCattail.place
 bool tryToCreatePortal(World& w, int x, int y, int z);      // BlockPortal (fire on an obsidian frame)
 bool isNaturalStone(int id);                                  // AxeolonStone.isNatural
-int oreKind(int id);                                          // BlockOreVariant.kindOf
+int oreKind(int id);
+void torchAdded(World& w, int i, int j, int k, int id); // BlockTorch.onBlockAdded (NSSS)                                          // BlockOreVariant.kindOf
 } // namespace Blocks

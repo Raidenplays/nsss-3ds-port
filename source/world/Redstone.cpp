@@ -621,8 +621,21 @@ void onBlockAdded(World& w, int x, int y, int z, int id) {
         wireAroundNotify(w, x, y, z);
         break;
     case BC::RedstoneTorch:
-        if (id == TORCH_ON) notifyAll6(w, x, y, z, id);
+        if (w.getBlockMetadata(x, y, z) == 0) Blocks::torchAdded(w, x, y, z, id); // BlockRedTorch: super only for meta 0
+        if (w.getBlockId(x, y, z) == id && id == TORCH_ON) notifyAll6(w, x, y, z, id);
         break;
+    case BC::Button: { // NSSS BlockButton.onBlockAdded: face a solid side (clears the pressed bit), else drop
+        auto solid = [&](int a, int b, int c) { return opaque(w, a, b, c); };
+        if (solid(x - 1, y, z)) w.setBlockMetadataWithNotify(x, y, z, 1);
+        else if (solid(x + 1, y, z)) w.setBlockMetadataWithNotify(x, y, z, 2);
+        else if (solid(x, y, z - 1)) w.setBlockMetadataWithNotify(x, y, z, 3);
+        else if (solid(x, y, z + 1)) w.setBlockMetadataWithNotify(x, y, z, 4);
+        if (!(solid(x - 1, y, z) || solid(x + 1, y, z) || solid(x, y, z - 1) || solid(x, y, z + 1))) {
+            Blocks::dropBlockAsItem(w, x, y, z, id, w.getBlockMetadata(x, y, z));
+            w.setBlockWithNotify(x, y, z, 0);
+        }
+        break;
+    }
     case BC::PowerRepeater: w.notifyBlocksOfNeighborChange(x, y, z, id); break;
     case BC::LapisWire: lapisUpdate(w, x, y, z); break;
     case BC::LapisTorch:
