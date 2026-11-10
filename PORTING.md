@@ -17,7 +17,10 @@ with no Minecraft window): same seed, same chunk order, then every block and met
 | Leaves (no decay metadata; log or mossy brick within 4) | ✅ NSSS's |
 | Flower/mushroom/reed placement rules | ✅ NSSS's |
 | Block/item/recipe/smelting tables | ✅ from the jar |
-| Every other block behaviour (66 tile classes) | ⏳ next: port each class, test with block-update dumps |
+| Fluids (incl. sponge rules, bleeding obsidian), sponges, gears/motors, light bulbs | ✅ identical (sims/fluids, sims/nsss_blocks) |
+| Torches (incl. sideways slabs), ladders, signs, buttons, levers, doors, rails, redstone, TNT, farmland, cactus, reeds, snow | ✅ identical (sims/common_blocks) |
+| Random ticks: grass, crops, saplings (16 stages), reeds, cactus, mushrooms (spreading), leaves, ice, snow, fire (NSSS burn table incl. Classic cloth), lava | ✅ identical over 120 rounds (sims/random_ticks) |
+| Remaining block classes: player-triggered (bleeding obsidian, pyramidion, sponge breaking, jukebox, doors by hand), burnt cloth, slab orientation | ⏳ |
 | Entities and mobs (38 + 34 item classes) | ⏳ |
 | Player, exhaustion, inventory, crafting | ⏳ |
 | World ticking, lighting, seasons, weather, day length | ⏳ |

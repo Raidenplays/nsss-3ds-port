@@ -31,6 +31,14 @@ public class BlockSimDump {
             break;
           case "set": w.setBlockAndMetadataWithNotify(v[0], v[1], v[2], v[3], v[4]); break;
           case "tick": for (int i = 0; i < v[0]; i++) { w.worldTime++; w.tickUpdates(false); } break;
+          case "rtick": // n rounds: random-tick every tickOnLoad block in the box, x then z then y
+            for (int n = 0; n < v[6]; n++)
+              for (int x = v[0]; x <= v[3]; x++) for (int z = v[2]; z <= v[5]; z++) for (int y = v[1]; y <= v[4]; y++) {
+                int id = w.getBlockId(x, y, z);
+                if (id > 0 && com.mojang.minecraft.core.level.tile.Block.tickOnLoad[id])
+                  com.mojang.minecraft.core.level.tile.Block.allBlocks[id].updateTick(w, x, y, z, w.rand);
+              }
+            break;
           case "dump":
             for (int x = v[0]; x <= v[3]; x++) for (int z = v[2]; z <= v[5]; z++) for (int y = v[1]; y <= v[4]; y++) {
               o.writeByte(w.getBlockId(x, y, z)); o.writeByte(w.getBlockMetadata(x, y, z));

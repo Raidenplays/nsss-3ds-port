@@ -631,11 +631,14 @@ bool placeCattail(World& w, int x, int y, int z, bool notify) {
 }
 
 // ---- BlockFire
-int fireEncourage(int id) { // chanceToEncourageFire
-    switch (id) { case 5: return 5; case 17: return 5; case 18: return 30; case 47: return 30; case 46: return 15; case 35: return 30; default: return 0; }
+inline bool nsssCloth(int id) { return id == 35 || (id >= 21 && id <= 34) || id == 36; } // NSSS's Classic cloth colours
+int fireEncourage(int id) { // NSSS BlockFire.chanceToEncourageFire
+    if (nsssCloth(id)) return 30;
+    switch (id) { case 5: return 5; case 17: return 5; case 18: return 30; case 47: return 30; case 46: return 15; default: return 0; }
 }
 int fireCatch(int id) { // abilityToCatchFire
-    switch (id) { case 5: return 20; case 17: return 5; case 18: return 60; case 47: return 20; case 46: return 100; case 35: return 60; default: return 0; }
+    if (nsssCloth(id)) return 60;
+    switch (id) { case 5: return 20; case 17: return 5; case 18: return 60; case 47: return 20; case 46: return 100; default: return 0; }
 }
 bool fireNextToFuel(World& w, int x, int y, int z) { // func_263_h
     return fireEncourage(w.blockAt(x + 1, y, z)) > 0 || fireEncourage(w.blockAt(x - 1, y, z)) > 0 ||
@@ -663,7 +666,7 @@ int fireNeighbourChance(World& w, int x, int y, int z) { // getChanceOfNeighbors
     return c;
 }
 void fireTick(World& w, int x, int y, int z, JavaRandom& r) { // BlockFire.updateTick
-    bool eternal = w.blockAt(x, y - 1, z) == BLOODSTONE;
+    const bool eternal = false; // (Axeolon's bloodstone; NSSS has no eternal fire)
     int meta = w.metaAt(x, y, z);
     if (meta < 15) {
         w.setBlockMetadataWithNotify(x, y, z, meta + 1);
@@ -676,7 +679,7 @@ void fireTick(World& w, int x, int y, int z, JavaRandom& r) { // BlockFire.updat
     } else if (meta % 2 == 0 && meta > 2) {
         fireTryCatch(w, x + 1, y, z, 300, r);
         fireTryCatch(w, x - 1, y, z, 300, r);
-        fireTryCatch(w, x, y - 1, z, 250, r);
+        fireTryCatch(w, x, y - 1, z, 200, r); // NSSS: 200 below
         fireTryCatch(w, x, y + 1, z, 250, r);
         fireTryCatch(w, x, y, z - 1, 300, r);
         fireTryCatch(w, x, y, z + 1, 300, r);
@@ -1009,15 +1012,40 @@ void updateTick(World& w, int x, int y, int z, int id, JavaRandom& r) {
         Redstone::updateTick(w, x, y, z, id, r);
         return;
     }
+    if (BP[id].cls == BC::Mushroom) { // NSSS BlockMushroom.updateTick (no stay check): spread
+        if (r.nextInt(25) == 0) {
+            int left = 15;
+            for (int a = x - 4; a <= x + 4; ++a)
+                for (int c = z - 4; c <= z + 4; ++c)
+                    for (int b = y - 1; b <= y + 1; ++b)
+                        if (w.blockAt(a, b, c) == id && --left <= 0) return;
+            int k = x + r.nextInt(3) - 1;
+            int t = r.nextInt(2); int i1 = y + t - r.nextInt(2);
+            int k1 = z + r.nextInt(3) - 1;
+            int px = x, py = y, pz = z;
+            for (int l1 = 0; l1 < 4; ++l1) {
+                if (w.isAirBlock(k, i1, k1) && plantStay(w, id, k, i1, k1)) { px = k; py = i1; pz = k1; }
+                k = px + r.nextInt(3) - 1;
+                t = r.nextInt(2); i1 = py + t - r.nextInt(2);
+                k1 = pz + r.nextInt(3) - 1;
+            }
+            if (w.isAirBlock(k, i1, k1) && plantStay(w, id, k, i1, k1)) w.setBlockWithNotify(k, i1, k1, id);
+        }
+        return;
+    }
     if (isPlant(id)) {
         checkPlant(w, x, y, z, id); // BlockFlower.updateTick
         if (w.blockAt(x, y, z) != id) return;
         switch (BP[id].cls) {
-        case BC::Sapling:
-            if (w.getBlockLightValue(x, y + 1, z) >= 9 && r.nextInt(7) == 0) {
+        case BC::Sapling: // NSSS BlockSapling: 16 stages, 1 in 5 (growthChance outside season cycles)
+            if (w.getBlockLightValue(x, y + 1, z) >= 9 && r.nextInt(5) == 0) {
                 int meta = w.metaAt(x, y, z);
-                if ((meta & 8) == 0) w.setBlockMetadataWithNotify(x, y, z, meta | 8);
-                else growSapling(w, r, x, y, z, id, meta);
+                if (meta < 15) {
+                    w.setBlockMetadataWithNotify(x, y, z, meta + 1);
+                } else {
+                    w.setBlock(x, y, z, 0);
+                    if (!nsssSaplingTree(w, r, x, y, z)) w.setBlock(x, y, z, id);
+                }
             }
             break;
         case BC::Crops:

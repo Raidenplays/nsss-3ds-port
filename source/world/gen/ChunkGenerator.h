@@ -121,3 +121,5 @@ void populateHell(World& w, JavaRandom& hellRNG, int cx, int cz);
 
 // BlockSapling.func_21028_c (Populate.cpp, next to the tree generators)
 bool growSapling(World& w, JavaRandom& r, int x, int y, int z, int id, int meta);
+// NSSS BlockSapling's tree (Populate.cpp)
+bool nsssSaplingTree(World& w, JavaRandom& r, int x, int y, int z);

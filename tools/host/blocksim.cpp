@@ -2,6 +2,7 @@
 // usage: blocksim <seed> <emptyDir> <script> <out>   (script format: see BlockSimDump.java)
 #include "world/World.h"
 #include "world/Blocks.h"
+#include "world/BlockProps.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -25,8 +26,8 @@ int main(int argc, char** argv) {
     bool windowSet = false;
     while (fgets(line, sizeof line, in)) {
         char cmd[16] = {0};
-        int v[6] = {0};
-        int n = sscanf(line, "%15s %d %d %d %d %d %d", cmd, &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+        int v[7] = {0};
+        int n = sscanf(line, "%15s %d %d %d %d %d %d %d", cmd, &v[0], &v[1], &v[2], &v[3], &v[4], &v[5], &v[6]);
         if (n < 1 || cmd[0] == '#') continue;
         if (!strcmp(cmd, "load")) {
             if (!windowSet) { w.setWindow(v[0], v[1]); windowSet = true; }
@@ -38,6 +39,14 @@ int main(int argc, char** argv) {
             w.setBlockAndMetadataWithNotify(v[0], v[1], v[2], v[3], v[4]);
         } else if (!strcmp(cmd, "tick")) {
             for (int i = 0; i < v[0]; i++) { w.info.time++; w.tickUpdates(false); }
+        } else if (!strcmp(cmd, "rtick")) {
+            for (int r = 0; r < v[6]; r++)
+                for (int x = v[0]; x <= v[3]; x++)
+                    for (int z = v[2]; z <= v[5]; z++)
+                        for (int y = v[1]; y <= v[4]; y++) {
+                            int id = w.blockAt(x, y, z);
+                            if (id > 0 && BP[id].tickOnLoad) Blocks::updateTick(w, x, y, z, id, w.rand);
+                        }
         } else if (!strcmp(cmd, "dump")) {
             for (int x = v[0]; x <= v[3]; x++)
                 for (int z = v[2]; z <= v[5]; z++)

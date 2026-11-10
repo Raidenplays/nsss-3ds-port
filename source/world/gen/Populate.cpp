@@ -407,6 +407,7 @@ struct BigTree {
     int height = 0;
     double hAtt = 0.618, branchDensity = 1.0, branchSlope = 0.381, scaleW = 1.0, leafDensity = 1.0;
     int trunkSize = 1, heightLimitLimit = 12, leafDistance = 4;
+    bool fromSapling = false;
     std::vector<std::array<int, 4>> leafNodes;
 
     float layerSize(int y) { // func_528_a
@@ -541,11 +542,12 @@ struct BigTree {
         return true;
     }
     bool generate(World& w, JR& r, int x, int y, int z) {
-        // func_517_a(1, 1, 1) from populate
-        heightLimitLimit = 12;
-        leafDistance = 5;
-        scaleW = 1.0;
-        leafDensity = 1.0;
+        if (!fromSapling) { // func_517_a(1, 1, 1) from populate (a sapling's tree keeps the defaults)
+            heightLimitLimit = 12;
+            leafDistance = 5;
+            scaleW = 1.0;
+            leafDensity = 1.0;
+        }
         world = &w;
         rand.setSeed(r.nextLong());
         base[0] = x;
@@ -1991,6 +1993,16 @@ void liquids(World& w, int id, int i, int j, int k) { // WorldGenLiquids: Alpha 
     if (l == 3 && i1 == 1) w.setBlockWithNotify(i, j, k, id);
 }
 } // namespace nsss
+
+// NSSS BlockSapling: a new WorldGenTrees, or one time in ten a new WorldGenBigTree with its defaults
+bool nsssSaplingTree(World& w, JavaRandom& r, int x, int y, int z) {
+    if (r.nextInt(10) == 0) {
+        BigTree b;
+        b.fromSapling = true;
+        return b.generate(w, r, x, y, z);
+    }
+    return nsss::oakTree(w, r, x, y, z);
+}
 
 void ChunkGenerator::alphaPopulate(World& w, int i, int j) { // ChunkProviderGenerate.generateStructures
     using namespace nsss;
