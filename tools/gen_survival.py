@@ -6,7 +6,8 @@ for l in open(os.path.join(here, 'generated/survival.txt')):
     p = l.split()
     if not p: continue
     if p[0] == 'B': hard[int(p[1])] = float(p[2])
-    elif p[0] == 'I': items[int(p[1])] = (int(p[2]), int(p[3]), int(p[4]))
+    # max damage <= 0 means "never wears out" in Java (NSSS's quiver and sponge armour are -16383)
+    elif p[0] == 'I': items[int(p[1])] = (int(p[2]), max(0, int(p[3])), int(p[4]))
     elif p[0] == 'T':
         lst = []
         for e in p[2:]:
