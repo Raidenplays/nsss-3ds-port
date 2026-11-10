@@ -1,0 +1,31 @@
+name: Symbolize a 3DS crash
+
+# Rebuilds a commit and names the functions at a Luma crash screen's addresses (PC, LR...).
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: commit the crashing build came from
+        required: true
+      addrs:
+        description: addresses, space separated (e.g. 0021B2C8 00222FB4)
+        required: true
+
+jobs:
+  symbolize:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - name: Build
+        run: make -j"$(nproc)"
+      - name: Symbolize
+        run: |
+          for a in ${{ inputs.addrs }}; do
+            echo "== 0x$a"
+            /opt/devkitpro/devkitARM/bin/arm-none-eabi-addr2line -f -C -i -e axeolon3ds.elf 0x$a
+          done
+          /opt/devkitpro/devkitARM/bin/arm-none-eabi-nm -C -S --size-sort axeolon3ds.elf | tail -5

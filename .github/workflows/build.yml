@@ -1,0 +1,255 @@
+name: Build 3DS (.3dsx + .cia) and Android (.apk)
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: make -j"$(nproc)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: |
+            axeolon3ds.elf
+            axeolon3ds.3dsx
+
+  emulator:
+    # Runs the build in the Azahar 3DS emulator (software rendering) and keeps screenshots,
+    # so the picture can be checked without a 3DS.
+    needs: build
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+      - uses: actions/cache@v4   # GitHub's API often 504s: keep the emulator between runs
+        with:
+          path: /tmp/az
+          key: azahar-v1
+      - name: Azahar + virtual screen
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb imagemagick mesa-utils mesa-vulkan-drivers libfuse2 libxcb-cursor0 libopengl0 libegl1 libgl1 libglx-mesa0 libgl1-mesa-dri libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libxcb-xkb1 libsdl2-2.0-0 libpulse0 >/dev/null
+          if [ ! -d /tmp/az/squashfs-root ]; then
+          curl -fsSL --retry 10 --retry-all-errors --retry-delay 10 -H "Authorization: Bearer ${{ github.token }}" https://api.github.com/repos/azahar-emu/azahar/releases/latest > rel.json
+          jq -r '.tag_name, (.assets[].name)' rel.json
+          url=$(jq -r '.assets[] | select(.name | test("appimage"; "i")) | select(.name | test("x86_64|amd64|linux"; "i") or true) | .browser_download_url' rel.json | grep -vi "aarch64\|arm64" | head -n1)
+          echo "Azahar: $url"
+          mkdir -p /tmp/az && cd /tmp/az && curl -fsSL --retry 10 --retry-all-errors --retry-delay 10 "$url" -o pkg
+          if file pkg | grep -qi "gzip\|xz\|tar"; then tar xf pkg; else mv pkg azahar.AppImage; fi
+          app=$(find /tmp/az -iname "*.AppImage" | head -n1)
+          chmod +x "$app" && "$app" --appimage-extract >/dev/null && ls squashfs-root | head
+          fi
+      - name: Run and take screenshots
+        run: |
+          mkdir -p shots
+          export LIBGL_ALWAYS_SOFTWARE=1 QT_QPA_PLATFORM=xcb
+          Xvfb :99 -screen 0 1280x1024x24 2>/dev/null &
+          sleep 2
+          export DISPLAY=:99
+          # the movement self-test (see main.cpp) - the emulator's SD card lives here
+          mkdir -p ~/.local/share/azahar-emu/sdmc/3ds/axeolon3ds && echo new > ~/.local/share/azahar-emu/sdmc/3ds/axeolon3ds/autotest.txt
+          bin=$(find /tmp/az/squashfs-root -maxdepth 3 -type f -name "AppRun" | head -n1)
+          ( "$bin" "$PWD/axeolon3ds.3dsx" > shots/emulator.log 2>&1 & )
+          prev=0; for t in 8 12 16 25 45 70 100; do sleep $((t - prev)); prev=$t; import -window root shots/shot_${t}s.png || true; done
+          pkill -f AppRun || true
+          find ~/.local/share -path "*sdmc*" -name log.txt -exec cp {} shots/game_log.txt \; || true
+          # and once more, started in the Nether
+          sleep 3
+          echo nether > ~/.local/share/azahar-emu/sdmc/3ds/axeolon3ds/autotest.txt
+          ( "$bin" "$PWD/axeolon3ds.3dsx" > shots/emulator_nether.log 2>&1 & )
+          prev=0; for t in 30 50 62; do sleep $((t - prev)); prev=$t; import -window root shots/nether_${t}s.png || true; done
+          pkill -f AppRun || true
+          find ~/.local/share -path "*sdmc*" -name log.txt -exec cp {} shots/game_log_nether.txt \; || true
+          # and as an Old 3DS (64 MB): a fresh world, saved and quit and reloaded every 25 s
+          sleep 3
+          find ~/.local/share -path "*sdmc*" -type d -name World5 -exec rm -rf {} + || true
+          find ~/.local/share -path "*sdmc*" -name log.txt -delete || true
+          echo quit > ~/.local/share/azahar-emu/sdmc/3ds/axeolon3ds/autotest.txt
+          cfg=$(find ~/.config -name "qt-config.ini" | head -n1); echo "config: $cfg"
+          if [ -n "$cfg" ]; then
+            sed -i 's/^is_new_3ds\\default=.*/is_new_3ds\\default=false/; s/^is_new_3ds=.*/is_new_3ds=false/' "$cfg"
+            grep -q "^is_new_3ds=" "$cfg" || sed -i 's/^\[System\]$/[System]\nis_new_3ds\\default=false\nis_new_3ds=false/' "$cfg"
+            sed -i 's/^log_filter\\default=.*/log_filter\\default=false/; s/^log_filter=.*/log_filter=*:Info Debug.Emulated:Debug Kernel:Debug Core.ARM11:Debug/' "$cfg"
+            grep -n "is_new_3ds\|log_filter" "$cfg" > shots/old3ds_cfg.txt || true
+          fi
+          ( "$bin" "$PWD/axeolon3ds.3dsx" > shots/emulator_old3ds.log 2>&1 & )
+          prev=0; for t in 20 45 80 120 160; do sleep $((t - prev)); prev=$t; import -window root shots/old3ds_${t}s.png || true; done
+          pkill -f AppRun || true
+          find ~/.local/share -path "*sdmc*" -name log.txt -exec cp {} shots/game_log_old3ds.txt \; || true
+          find ~/.local/share/azahar-emu ~/.config/azahar-emu -name "*log*.txt" -path "*log*" -not -path "*sdmc*" -exec cp {} shots/azahar_old3ds.txt \; || true
+          grep -v "keysym\|xkbcomp" shots/emulator.log | tail -50 || true
+      - name: Screenshots to the "shots" branch
+        if: always()
+        run: |
+          cd shots
+          git init -q -b shots
+          git config user.name "github-actions"; git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "Screenshots of ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" shots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shots
+          path: shots
+
+  android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+      - name: Build the APK
+        working-directory: android
+        run: |
+          echo "NDK: $ANDROID_NDK_LATEST_HOME"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-37" "build-tools;36.0.0" > /dev/null || \
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-37.0" "build-tools;36.0.0" > /dev/null
+          gradle --no-daemon assembleFullRelease assembleLiteRelease
+          cp app/build/outputs/apk/full/release/app-full-release.apk ../axeolon.apk
+          cp app/build/outputs/apk/lite/release/app-lite-release.apk ../axeolon-lite.apk
+          ls -la ../axeolon*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: axeolon*.apk
+
+  android-emulator:
+    needs: android
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run it and take screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: default
+          force-avd-creation: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -skin 1280x720
+          disable-animations: true
+          script: |
+            mkdir -p ashots
+            adb install -r axeolon.apk
+            adb shell am start -n com.raidenplays.axeolon/android.app.NativeActivity
+            sleep 8
+            adb exec-out screencap -p > ashots/preparing.png
+            sleep 30
+            adb exec-out screencap -p > ashots/title.png
+            adb shell input tap 640 476
+            sleep 4
+            adb exec-out screencap -p > ashots/worlds.png
+            adb shell input tap 640 204
+            sleep 30
+            adb exec-out screencap -p > ashots/world_30s.png
+            adb shell input swipe 900 360 1100 360 600
+            sleep 3
+            adb exec-out screencap -p > ashots/world_look.png
+            adb shell input tap 1000 690
+            sleep 2
+            adb exec-out screencap -p > ashots/inventory.png
+            adb shell input keyevent 4
+            sleep 2
+            adb shell input keyevent 4
+            sleep 2
+            adb exec-out screencap -p > ashots/pause.png
+            adb root || true
+            sleep 2
+            pid=$(adb shell pidof com.raidenplays.axeolon || true)
+            echo "pid $pid" > ashots/stack.txt
+            [ -n "$pid" ] && adb shell debuggerd -b $pid >> ashots/stack.txt 2>&1 || true
+            adb logcat -d > ashots/logcat_full.txt || true
+            grep -E "axeolon|AndroidRuntime|DEBUG|libc" ashots/logcat_full.txt | tail -400 > ashots/logcat.txt || true
+      - name: Screenshots to the "ashots" branch
+        if: always()
+        run: |
+          cd ashots
+          git init -q -b ashots
+          git config user.name "github-actions"; git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "Android screenshots of ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" ashots
+
+  cia:
+    needs: [build, android]
+    if: ${{ !cancelled() && needs.build.result == 'success' }} # the .cia still goes out if the APK didn't build
+    runs-on: ubuntu-24.04   # makerom needs a newer glibc than the devkitPro container
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: android
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: shots
+          path: shots
+      - uses: actions/cache@v4
+        with:
+          path: /tmp/ctr
+          key: ctr-tools-v1
+      - name: Tools (makerom, bannertool)
+        run: |
+          mkdir -p /tmp/ctr && cd /tmp/ctr
+          if [ ! -d mr ] || [ ! -d bt ]; then
+          url=$(curl -fsSL --retry 30 --retry-all-errors --retry-delay 10 -H "Authorization: Bearer ${{ github.token }}" https://api.github.com/repos/3DSGuy/Project_CTR/releases \
+                | jq -r '[.[] | .assets[] | select(.name | test("makerom.*(ubuntu|linux).*x86_64.*zip"))][0].browser_download_url')
+          curl -fsSL --retry 30 --retry-all-errors --retry-delay 10 "$url" -o makerom.zip && unzip -o -q makerom.zip -d mr
+          url=$(curl -fsSL --retry 30 --retry-all-errors --retry-delay 10 -H "Authorization: Bearer ${{ github.token }}" https://api.github.com/repos/Epicpkmn11/bannertool/releases/latest \
+                | jq -r '.assets[] | select(.name | test("zip$")) | .browser_download_url' | head -n1)
+          curl -fsSL --retry 30 --retry-all-errors --retry-delay 10 "$url" -o bannertool.zip && unzip -o -q bannertool.zip -d bt
+          fi
+          sudo cp "$(find mr -type f -name makerom | head -n1)" /usr/local/bin/makerom
+          sudo cp "$(find bt -type f -path '*linux*x86_64*' -name bannertool | head -n1)" /usr/local/bin/bannertool
+          sudo chmod +x /usr/local/bin/makerom /usr/local/bin/bannertool
+      - name: Make the .cia
+        run: |
+          mkdir -p build
+          bannertool makebanner -i meta/banner.png -a meta/audio.wav -o build/banner.bnr
+          bannertool makesmdh -s "Minecraft Axeolon" -l "Minecraft Axeolon - 3DS" -p "Raiden Brundin" \
+            -i meta/icon.png -o build/icon.icn
+          makerom -f cia -o axeolon3ds.cia -elf axeolon3ds.elf -rsf meta/axeolon3ds.rsf \
+            -icon build/icon.icn -banner build/banner.bnr -target t -exefslogo
+          ls -la axeolon3ds.cia
+      - uses: actions/upload-artifact@v4
+        with:
+          name: axeolon3ds
+          path: |
+            axeolon3ds.cia
+            axeolon3ds.3dsx
+      - name: Put the latest build on the "builds" branch
+        run: |
+          mkdir /tmp/out && cp axeolon3ds.cia axeolon3ds.3dsx /tmp/out/ && (cp axeolon*.apk /tmp/out/ || true)
+          cd /tmp/out
+          git init -q -b builds
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "Build of ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" builds

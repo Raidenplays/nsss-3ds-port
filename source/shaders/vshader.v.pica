@@ -1,0 +1,105 @@
+; Axeolon 3DS - the one vertex shader (Old 3DS friendly)
+; Chunk sections send the 12-byte BlockVertex:
+;   v0 = short4 (x, y, z, shade)  position in 1/64 block relative to the section, shade 0..255
+;   v1 = short2 (u, v)            quarter texels in the 256x1024 atlas (v from the bottom)
+; Models (mobs, animating blocks) send floats with their own scales (see Renderer).
+
+; Chunk vertices carry their light, not a finished shade: w = face*256 + sky*16 + block, where
+; face is the Beta face factor in twentieths (bottom 10, top 20, z sides 16, x sides 12). The
+; brightness comes from WorldProvider.lightBrightnessTable worked out here, so the time of day
+; (skylightSubtracted) changes without rebuilding a single section.
+
+; Uniforms
+.fvec projection[4], modelView[4]
+.fvec sectionOrigin              ; xyz: world position added to every vertex
+.fvec params                     ; x: position scale, y: shade scale (models), z: 1 = chunk light in w
+.fvec texScale, texOffset        ; texcoord = in * texScale + texOffset
+.fvec lightParams                ; x: skylightSubtracted, y: 1/16, z: 16, w: the darkest brightness (0.05)
+.fvec fogParams                  ; visibility (colour alpha) = clamp(y * (x - distance) + z)
+
+; Constants
+.constf myconst(0.0, 1.0, 0.0666666667, 3.0)
+.constf myconst2(0.05, 0.0, 0.0, 0.0001)
+.alias  zeros       myconst.xxxx
+.alias  ones        myconst.yyyy
+.alias  fifteenth   myconst.zzzz
+.alias  three       myconst.wwww
+.alias  twentieth   myconst2.xxxx
+.alias  tiny        myconst2.wwww
+
+; Outputs
+.out outpos position
+.out outtc0 texcoord0
+.out outclr color
+
+; Inputs
+.alias inpos v0
+.alias intex v1
+
+.proc main
+	; r0 = vec4(sectionOrigin + inpos.xyz * scale, 1.0)
+	mul r0.xyz, params.xxx, inpos.xyz
+	add r0.xyz, sectionOrigin.xyz, r0.xyz
+	mov r0.w,   ones
+
+	; r1 = modelView * r0
+	dp4 r1.x, modelView[0], r0
+	dp4 r1.y, modelView[1], r0
+	dp4 r1.z, modelView[2], r0
+	dp4 r1.w, modelView[3], r0
+
+	; outpos = projection * r1
+	dp4 outpos.x, projection[0], r1
+	dp4 outpos.y, projection[1], r1
+	dp4 outpos.z, projection[2], r1
+	dp4 outpos.w, projection[3], r1
+
+	; texcoord
+	mul r3, texScale, intex
+	add outtc0, texOffset, r3
+
+	; models: shade = w * scale
+	mul r2.xyz, params.yyy, inpos.www
+
+	; chunks: split w into face / sky / block
+	mul r4.x, lightParams.y, inpos.w
+	flr r4.y, r4.x                      ; face*16 + sky
+	mul r4.z, lightParams.z, r4.y
+	add r4.w, inpos.w, -r4.z            ; block light
+	mul r5.x, lightParams.y, r4.y
+	flr r5.y, r5.x                      ; face
+	mul r5.z, lightParams.z, r5.y
+	add r5.w, r4.y, -r5.z               ; sky light
+	add r5.w, -lightParams.x, r5.w      ; sky - skylightSubtracted
+	max r6.x, r5.w, r4.w                ; World.getBlockLightValue
+	; lightBrightnessTable: f = 1 - L/15; (1 - f) / (3f + 1) * (1 - d) + d
+	mul r6.y, fifteenth, r6.x
+	add r6.z, ones, -r6.y               ; f
+	mul r6.w, three, r6.z
+	add r6.w, ones, r6.w
+	rcp r7.x, r6.w
+	mul r7.y, r6.y, r7.x                ; (1 - f) / (3f + 1)
+	mov r9.x, lightParams.w
+	add r7.z, ones, -r9.x
+	mul r7.y, r7.y, r7.z
+	add r7.y, lightParams.w, r7.y       ; brightness
+	mul r7.w, twentieth, r5.y           ; face factor
+	mul r7.y, r7.y, r7.w                ; chunk shade
+	; pick: params.z = 1 for chunks, 0 for models
+	add r7.z, r7.yyyy, -r2.xxxx
+	mul r7.z, params.z, r7.z
+	add r2.xyz, r2.xyz, r7.zzz
+
+	; fog visibility in alpha (the texture combiners blend toward the fog colour by it)
+	dp3 r8.x, r1.xyz, r1.xyz
+	add r8.x, tiny, r8.x
+	rsq r8.y, r8.x
+	mul r8.z, r8.x, r8.y                ; distance from the eye
+	add r8.w, fogParams.x, -r8.z
+	mul r8.w, fogParams.y, r8.w
+	add r8.w, fogParams.z, r8.w
+	max r8.w, zeros, r8.w
+	min r2.w, ones, r8.w
+	mov outclr, r2
+	end
+.end

@@ -1,0 +1,10 @@
+build/
+*.3dsx
+*.cia
+*.elf
+*.smdh
+*.map
+android/.gradle/
+android/app/build/
+android/app/.cxx/
+android/build/
