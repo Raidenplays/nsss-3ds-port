@@ -16,8 +16,8 @@ jobs:
         with:
           name: build
           path: |
-            axeolon3ds.elf
-            axeolon3ds.3dsx
+            nsss3ds.elf
+            nsss3ds.3dsx
 
   emulator:
     # Runs the build in the Azahar 3DS emulator (software rendering) and keeps screenshots,
@@ -57,16 +57,16 @@ jobs:
           sleep 2
           export DISPLAY=:99
           # the movement self-test (see main.cpp) - the emulator's SD card lives here
-          mkdir -p ~/.local/share/azahar-emu/sdmc/3ds/axeolon3ds && echo new > ~/.local/share/azahar-emu/sdmc/3ds/axeolon3ds/autotest.txt
+          mkdir -p ~/.local/share/azahar-emu/sdmc/3ds/nsss3ds && echo new > ~/.local/share/azahar-emu/sdmc/3ds/nsss3ds/autotest.txt
           bin=$(find /tmp/az/squashfs-root -maxdepth 3 -type f -name "AppRun" | head -n1)
-          ( "$bin" "$PWD/axeolon3ds.3dsx" > shots/emulator.log 2>&1 & )
+          ( "$bin" "$PWD/nsss3ds.3dsx" > shots/emulator.log 2>&1 & )
           prev=0; for t in 8 12 16 25 45 70 100; do sleep $((t - prev)); prev=$t; import -window root shots/shot_${t}s.png || true; done
           pkill -f AppRun || true
           find ~/.local/share -path "*sdmc*" -name log.txt -exec cp {} shots/game_log.txt \; || true
           # and once more, started in the Nether
           sleep 3
-          echo nether > ~/.local/share/azahar-emu/sdmc/3ds/axeolon3ds/autotest.txt
-          ( "$bin" "$PWD/axeolon3ds.3dsx" > shots/emulator_nether.log 2>&1 & )
+          echo nether > ~/.local/share/azahar-emu/sdmc/3ds/nsss3ds/autotest.txt
+          ( "$bin" "$PWD/nsss3ds.3dsx" > shots/emulator_nether.log 2>&1 & )
           prev=0; for t in 30 50 62; do sleep $((t - prev)); prev=$t; import -window root shots/nether_${t}s.png || true; done
           pkill -f AppRun || true
           find ~/.local/share -path "*sdmc*" -name log.txt -exec cp {} shots/game_log_nether.txt \; || true
@@ -74,7 +74,7 @@ jobs:
           sleep 3
           find ~/.local/share -path "*sdmc*" -type d -name World5 -exec rm -rf {} + || true
           find ~/.local/share -path "*sdmc*" -name log.txt -delete || true
-          echo quit > ~/.local/share/azahar-emu/sdmc/3ds/axeolon3ds/autotest.txt
+          echo quit > ~/.local/share/azahar-emu/sdmc/3ds/nsss3ds/autotest.txt
           cfg=$(find ~/.config -name "qt-config.ini" | head -n1); echo "config: $cfg"
           if [ -n "$cfg" ]; then
             sed -i 's/^is_new_3ds\\default=.*/is_new_3ds\\default=false/; s/^is_new_3ds=.*/is_new_3ds=false/' "$cfg"
@@ -82,7 +82,7 @@ jobs:
             sed -i 's/^log_filter\\default=.*/log_filter\\default=false/; s/^log_filter=.*/log_filter=*:Info Debug.Emulated:Debug Kernel:Debug Core.ARM11:Debug/' "$cfg"
             grep -n "is_new_3ds\|log_filter" "$cfg" > shots/old3ds_cfg.txt || true
           fi
-          ( "$bin" "$PWD/axeolon3ds.3dsx" > shots/emulator_old3ds.log 2>&1 & )
+          ( "$bin" "$PWD/nsss3ds.3dsx" > shots/emulator_old3ds.log 2>&1 & )
           prev=0; for t in 20 45 80 120 160; do sleep $((t - prev)); prev=$t; import -window root shots/old3ds_${t}s.png || true; done
           pkill -f AppRun || true
           find ~/.local/share -path "*sdmc*" -name log.txt -exec cp {} shots/game_log_old3ds.txt \; || true
@@ -235,18 +235,18 @@ jobs:
           bannertool makebanner -i meta/banner.png -a meta/audio.wav -o build/banner.bnr
           bannertool makesmdh -s "Minecraft Axeolon" -l "Minecraft Axeolon - 3DS" -p "Raiden Brundin" \
             -i meta/icon.png -o build/icon.icn
-          makerom -f cia -o axeolon3ds.cia -elf axeolon3ds.elf -rsf meta/axeolon3ds.rsf \
+          makerom -f cia -o nsss3ds.cia -elf nsss3ds.elf -rsf meta/nsss3ds.rsf \
             -icon build/icon.icn -banner build/banner.bnr -target t -exefslogo
-          ls -la axeolon3ds.cia
+          ls -la nsss3ds.cia
       - uses: actions/upload-artifact@v4
         with:
-          name: axeolon3ds
+          name: nsss3ds
           path: |
-            axeolon3ds.cia
-            axeolon3ds.3dsx
+            nsss3ds.cia
+            nsss3ds.3dsx
       - name: Put the latest build on the "builds" branch
         run: |
-          mkdir /tmp/out && cp axeolon3ds.cia axeolon3ds.3dsx /tmp/out/ && (cp axeolon*.apk /tmp/out/ || true)
+          mkdir /tmp/out && cp nsss3ds.cia nsss3ds.3dsx /tmp/out/ && (cp axeolon*.apk /tmp/out/ || true)
           cd /tmp/out
           git init -q -b builds
           git config user.name "github-actions"

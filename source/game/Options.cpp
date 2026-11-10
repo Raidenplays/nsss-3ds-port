@@ -6,7 +6,7 @@
 Options gOptions;
 
 namespace {
-const char* PATH = "sdmc:/3ds/axeolon3ds/options.txt";
+const char* PATH = "sdmc:/3ds/nsss3ds/options.txt";
 }
 
 void Options::load() {

@@ -1,6 +1,6 @@
 BasicInfo:
-  Title                   : "Minecraft Axeolon"
-  ProductCode             : "CTR-P-AXEO"
+  Title                   : "Not So Seecret Saturday"
+  ProductCode             : "CTR-P-NSSS"
   Logo                    : Homebrew
 
 RomFs:
@@ -8,7 +8,7 @@ RomFs:
 
 TitleInfo:
   Category                : Application
-  UniqueId                : 0xA8E01
+  UniqueId                : 0xA8E05
 
 Option:
   UseOnSD                 : true

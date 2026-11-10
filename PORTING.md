@@ -1,156 +1,120 @@
-# Porting plan — Minecraft Beta 1.2_02 → 3DS (C++ / citro3d)
+# Porting plan: Not So Seecret Saturday a1.1.12 → 3DS (C++ / citro3d)
 
-Reference source: your RetroMCP b1.2_02 workspace (`C:\Dev\...`).
-Engine helpers worth borrowing (not copying wholesale): ReMinecraftPE (C++, Beta-era).
-Target hardware: **Old 3DS at 60 fps** (268 MHz ARM11, 64 MB for the app, no C-stick/ZL/ZR).
-New 3DS runs the same build with headroom. Every phase below has to fit the Old 3DS budget.
+Source of truth: the `a1.1.12.jar` jarmod from `NSSS_a1.1.12.zip` (MultiMC instance).
+It is a **full replacement jar** (591 classes, already deobfuscated, `com.mojang.minecraft.*`
+packages), so it decompiles straight to readable Java with Vineflower. No vanilla a1.1.2_01
+jar and no RetroMCP mappings are needed. Decompiled: 581 files, ~73k lines.
 
-Rule of thumb: port **behaviour** faithfully, and **rewrite the platform layers** (rendering,
-input, sound, files). Anything under `net.minecraft.src` that calls LWJGL/OpenGL/AWT gets rewritten.
-Anything that is pure logic gets translated almost line by line.
+Engine: forked from **Axeolon 3DS** (`Raidenplays/axeolon3ds`). It already does chunks,
+meshing, lighting, NBT, region and old chunk files, physics, redstone, rails, mobs with
+Blockbench models, containers, the bottom-screen UI, options, commands, and the Azahar CI.
+Same rules as there: port **behaviour** line by line, rewrite the **platform layers**, and
+Old 3DS at 60 fps with 64 MB.
 
----
-
-## Phase 0 — Skeleton ✅ (this commit)
-- devkitPro Makefile, PICA200 vertex shader, citro3d renderer
-- 16×128×16 chunks with Beta's `x << 11 | z << 7 | y` layout
-- Section mesher (16³) with Beta's face shading (1.0 / 0.5 / 0.8 / 0.6)
-- `JavaRandom` — bit-exact `java.util.Random` (verified against the JVM)
-- Placeholder terrain atlas in Beta's `terrain.png` layout
-- Free-fly camera, debug console on the bottom screen
-
-## Phase 0.5 — Two screens ✅
-- Top: gameplay + crosshair. Bottom: hotbar + Map / Items / Almanac / Menu tabs (citro2d)
-- Almanac map (explored-only, waypoints, zoom), inventory with Axeolon charm row
-- Block breaking/placing, ray cast, frustum culling, face-group culling, compact vertices
-
-## Old 3DS rules (apply to every phase)
-- **One frame = 16.6 ms.** Anything slow is spread across frames (rebuild queue) or moved to
-  the second CPU core (`APT_SetAppCpuTimeLimit` + `threadCreate` on core 1). Chunk generation,
-  lighting and saving go there when they're ported.
-- **Memory:** 64 MB total. A Beta chunk is 80 KB (blocks + 3 nibble arrays). Keep about 7×7
-  chunks loaded (≈4 MB); Axeolon's 256 height doubles that.
-- **Render distance** defaults to 56 blocks with fog to hide the edge (Beta's "Short" was 64).
-- **No per-frame allocation** in the game loop (no `new`, no growing vectors).
-- **Mobs:** cap the active count and update far mobs less often. Beta's `PathFinder` is
-  expensive, so give it a per-frame budget.
-- Measure with the Menu tab's fps/triangle readout **on real Old 3DS hardware**.
-
-## Phase 1 — Core utilities (small, everything depends on them)
-| Java class | Notes |
-|---|---|
-| `MathHelper` | **Port the 65536-entry sin table exactly** — worldgen and mob movement use it |
-| `java.util.Random` | ✅ done (`JavaRandom.h`) |
-| `AxisAlignedBB`, `Vec3D` | Beta pools these objects; use plain stack values instead |
-| `MovingObjectPosition`, `EnumMovingObjectType` | raycast results |
-
-## Phase 2 — World data and generation (makes it look like *Beta*)
-| Java class | Notes |
-|---|---|
-| `Block` + subclasses | Start with a table of id → properties; add behaviours (`onBlockAdded`, `updateTick`…) as virtual methods |
-| `Material`, `StepSound` | data only |
-| `NibbleArray` | metadata + light; easy |
-| `Chunk` | add metadata, skylight, blocklight, heightMap |
-| `NoiseGeneratorPerlin`, `NoiseGeneratorOctaves` | must match **exactly** (seed parity) |
-| `ChunkProviderGenerate` | terrain, `replaceBlocksForBiome`, caves |
-| `MapGenCaves` | |
-| `WorldChunkManager`, `BiomeGenBase`, `NoiseGeneratorOctaves2` | biomes + grass/foliage colours |
-| `WorldGenTrees`, `WorldGenBigTree`, `WorldGenMinable`, `WorldGenFlowers`, `WorldGenReed`, `WorldGenClay`, `WorldGenDungeons`, `WorldGenLakes`, `WorldGenCactus`, `WorldGenLiquids` | populate step |
-| `World` | getBlockId/setBlock, chunk provider, ticking |
-| `ChunkProviderLoadOrGenerate` / `ChunkProvider` | streaming chunks around the player |
-
-✔ Milestone: same seed as the Java jar produces the same world.
-
-## Phase 3 — Lighting
-| Java class | Notes |
-|---|---|
-| `EnumSkyBlock`, `MetadataChunkBlock` | Beta's light propagation queue |
-| `World.updateLightByType`, `Chunk.generateSkylightMap` | |
-
-Then pass light into the mesher (Beta uses `getLightBrightness` per face, no smooth lighting
-in 1.2). This is the first big CPU cost — budget it per frame.
-
-## Phase 4 — Rendering
-| Java class | 3DS replacement |
-|---|---|
-| `Tessellator` | `MeshData` builder (already started) |
-| `RenderBlocks` | port shape code: torches, crosses (flowers/saplings), stairs, fences, doors, rails, liquids, cactus, ladders |
-| `WorldRenderer` | `GpuMesh` per section ✅; add 2 passes (opaque + water) |
-| `RenderGlobal` | section dirty-marking + rebuild queue (rebuild a few per frame) |
-| `Frustrum`, `ClippingHelperImplementation` | replace distance culling |
-| `EntityRenderer` | fog (citro3d FogLut), FOV, view bobbing, sky + clouds |
-| `RenderEngine`, `TextureFX` (water/lava/fire animation) | load `romfs:/textures/terrain.png` (from *your* jar), animated tiles via sub-uploads |
-| `FontRenderer` | `default.png` bitmap font on the bottom screen |
-
-## Phase 5 — Player, physics, interaction
-| Java class | Notes |
-|---|---|
-| `Entity`, `EntityLiving`, `EntityPlayer`, `EntityPlayerSP` | `moveEntity` collision is the key part — port exactly |
-| `MovementInput` | Circle Pad → `moveForward/moveStrafe`, B jump, sneak toggle |
-| `PlayerController`, `PlayerControllerSP` | breaking times, placing |
-| `Item`, `ItemBlock`, `ItemTool`…, `ItemStack` | |
-| `InventoryPlayer` | hotbar on top screen, full inventory on bottom (touch) |
-
-✔ Milestone: survival walking, mining and placing.
-
-## Phase 6 — Saving ✅ (player, inventory incl. battle slots/charms, waypoints, chunks, Almanac map)
-| Java class | Notes |
-|---|---|
-| `NBTBase` + tags, `CompressedStreamTools` | zlib/gzip from devkitPro portlibs (`3ds-zlib`) |
-| `ChunkLoader`, `SaveHandler` | **b1.2 uses the old Alpha format** (one file per chunk, base36 folders). McRegion only arrived in b1.3. Keep the format so saves copy to/from PC |
-
-Saves go to `sdmc:/3ds/axeolon3ds/saves/`.
-
-## Phase 7 — GUI (bottom screen: framework already exists in `ui/BottomScreen`)
-Crafting tables, furnaces and chests open as extra bottom-screen tabs (the top screen keeps
-playing, as in Beta single-player). Port the logic of
-`GuiInventory`, `GuiCrafting`, `GuiFurnace`, `GuiChest`,
-`CraftingManager` + `Recipes*`, `FurnaceRecipes`, `TileEntity*` (chest, furnace, sign, mob spawner).
-
-## Phase 8 — Mobs (models + animations ✅: source/model, game/Mobs; AI, spawning, combat to do)
-`EntityAnimal`, `EntityMob`, `EntityPig/Cow/Sheep/Chicken/Zombie/Skeleton/Creeper/Spider/Slime`,
-`PathFinder` + `PathEntity`, `SpawnerAnimals`. Rendering: `ModelBase`/`ModelRenderer` →
-pre-built per-part meshes animated with a matrix per part (the 3DS handles this well).
-
-## Phase 9 — Sound
-`SoundManager` → `ndsp` + Tremor (`3ds-libvorbisidec`) for the .ogg files. Music streams from romfs.
-
-## Phase 10 — Axeolon
-Apply Axeolon's changes **on top of the vanilla port**, in this order:
-1. World height 256 (change `Chunk::HEIGHT`, the `<< 7` shift becomes `<< 8`, and the save format to match)
-2. Charm slot row (UI slots already exist) + loot-only charms + spawn-setting item
-   → also port the Almanac's Achievements / The Hunt / Recipes pages into the Almanac tab
-3. New structures and loot tables
-4. New mobs, bosses (Tabish) and Blockbench keyframed animations
-   → write an exporter that converts `.bbmodel` animations to a compact binary in romfs
-
-Performance watch: 256 height doubles chunk memory and meshing time.
+Personal build. The NSSS source has no license, so ask DirtPiper (NSSS Discord) before
+sharing builds. The decompiled Java stays out of this repo.
 
 ---
 
-## Java → C++ gotchas
-- **Integer overflow:** Java wraps; signed overflow in C++ is undefined. For hash/seed math, do it in
-  `uint32_t`/`uint64_t` and cast back (see `JavaRandom.h`).
-- **`>>>`** → shift on the unsigned type. **`>>`** on negatives is arithmetic in both (GCC).
-- **`long` is 64-bit** in Java; use `int64_t`, never `long` (32-bit on ARM).
-- **`(int)` casts of floats** truncate toward zero in both; Beta often uses `MathHelper.floor_double` — keep it.
-- **`char`** in Java is 16-bit.
-- **Float maths:** keep `float` vs `double` exactly as Java does, or worldgen drifts. The 3DS has
-  hardware float but doubles are slower — profile before changing anything.
-- **Garbage collection:** Beta allocates constantly (`Vec3D`, `AxisAlignedBB`, `ArrayList`). Use
-  stack values and reuse vectors.
-- **`HashMap<Long,...>` chunk maps** → `std::unordered_map<int64_t,...>` or a fixed ring buffer.
+## What NSSS actually is (from the decompile, not the forum post)
 
-## Legal
-Code translated from decompiled Mojang code is a derivative work. Fine for personal use;
-**keep the repo private** and never ship Mojang textures or sounds. Users supply their own
-`minecraft.jar` assets. The Axeolon-only code and art are yours.
+### Blocks (IDs 1–103). New or changed compared with Alpha 1.1.2_01:
+| ID | Block | Behaviour |
+|---|---|---|
+| 19 / 87 | Sponge / wet sponge | absorbs water in a 5-block diameter, turns into a wet sponge |
+| 86 | **Gear** | mechanical power network (`GearGroup`): connected gears share a load limit |
+| 90 | **Motor** | powers a gear group up to 30 gears |
+| 91 | **Generator** | motor variant (limit −1) |
+| 89 / 92 | Copper ore / copper block | new ore and ingot |
+| 93 | Mossy bricks | |
+| 94 | **Bleeding obsidian** | use a compass on it to set your spawn (smoke, sounds) |
+| 95 | Cobweb | generated by `WorldGenCobWebs` |
+| 96 | Steel pressure plate | triggered by players only |
+| 97 / 98 | **Light bulb** off/on | redstone-powered lamp |
+| 99 | **Pyramidion** | capstone of the pyramid; breaking it spawns a **Giant** (on Peaceful it puts itself back: "No.") |
+| 100 | Sandstone (`stoneSand`) | |
+| 101 / 102 | Blue bricks / flint bricks | |
+| 103 | Red clay block | |
+| 54 | `crate` | the chest, renamed |
 
-## Blockbench models (done)
-- `tools/bbmodel_convert.py` reads every /axeolon/{mob,block}/*.bbmodel like AxeolonBBModel/AxeolonBlockRig
-  and writes romfs `.axm`. `source/model/AxmModel` ports sampling, blending, Box-UV cubes, bone transforms
-  and the block rig maths; `Animator` ports AxeolonAnimator; `BlockModels` ports AxeolonBlockAnims
-  (describe / drawStill / play / tick / hides / render); `game/Mobs` ports AxeolonMobAnims + RenderLiving.
-- Verify after changing models: `java ... net.minecraft.src.CheckModels <axeolon dir> java.txt`, the host
-  tool `hosttest/models.cpp` writes the same dump from the .axm files; compare (0 mismatches today).
-- Block model textures are packed into terrain.rgba rows 512+ (RigAtlas.cpp, generated).
+### Items (new compared with vanilla)
+Obsidian sword/shovel/pickaxe/axe · sponge armour (4 pieces) · **quiver** (armour slot) ·
+copper ingot · raw/cooked fish · cooked egg · egg · chicken drops · **carbon filament** (light bulbs) ·
+**fire extinguisher** (throwable entity, puts out fire) · slime bucket · red clay · snail ·
+compass · fishing rod · 15 dyes + bonemeal + cocoa · records including "where are we now" and "magnet".
+Also golden apples crafted from ingots that don't stack, food stacking to 8, doors and signs to 16,
+doubled tool durability, and apples from leaves at 1/128.
+
+### Mobs
+Creeper, Skeleton (purple arrows), Spider (climbs walls on Hard), Zombie (drops flint),
+**Giant** (drops golden apples; also spawned by the pyramidion), Slime, Pig, Sheep, Cow, **Chicken**,
+and fish. Indev-style pathfinding on Normal/Hard (`core/entity/path`).
+
+### World creation (`GuiNameWorld`)
+- **World type:** NORMAL · FLOATING (`ChunkProviderSky`) · CORRUPTION · DESERT · OLD-TIMEY (`ChunkProviderIndev`)
+- **Season:** Summer / Fall / … (`GuiPreSeasonWorld`)
+- **Weather:** Clear / Precipitating, with rain, snow, lightning (`EntityLightningBolt`, `EntityWeatherEffect`)
+- **Commands:** on/off
+- Structures: underwater brick dungeons with sponge chests, floating dungeons, cobwebs, red clay,
+  and the **pyramid** (`aaa`): a 95-high brick and mossy-brick shell topped with the pyramidion
+
+### Quality of life
+F3 coordinates and seed · fog toggle · F7 rain · `/help` and `/summon` in singleplayer ·
+Peaceful/Easy · textured clouds · more than 5 worlds.
+
+### Saves
+Region files **and** `c.<x>.<z>.dat` old chunk files with the usual `Level` NBT. Axeolon 3DS reads
+and writes both already, so NSSS worlds can be copied to the SD card and played both ways.
+
+### Skipped (for now)
+- Custom multiplayer (login and permissions protocol): a separate project
+- Isometric map viewer (`client/iso`), gamepad controls screen, texture pack screen
+  (the textures ship inside the jar anyway)
+
+---
+
+## Phases
+
+### Phase 0: Fork and strip
+Repo: `Raidenplays/nsss-3ds-port`, started from Axeolon 3DS @ ffba73f (its old notes are in `docs/`).
+Chunk storage stays 256 tall internally; the world is capped at 128 and saved 128 tall like Alpha.
+- Copy the Axeolon 3DS engine; set `TARGET nsss3ds`, title "Not So Seecret Saturday", own save
+  path `sdmc:/3ds/nsss3ds/saves/`, own title ID.
+- Turn off the Axeolon layer: charms, mana, spells, the Almanac tab, the Nether, bosses,
+  Axeolon mobs, the 256 height (back to 128).
+- Keep the bottom-screen hotbar, the Items tab (inventory + crafting + chests) and Menu.
+
+### Phase 1: Content tables (generated from the decompile, like `gen_blockprops.py`)
+- Block table 1–103: hardness, resistance, light, opacity, texture index, step sound, material.
+- Item table: IDs, stack sizes (food 8, doors/signs 16), durability ×2, armour values.
+- Recipes from `Recipes*.java` + `CraftingManager`.
+- Atlases: `terrain.png`, `gui/items.png` and the rest straight from the jar.
+
+### Phase 2: World generation (seed parity, checked with `tools/host` like Axeolon)
+- ✅ `ChunkProviderGenerate` terrain + beaches + soil + `MapGenCaves` → `source/world/gen/AlphaGen.*`.
+  Byte-identical to the jar on seeds 0, 404, 12345, 8675309 and -7461234987123, near spawn and
+  ±1000–3000 chunks out (`tools/host/alphagen.cpp` vs `tools/nsss/AlphaGenDump.java`).
+  Alpha quirks kept: no 2D shortcut in the main Perlin path, the y-as-z beach noise, and
+  MathHelper's `10430.38F` (Beta's is `10430.378F`).
+- The populate step (dungeons, pyramid, water dungeons, cobwebs, red clay, ores incl. copper, trees, flowers incl. blue, reeds, cactus, springs).
+- `ChunkProviderSky`, `ChunkProviderCorruption`, `ChunkProviderDesert`, `ChunkProviderIndev`.
+- `WorldGenWaterDungeons`, `WorldGenFloatingDungeons`, `WorldGenCobWebs`, `WorldGenClayRed`, pyramid.
+- Textured clouds; seasons and weather (rain, snow, lightning) in the renderer and world tick.
+
+### Phase 3: Block behaviour
+- Sponge / wet sponge, bleeding obsidian, pyramidion, light bulb (on top of the existing redstone).
+- **Gear / motor / generator network:** `GearGroup` merge and split, load limit, gear animation.
+
+### Phase 4: Entities
+- Remap Axeolon's Beta mob code to NSSS's versions (purple arrows, wall-climbing spiders, drops).
+- Giant (big zombie model), chicken + eggs, fish, fire extinguisher projectile, lightning.
+- Indev pathfinding on Normal/Hard, with a per-frame budget.
+
+### Phase 5: UI and QoL
+- World creation screen (type / season / weather / commands) in the bottom-screen style.
+- F3 info as a Menu-tab readout; fog and rain toggles as buttons; `/help` and `/summon` in the
+  existing command console; colored names.
+
+### Phase 6: Saves and checks
+- Load and save NSSS worlds both ways (play a world on the PC, copy it to the 3DS, and back).
+- Azahar screenshots from CI on every push; on-hardware fps on an Old 3DS.

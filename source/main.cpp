@@ -3,7 +3,7 @@
 // menus, hotbar.
 // Budget: 60 fps on an Old 3DS (268 MHz, no C-stick, no ZL/ZR).
 //
-// Worlds: your Java Axeolon saves, copied as-is to sdmc:/3ds/axeolon3ds/saves/<World>/.
+// Worlds: your Java Axeolon saves, copied as-is to sdmc:/3ds/nsss3ds/saves/<World>/.
 // Loads player position, look, inventory, armour, charms, battle slots and the Almanac map
 // and waypoints; saves them all back on quit in the same format, so the world goes straight
 // back to the PC.
@@ -94,7 +94,7 @@ extern u32 __ctru_heap_size;
 
 
 namespace {
-// Startup log on the SD card (sdmc:/3ds/axeolon3ds/log.txt), flushed every line, so a crash
+// Startup log on the SD card (sdmc:/3ds/nsss3ds/log.txt), flushed every line, so a crash
 // leaves a trail of how far it got.
 void dbg(const char* fmt, ...) {
 #ifdef __ANDROID__
@@ -114,7 +114,7 @@ void dbg(const char* fmt, ...) {
         if (n > 0) svcOutputDebugString(line, std::min(n, int(sizeof line) - 1));
     }
 #endif
-    FILE* f = fopen("sdmc:/3ds/axeolon3ds/log.txt", "a");
+    FILE* f = fopen("sdmc:/3ds/nsss3ds/log.txt", "a");
     if (!f) return;
     va_list ap;
     va_start(ap, fmt);
@@ -137,7 +137,7 @@ extern "C" void abort(void) {
 #endif
 namespace {
 
-constexpr const char* SAVES_DIR = "sdmc:/3ds/axeolon3ds/saves";
+constexpr const char* SAVES_DIR = "sdmc:/3ds/nsss3ds/saves";
 constexpr float REACH = 5.0f;   // Beta survival reach
 constexpr float REPEAT = 0.25f; // break/place repeat while held (Beta: 4/sec)
 constexpr int LOAD_RADIUS = 4;  // chunks around the player kept loaded (Old 3DS)
@@ -448,9 +448,9 @@ int main() {
     C2D_Prepare();
 
     mkdir("sdmc:/3ds", 0777);
-    mkdir("sdmc:/3ds/axeolon3ds", 0777);
+    mkdir("sdmc:/3ds/nsss3ds", 0777);
     mkdir(SAVES_DIR, 0777);
-    remove("sdmc:/3ds/axeolon3ds/log.txt");
+    remove("sdmc:/3ds/nsss3ds/log.txt");
     dbg("start");
     installBundledWorlds();
     dbg("bundled worlds ok");
@@ -478,16 +478,16 @@ int main() {
     BlockModels::markDirty = hookMarkDirty;
     BlockModels::chunkPending = hookChunkPending;
 
-    // Automatic test (sdmc:/3ds/axeolon3ds/autotest.txt present): the title screen for a few
+    // Automatic test (sdmc:/3ds/nsss3ds/autotest.txt present): the title screen for a few
     // seconds, then World1, replaying tools/java/SimPlayer's input script with every tick logged.
     struct stat ast;
-    bool autotestOn = stat("sdmc:/3ds/axeolon3ds/autotest.txt", &ast) == 0;
+    bool autotestOn = stat("sdmc:/3ds/nsss3ds/autotest.txt", &ast) == 0;
     bool autotestNew = false; // "new" in the file: create World5 from seed 12345 instead
     bool autotestNether = false;
     bool autotestQuit = false;
     int autotestVisits = 0;
     if (autotestOn) {
-        FILE* f = fopen("sdmc:/3ds/axeolon3ds/autotest.txt", "r");
+        FILE* f = fopen("sdmc:/3ds/nsss3ds/autotest.txt", "r");
         char buf[8] = {0};
         if (f) { fread(buf, 1, 3, f); fclose(f); }
         autotestNew = std::strncmp(buf, "new", 3) == 0;
@@ -958,7 +958,7 @@ int main() {
         almanacMap.invalidate();
         bottom.markDirty();
     };
-    // Automatic movement test (sdmc:/3ds/axeolon3ds/autotest.txt present): replays
+    // Automatic movement test (sdmc:/3ds/nsss3ds/autotest.txt present): replays
     // tools/java/SimPlayer's input script and logs every tick, to compare with Java.
     int autotest = autotestOn ? 0 : -1;
     dbg("player loaded%s", autotest == 0 ? " (autotest)" : "");

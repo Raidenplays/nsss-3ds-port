@@ -26,6 +26,6 @@ jobs:
         run: |
           for a in ${{ inputs.addrs }}; do
             echo "== 0x$a"
-            /opt/devkitpro/devkitARM/bin/arm-none-eabi-addr2line -f -C -i -e axeolon3ds.elf 0x$a
+            /opt/devkitpro/devkitARM/bin/arm-none-eabi-addr2line -f -C -i -e nsss3ds.elf 0x$a
           done
-          /opt/devkitpro/devkitARM/bin/arm-none-eabi-nm -C -S --size-sort axeolon3ds.elf | tail -5
+          /opt/devkitpro/devkitARM/bin/arm-none-eabi-nm -C -S --size-sort nsss3ds.elf | tail -5

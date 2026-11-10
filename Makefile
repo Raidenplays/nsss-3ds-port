@@ -1,5 +1,5 @@
 #---------------------------------------------------------------------------------
-# Axeolon 3DS — Minecraft Beta 1.2_02 port scaffold
+# NSSS 3DS — Not So Seecret Saturday (Alpha 1.1.2_01 fork) port
 # Based on the standard devkitPro 3DS template (citro3d + PICA200 shaders)
 #---------------------------------------------------------------------------------
 .SUFFIXES:
@@ -17,7 +17,7 @@ include $(DEVKITARM)/3ds_rules
 # SOURCES is a list of directories containing source code (and .v.pica shaders)
 # NOTE: VPATH flattens these, so every file name must be unique across folders.
 #---------------------------------------------------------------------------------
-TARGET		:=	axeolon3ds
+TARGET		:=	nsss3ds
 BUILD		:=	build
 SOURCES		:=	source source/world source/render source/client source/game source/ui source/model source/audio source/shaders source/world/gen
 DATA		:=	data
@@ -25,8 +25,8 @@ INCLUDES	:=	source
 ROMFS		:=	romfs
 ICON		:=	meta/icon.png
 
-APP_TITLE	:=	Minecraft Axeolon
-APP_DESCRIPTION	:=	Minecraft Beta 1.2_02 / Axeolon port
+APP_TITLE	:=	Not So Seecret Saturday
+APP_DESCRIPTION	:=	NSSS a1.1.12 (Alpha 1.1.2_01) port
 APP_AUTHOR	:=	Raiden Brundin
 
 #---------------------------------------------------------------------------------

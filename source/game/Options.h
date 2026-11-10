@@ -1,5 +1,5 @@
 #pragma once
-// GameSettings: the player's options, kept in sdmc:/3ds/axeolon3ds/options.txt in the Java game's
+// GameSettings: the player's options, kept in sdmc:/3ds/nsss3ds/options.txt in the Java game's
 // "key:value" lines (music, sound, invertYMouse, mouseSensitivity, bobView, difficulty...).
 #include <string>
 

@@ -16,7 +16,7 @@ namespace {
 std::unique_ptr<Screen> gScreen, gNext;
 Choice gChoice;
 bool gChosen = false;
-const char* SAVES = "sdmc:/3ds/axeolon3ds/saves";
+const char* SAVES = "sdmc:/3ds/nsss3ds/saves";
 bool worldExists(int i) {
     std::string p = std::string(SAVES) + "/World" + std::to_string(i) + "/level.dat";
     if (FILE* f = std::fopen(p.c_str(), "rb")) { std::fclose(f); return true; }

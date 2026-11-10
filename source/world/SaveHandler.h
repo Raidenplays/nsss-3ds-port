@@ -23,7 +23,7 @@ struct LevelInfo {
 
 class SaveHandler {
 public:
-    // worldDir: e.g. "sdmc:/3ds/axeolon3ds/saves/World1". dimension: 0 or -1.
+    // worldDir: e.g. "sdmc:/3ds/nsss3ds/saves/World1". dimension: 0 or -1.
     SaveHandler(const std::string& worldDir, int dimension);
 
     bool readLevel(LevelInfo& out);  // level.dat -> level.dat_new -> level.dat_old (Axeolon's recovery order)
