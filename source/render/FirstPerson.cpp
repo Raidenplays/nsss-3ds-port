@@ -53,15 +53,7 @@ void FirstPerson::addQuad(const float m[16], const float p[4][3], const float uv
     for (int i : T) tris.push_back(v[i]);
 }
 
-void FirstPerson::tick(const Inventory& inv, bool blocking) {
-    if (offSwing > 0) --offSwing;
-    prevRaise = raise_;
-    raise_ += ((blocking ? 1.0f : 0.0f) - raise_) * 0.5f;
-    {
-        Inventory& mut = const_cast<Inventory&>(inv);
-        ItemStack* off = mut.offhand();
-        offShown = off && !off->empty() ? *off : ItemStack{};
-    }
+void FirstPerson::tick(const Inventory& inv) {
     prevEquipped = equipped;
     const ItemStack& cur = inv.main[inv.currentItem];
     bool same = shownSlot == inv.currentItem && cur.id == shown.id && cur.damage == shown.damage &&
@@ -241,7 +233,7 @@ void FirstPerson::draw(Renderer& r, const Player& p, const Camera& cam, float pa
             addQuad(t.m, pq, uv, bright * f.shade);
         }
     }
-    if (!tex || tris.empty()) { drawOffhand(r, p, base.m, partial, bright); return; }
+    if (!tex || tris.empty()) return;
     // no depth buffer of its own here: draw the far triangles first
     struct Tri { float z; int i; };
     std::vector<Tri> order(tris.size() / 3);
@@ -253,47 +245,5 @@ void FirstPerson::draw(Renderer& r, const Player& p, const Camera& cam, float pa
     for (const Tri& t : order)
         for (int k = 0; k < 3; ++k) sorted.push_back(tris[t.i * 3 + k]);
     r.drawFree(r.currentProjection(), sorted, tex, 0, false);
-    drawOffhand(r, p, base.m, partial, bright);
 }
 
-void FirstPerson::drawOffhand(Renderer& r, const Player& p, const float baseM[16], float partial, float bright) {
-    // Axeolon battle mode: the off-hand item on the left, raised while a shield blocks
-    if (offShown.empty()) return;
-    const ItemInfo* info = itemInfo(offShown.id, offShown.damage);
-    if (!info || info->icon < 0 || offShown.id < 256) return;
-    tris.clear();
-    int icon = info->icon & 255;
-    float u0 = float(icon % 16 * 16) / 256.0f, u1 = (float(icon % 16 * 16) + 15.99f) / 256.0f;
-    float v0 = float(icon / 16 * 16) / 256.0f, v1 = (float(icon / 16 * 16) + 15.99f) / 256.0f;
-    float sp = offSwing > 0 ? (float(6 - offSwing) + partial) / 6.0f : 0.0f;
-    float s1 = MathHelper::sin(sp * PI_F), s2 = MathHelper::sin(MathHelper::sqrt_float(sp) * PI_F);
-    float raise = prevRaise + (raise_ - prevRaise) * partial;
-    M4 t;
-    std::memcpy(t.m, baseM, sizeof t.m);
-    t.translate(s2 * 0.4f, MathHelper::sin(MathHelper::sqrt_float(sp) * PI_F * 2.0f) * 0.2f, -s1 * 0.2f);
-    t.translate(-0.7f * 0.8f + raise * 0.25f, -0.65f * 0.8f + raise * 0.3f, -0.9f * 0.8f);
-    t.rotate(-45.0f + raise * 40.0f, 1);
-    t.rotate(s2 * 80.0f * -1.0f, 0);
-    t.scale(0.4f, 0.4f, 0.4f);
-    t.translate(0.0f, -0.3f, 0.0f);
-    t.scale(1.5f, 1.5f, 1.5f);
-    t.rotate(50.0f, 1);
-    t.rotate(335.0f, 2);
-    t.translate(-15.0f / 16.0f, -1.0f / 16.0f, 0.0f);
-    (void)p;
-    // same icon geometry as the main hand
-    const float d = 1.0f / 16.0f;
-    float sh = bright;
-    {
-        float pq[4][3] = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
-        float uv[4][2] = {{u1, v1}, {u0, v1}, {u0, v0}, {u1, v0}};
-        addQuad(t.m, pq, uv, sh);
-        float pb[4][3] = {{0, 1, -d}, {1, 1, -d}, {1, 0, -d}, {0, 0, -d}};
-        float ub[4][2] = {{u1, v0}, {u0, v0}, {u0, v1}, {u1, v1}};
-        addQuad(t.m, pb, ub, sh * 0.8f);
-    }
-    std::vector<axm::ModelVertex> both = tris;
-    r.drawFree(r.currentProjection(), both, r.texture("romfs:/textures/gui/items.rgba"), 0, false);
-}
-
-void FirstPerson::swingOffhand() { offSwing = 6; }

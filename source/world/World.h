@@ -42,6 +42,10 @@ public:
     uint8_t getBlockId(int x, int y, int z) const;
     int getBlockMetadata(int x, int y, int z) const;
     int getLightValue(int x, int y, int z) const; // getBlockLightValue without the slab/farmland rule
+    int getBlockLightValue(int x, int y, int z) const; // ... with it (a half slab or farmland: the brightest neighbour)
+    float getBrightness(int x, int y, int z) const;    // World.getBrightness (lightBrightnessTable)
+    int currentSeason() const;                         // getCurrentSeason (a CYCLE world turns every daysInSeason days)
+    float mobRatio() const;                            // EnumSeason.getMobRatio
     bool setBlockAndMetadata(int x, int y, int z, uint8_t id, int meta); // player edits: ...WithNotify
     int getTopY(int x, int z) const;
     Chunk* getChunk(int cx, int cz) const {
@@ -65,6 +69,14 @@ public:
     RayHit rayTrace(float ox, float oy, float oz, float dx, float dy, float dz, float maxDist, bool liquids = false) const;
 
     LevelInfo info;
+    // NSSS world settings (GuiNameWorld / the /set* commands); seasons and weather are ported with
+    // World.tick. Values match EnumSeason / EnumWeather order.
+    enum Season { SUMMER, FALL, WINTER, SPRING, CYCLE };
+    enum Weather { CLEAR, PRECIPITATION, WEATHER_CYCLE, SEASONAL };
+    int season = SUMMER, weather = CLEAR;
+    bool snowCovered = false, cheatsDisabled = false;
+    int daysInSeason = 14;
+    int worldType = 0; // 0 normal, 1 floating, 2 corruption, 3 desert, 4 old-timey
     int skylightSubtracted = 0;
     // RenderGlobal.markBlockRangeNeedsUpdate (IWorldAccess); set by the game
     std::function<void(int, int, int, int, int, int)> onBlocksDirty;
@@ -168,7 +180,6 @@ public:
     int caveSoundCooldown = 0;  // field_9426_L
     bool scheduledUpdatesAreImmediate = false;
     bool editingBlocks = false; // field_1043_h: neighbour notifications are suppressed
-    bool hell = false;          // WorldProviderHell: isHellWorld, and no sky (field_6478_e)
 
     // TileEntity data as saved NBT, in the chunk's "TileEntities" list
     nbt::Tag* tileEntityAt(int x, int y, int z);
@@ -177,7 +188,7 @@ public:
 
     JavaRandom rand; // World.rand (Java seeds it from the clock)
     // Block.dropBlockAsItem results waiting for the item-entity port: position, item id, damage
-    struct Drop { double x, y, z; int id, count, damage; std::shared_ptr<nbt::Tag> tag = nullptr; };
+    struct Drop { double x, y, z; int id, count, damage; };
     std::vector<Drop> drops;
     ChunkGenerator* generator() { return gen.get(); }
 

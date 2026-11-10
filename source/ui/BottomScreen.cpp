@@ -1,10 +1,9 @@
 #include "BottomScreen.h"
 #include "game/Options.h"
 #include "audio/Sound.h"
-#include "game/Progress.h"
 #include <algorithm>
 #include "game/ItemTable.h"
-#include "game/CreativeMenu.h"
+#include "game/BuildMenu.h"
 #include "game/Survival.h"
 #include "world/BlockTable.h"
 #include "render/Renderer.h"
@@ -22,7 +21,7 @@ constexpr int SLOT_IN = 30;        // slot drawn size
 constexpr int HOTBAR_X = 16, HOTBAR_Y = 208;
 
 // Items tab
-constexpr int ARMOUR_X = 16, CHARM_X = 96, CRAFT_X = 184, RESULT_X = 280, TOP_ROW_Y = 36;
+constexpr int ARMOUR_X = 16, CRAFT_X = 184, RESULT_X = 280, TOP_ROW_Y = 36;
 constexpr int GRID_X = 16, GRID_Y = 108;
 constexpr int TSLOT = 24, TABLE_X = 120, TABLE_Y = 28; // crafting table grid (smaller slots)
 constexpr int CSLOT = 20, CONT_X = 70; // chests: 9 columns of 20 px (a large chest needs 6 rows + yours)
@@ -39,7 +38,7 @@ constexpr int MT_CAT_X = 2, MT_CAT_W = 44, MT_CAT_H = 43, MT_CAT_STEP = 45;
 constexpr int MT_LIST_X = 48, MT_LIST_W = 148, MT_LIST_Y = TAB_H + 2, MT_ROW = 18, MT_LIST_H = 180;
 constexpr int MT_PANEL_X = 202;
 constexpr int MT_CRAFT_X = 238, MT_CRAFT_Y = 42, MT_CRAFT_W = 78, MT_CRAFT_H = 26;
-constexpr float MAP_SCALE = MAP_PX / float(AlmanacMap::SIZE);
+constexpr float MAP_SCALE = MAP_PX / float(Minimap::SIZE);
 
 // Beta inventory GUI colours
 inline u32 rgb(u32 c, u8 a = 255) { return C2D_Color32((c >> 16) & 255, (c >> 8) & 255, c & 255, a); }
@@ -53,13 +52,9 @@ const u32 PARCH = 0xD8C8A0, INK = 0x3F2A14;
 
 inline bool in(int x, int y, int rx, int ry, int rw, int rh) { return x >= rx && y >= ry && x < rx + rw && y < ry + rh; }
 
-const char* TAB_NAMES[4] = {"Map", "Items", "Almanac", "Menu"};
-const char* ALMANAC_PAGES[4] = {"Achievements", "The Hunt", "Recipes", "Charms"};
-constexpr int ALM_TAB_W = 74;
-
 } // namespace
 
-bool BottomScreen::init(Renderer& r, Camera& c, Inventory& i, AlmanacMap& m) {
+bool BottomScreen::init(Renderer& r, Camera& c, Inventory& i, Minimap& m) {
     renderer = &r; camera = &c; inv = &i; map = &m;
 
     gfxSetDoubleBuffering(GFX_BOTTOM, false); // keep last image when we skip redraws
@@ -81,7 +76,7 @@ bool BottomScreen::init(Renderer& r, Camera& c, Inventory& i, AlmanacMap& m) {
     peSheet = r.texture("romfs:/textures/pe/spritesheet.rgba");
     peGui = r.texture("romfs:/textures/pe/gui.rgba");
 
-    const int n = AlmanacMap::SIZE;
+    const int n = Minimap::SIZE;
     if (!C3D_TexInit(&mapTex, n, n, GPU_RGBA8)) return false;
     C3D_TexSetFilter(&mapTex, GPU_NEAREST, GPU_NEAREST);
     // parchment until the first paint (linear memory comes back with whatever was there before)
@@ -103,7 +98,6 @@ void BottomScreen::setTab(Tab t) {
     if (t != current && current == Tab::Items) { // like closing GuiInventory / GuiCrafting
         inv->returnCursor();
         if (inv->tableOpen) inv->closeTable();
-        if (inv->cutterOpen) inv->closeStonecutter();
         mattisOpen = false;
         dragging = false;
     }
@@ -116,7 +110,7 @@ void BottomScreen::setTab(Tab t) {
 // --------------------------------------------------------------------------
 
 void BottomScreen::uploadMap() {
-    const int n = AlmanacMap::SIZE;
+    const int n = Minimap::SIZE;
     memcpy(mapStaging, map->pixels(), n * n * 4);
     GSPGPU_FlushDataCache(mapStaging, n * n * 4);
     C3D_SyncDisplayTransfer(mapStaging, GX_BUFFER_DIM(n, n), (u32*)mapTex.data, GX_BUFFER_DIM(n, n),
@@ -153,8 +147,6 @@ void BottomScreen::handleInput(u32 down, u32 held, const touchPosition& touch) {
     if (dragging) {
         if (!(held & KEY_TOUCH)) {
             dragging = false;
-            if (creativePending != -1 && !dragMoved) creativePick(creativePending, creativePendingAlt);
-            creativePending = -1;
             dirty = true;
         } else if (!(down & KEY_TOUCH)) {
             int dy = dragY0 - int(touch.py);
@@ -177,6 +169,9 @@ void BottomScreen::handleInput(u32 down, u32 held, const touchPosition& touch) {
     if (current == Tab::Map) { touchHome(x, y); return; }
     if (y < TAB_H) { // the PE header: X closes back to the home view, Craft opens PE crafting
         if (x >= PE_X_BTN) setTab(Tab::Map);
+        else if (current == Tab::Items && x < 74 && buildShowing()) buildOwnPage = true;
+        else if (current == Tab::Items && x < 74 && inv->creative && buildOwnPage && !mattisShowing() &&
+                 inv->containerKind == Inventory::NONE && !inv->tableOpen) buildOwnPage = false;
         else if (current == Tab::Items && x < 74 && gOptions.craftStyle == 1 && inv->containerKind == Inventory::NONE)
             openMattis(!mattisShowing());
         sound::playUi("random.click", 1.0f, 1.0f);
@@ -185,13 +180,12 @@ void BottomScreen::handleInput(u32 down, u32 held, const touchPosition& touch) {
     if (touchHotbar(x, y, alt)) return;
 
     switch (current) {
-    case Tab::Map: touchMapTab(x, y); break;
+    case Tab::Map: break;
     case Tab::Items:
         if (mattisShowing()) touchMattis(x, y, alt);
-        else if (creativeShowing()) touchCreative(x, y, alt);
+        else if (buildShowing()) touchBuild(x, y, alt);
         else touchItemsTab(x, y, alt);
         break;
-    case Tab::Almanac: touchAlmanacTab(x, y); break;
     case Tab::Menu: touchMenuTab(x, y); break;
     }
 }
@@ -206,16 +200,6 @@ bool BottomScreen::touchHotbar(int x, int y, bool alt) {
         inv->currentItem = i;
     }
     return true;
-}
-
-void BottomScreen::touchMapTab(int x, int y) {
-    if (in(x, y, 8, 40, 56, 28)) { if (mapZoom > 1) mapZoom /= 2; mapTimer = 1; return; }  // +
-    if (in(x, y, 8, 76, 56, 28)) { if (mapZoom < 8) mapZoom *= 2; mapTimer = 1; return; }  // -
-    if (in(x, y, MAP_X, MAP_Y, MAP_PX, MAP_PX)) {
-        int wx = map->centreX() + (int)std::floor(((x - MAP_X) / MAP_SCALE - AlmanacMap::SIZE / 2) * map->zoom());
-        int wz = map->centreZ() + (int)std::floor(((y - MAP_Y) / MAP_SCALE - AlmanacMap::SIZE / 2) * map->zoom());
-        map->toggleWaypoint(wx, wz, 3 * map->zoom());
-    }
 }
 
 void BottomScreen::touchItemsTab(int x, int y, bool alt) {
@@ -243,21 +227,6 @@ void BottomScreen::touchItemsTab(int x, int y, bool alt) {
                     return click(SlotGroup::Main, 9 + row * 9 + col);
         return;
     }
-    if (inv->cutterOpen) { // GuiStonecutter: the stone, the pieces it cuts into, the result
-        if (in(x, y, 24, 46, SLOT_IN, SLOT_IN)) return click(SlotGroup::CutInput, 0);
-        for (int i = 0; i < int(inv->cutChoices.size()) && i < 12; i++)
-            if (in(x, y, 76 + (i % 6) * 30, 32 + (i / 6) * 32, 28, 30)) {
-                inv->selectCut(i);
-                sound::playUi("random.click", 1.0f, 1.0f);
-                return;
-            }
-        if (in(x, y, RESULT_X, TOP_ROW_Y + SLOT / 2, SLOT_IN, SLOT_IN)) return click(SlotGroup::CutResult, 0);
-        for (int row = 0; row < 3; row++)
-            for (int col = 0; col < 9; col++)
-                if (in(x, y, GRID_X + col * SLOT, GRID_Y + row * SLOT, SLOT_IN, SLOT_IN))
-                    return click(SlotGroup::Main, 9 + row * 9 + col);
-        return;
-    }
     if (inv->tableOpen) { // crafting table: 3x3 grid on the left, the result on the right
         for (int i = 0; i < 9; i++)
             if (in(x, y, TABLE_X + (i % 3) * TSLOT, TABLE_Y + (i / 3) * TSLOT, TSLOT - 2, TSLOT - 2)) return click(SlotGroup::Table, i);
@@ -268,9 +237,7 @@ void BottomScreen::touchItemsTab(int x, int y, bool alt) {
                     return click(SlotGroup::Main, 9 + row * 9 + col);
         return;
     }
-    if (inv->creative && in(x, y, ARMOUR_X - 2, TAB_H + 1, 70, 12)) { creativeOwnPage = false; return; } // back to the palette
-    if (in(x, y, RESULT_X - 8, 20, 48, 14)) { battlePage = !battlePage; return; } // Craft / Battle switch
-    if (gOptions.craftStyle == 1 && !battlePage) { // Pocket: one button instead of the 2x2 grid
+    if (gOptions.craftStyle == 1) { // Pocket: one button instead of the 2x2 grid
         if (in(x, y, CRAFT_X, TOP_ROW_Y, RESULT_X + SLOT_IN - CRAFT_X, SLOT + SLOT_IN)) {
             if (!inv->cursor.empty()) return;
             openMattis(true);
@@ -281,50 +248,13 @@ void BottomScreen::touchItemsTab(int x, int y, bool alt) {
     for (int i = 0; i < 4; i++) {
         int cx = (i & 1) * SLOT, cy = (i >> 1) * SLOT;
         if (in(x, y, ARMOUR_X + cx, TOP_ROW_Y + cy, SLOT_IN, SLOT_IN)) return click(SlotGroup::Armour, 3 - i);
-        if (i < Inventory::CHARMS && in(x, y, CHARM_X + cx, TOP_ROW_Y + cy, SLOT_IN, SLOT_IN)) return click(SlotGroup::Charm, i);
-        if (!battlePage && gOptions.craftStyle == 0 && in(x, y, CRAFT_X + cx, TOP_ROW_Y + cy, SLOT_IN, SLOT_IN)) return click(SlotGroup::Craft, i);
-    }
-    if (battlePage) {
-        // 3 pairs: main hand on top, off hand below (slots 36-41)
-        for (int p = 0; p < 3; p++)
-            for (int h = 0; h < 2; h++)
-                if (in(x, y, CRAFT_X + p * SLOT, TOP_ROW_Y + h * SLOT, SLOT_IN, SLOT_IN)) {
-                    if (inv->cursor.empty() && inv->main[Inventory::BATTLE_START + p * 2 + h].empty()) {
-                        inv->selectBattleSlot(p); // empty slot, empty hand: pick this pair
-                        return;
-                    }
-                    return click(SlotGroup::Main, Inventory::BATTLE_START + p * 2 + h);
-                }
-        if (in(x, y, RESULT_X + 4, TOP_ROW_Y + 8, 30, 46)) { inv->setBattleMode(!inv->battleMode); return; }
-        return;
+        if (gOptions.craftStyle == 0 && in(x, y, CRAFT_X + cx, TOP_ROW_Y + cy, SLOT_IN, SLOT_IN)) return click(SlotGroup::Craft, i);
     }
     if (gOptions.craftStyle == 0 && in(x, y, RESULT_X, TOP_ROW_Y + SLOT / 2, SLOT_IN, SLOT_IN)) return click(SlotGroup::CraftResult, 0);
     for (int row = 0; row < 3; row++)
         for (int col = 0; col < 9; col++)
             if (in(x, y, GRID_X + col * SLOT, GRID_Y + row * SLOT, SLOT_IN, SLOT_IN))
                 return click(SlotGroup::Main, 9 + row * 9 + col);
-}
-
-void BottomScreen::touchAlmanacTab(int x, int y) {
-    for (int i = 0; i < 4; i++)
-        if (in(x, y, 8 + i * (ALM_TAB_W + 2), 26, ALM_TAB_W, 20)) {
-            if (almanacPage != i) sound::playUi("random.click", 1.0f, 1.0f);
-            almanacPage = i;
-            return;
-        }
-    if (almanacPage == 2) { // turn the page
-        if (in(x, y, 12, 176, 40, 20) && recipePage > 0) { --recipePage; sound::playUi("random.click", 1.0f, 1.0f); }
-        if (in(x, y, 268, 176, 40, 20)) { ++recipePage; sound::playUi("random.click", 1.0f, 1.0f); } // clamped when drawn
-        return;
-    }
-    if (almanacPage == 3 && in(x, y, 8, 46, 304, 152)) {
-        dragging = true;
-        dragMoved = false;
-        dragY0 = y;
-        dragScroll0 = charmScroll;
-        dragTarget = &charmScroll;
-        dragMax = std::max(0, 7 * 36 - 148);
-    }
 }
 
 void BottomScreen::touchMenuTab(int x, int y) {
@@ -359,8 +289,6 @@ void BottomScreen::touchMenuTab(int x, int y) {
         o.bobView = !o.bobView;
     } else if (in(x, y, 40, MENU_Y0 + 6 * MENU_ROW, 118, MENU_H)) {
         o.invertY = !o.invertY;
-    } else if (in(x, y, 162, MENU_Y0 + 6 * MENU_ROW, 118, MENU_H)) {
-        o.dynamicLights = (o.dynamicLights + 1) % 3;
     } else if (in(x, y, 40, MENU_Y0 + 7 * MENU_ROW, 240, MENU_H)) {
         quit = true;
         changed = false;
@@ -429,14 +357,6 @@ void BottomScreen::button(float x, float y, float w, float h, const char* label)
     text(label, x + w / 2, y + h / 2 - 8, 0.5f, rgb(0xE0E0E0), C2D_AlignCenter);
 }
 
-void BottomScreen::drawTabs() {
-    for (int i = 0; i < 4; i++) {
-        bool active = static_cast<int>(current) == i;
-        bevel(i * 80, 0, 80, TAB_H, true, active ? GUI_BG : 0x8B8B8B);
-        text(TAB_NAMES[i], i * 80 + 40, 3, 0.5f, rgb(active ? 0x202020 : 0x404040), C2D_AlignCenter);
-    }
-}
-
 void BottomScreen::drawHotbar() {
     C2D_DrawRectSolid(0, HOTBAR_Y - 4, 0.5f, 320, 240 - (HOTBAR_Y - 4), rgb(0x2A2A2A));
     for (int i = 0; i < Inventory::HOTBAR; i++) {
@@ -458,16 +378,6 @@ void BottomScreen::drawMapTab() {
     C2D_DrawRectSolid(MAP_X - 3, MAP_Y - 3, 0.5f, MAP_PX + 6, MAP_PX + 6, rgb(INK));
     C2D_Image img = {&mapTex, &mapSub};
     C2D_DrawImageAt(img, MAP_X, MAP_Y, 0.5f, nullptr, MAP_SCALE, MAP_SCALE);
-
-    // Waypoints
-    const int half = AlmanacMap::SIZE / 2;
-    for (const Waypoint& w : map->waypoints()) {
-        float px = ((w.x - map->centreX()) / (float)map->zoom() + half) * MAP_SCALE + MAP_X;
-        float py = ((w.z - map->centreZ()) / (float)map->zoom() + half) * MAP_SCALE + MAP_Y;
-        if (px < MAP_X + 3 || py < MAP_Y + 3 || px > MAP_X + MAP_PX - 3 || py > MAP_Y + MAP_PX - 3) continue;
-        C2D_DrawRectSolid(px - 4, py - 4, 0.5f, 8, 8, rgb(0x000000));
-        C2D_DrawRectSolid(px - 3, py - 3, 0.5f, 6, 6, rgb(AlmanacMap::woolColour(w.colour)));
-    }
 
     // Player arrow (north up)
     float cx = MAP_X + MAP_PX / 2.0f, cy = MAP_Y + MAP_PX / 2.0f;
@@ -527,31 +437,6 @@ void BottomScreen::drawItemsTab() {
             }
         return;
     }
-    if (inv->cutterOpen) {
-        text("Stonecutter", 16, 23, 0.42f, rgb(0x404040));
-        slotFrame(24, 46);
-        itemIcon(inv->cutInput, 24, 46);
-        text(">", 60, 52, 0.6f, rgb(0x404040));
-        C2D_DrawRectSolid(75, 31, 0.5f, 6 * 30 + 1, 2 * 32 + 1, rgb(DARK));
-        C2D_DrawRectSolid(76, 32, 0.5f, 6 * 30 - 1, 2 * 32 - 1, rgb(SLOT_BG));
-        for (int i = 0; i < int(inv->cutChoices.size()) && i < 12; i++) {
-            float bx = 76 + (i % 6) * 30, by = 32 + (i / 6) * 32;
-            bool sel = i == inv->cutSelected;
-            bevel(bx, by, 28, 30, !sel, sel ? 0x6E6E6E : 0x9C9C9C);
-            itemIcon(inv->cutChoices[i], bx - 1, by, 1.0f);
-        }
-        text(">", RESULT_X - 14, TOP_ROW_Y + SLOT / 2 + 6, 0.6f, rgb(0x404040));
-        slotFrame(RESULT_X, TOP_ROW_Y + SLOT / 2);
-        itemIcon(inv->cutResult, RESULT_X, TOP_ROW_Y + SLOT / 2);
-        if (inv->cutInput.empty()) text("Put stone in to cut it", 76, 100 - 4, 0.36f, rgb(0x505050));
-        for (int row = 0; row < 3; row++)
-            for (int col = 0; col < 9; col++) {
-                float x = GRID_X + col * SLOT, y = GRID_Y + row * SLOT;
-                slotFrame(x, y);
-                itemIcon(inv->main[9 + row * 9 + col], x, y);
-            }
-        return;
-    }
     if (inv->tableOpen) {
         text("Crafting", 16, 23, 0.42f, rgb(0x404040));
         for (int i = 0; i < 9; i++) {
@@ -570,42 +455,17 @@ void BottomScreen::drawItemsTab() {
             }
         return;
     }
-    if (inv->creative) { // back to the creative palette (where "Armour" usually sits)
-        bevel(ARMOUR_X - 2, TAB_H + 1, 70, 12, true, 0xA0A0A0);
-        text("< Creative", ARMOUR_X + 33, TAB_H, 0.38f, rgb(0x202020), C2D_AlignCenter);
-    } else {
-        text("Armour", ARMOUR_X, 23, 0.42f, rgb(0x404040));
-    }
-    text("Charms", CHARM_X, 23, 0.42f, rgb(0x404040));
-    text(battlePage ? "Battle" : "Crafting", CRAFT_X, 23, 0.42f, rgb(0x404040));
-    bevel(RESULT_X - 8, 20, 48, 14, true, 0xA0A0A0);
-    text(battlePage ? "Craft" : "Battle", RESULT_X + 16, 20, 0.38f, rgb(0x202020), C2D_AlignCenter);
+    text("Armour", ARMOUR_X, 23, 0.42f, rgb(0x404040));
+    text("Crafting", CRAFT_X, 23, 0.42f, rgb(0x404040));
     for (int i = 0; i < 4; i++) {
         int cx = (i & 1) * SLOT, cy = (i >> 1) * SLOT;
         slotFrame(ARMOUR_X + cx, TOP_ROW_Y + cy); itemIcon(inv->armour[3 - i], ARMOUR_X + cx, TOP_ROW_Y + cy);
-        if (i < Inventory::CHARMS) {
-            slotFrame(CHARM_X + cx, TOP_ROW_Y + cy);
-            itemIcon(inv->charms[i], CHARM_X + cx, TOP_ROW_Y + cy);
-        }
-        if (!battlePage && gOptions.craftStyle == 0) {
+        if (gOptions.craftStyle == 0) {
             slotFrame(CRAFT_X + cx, TOP_ROW_Y + cy);
             itemIcon(inv->craft[i], CRAFT_X + cx, TOP_ROW_Y + cy);
         }
     }
-    if (battlePage) {
-        for (int p = 0; p < 3; p++) {
-            if (p == inv->battleSlot)
-                C2D_DrawRectSolid(CRAFT_X + p * SLOT - 2, TOP_ROW_Y - 2, 0.5f, SLOT_IN + 4, SLOT + SLOT_IN + 4,
-                                  rgb(inv->battleMode ? 0xE0C040 : 0x909090));
-            for (int h = 0; h < 2; h++) {
-                float sx = CRAFT_X + p * SLOT, sy = TOP_ROW_Y + h * SLOT;
-                slotFrame(sx, sy);
-                itemIcon(inv->main[Inventory::BATTLE_START + p * 2 + h], sx, sy);
-            }
-        }
-        bevel(RESULT_X + 4, TOP_ROW_Y + 8, 30, 46, true, inv->battleMode ? 0xC04040 : 0x707070);
-        text(inv->battleMode ? "ON" : "OFF", RESULT_X + 19, TOP_ROW_Y + 22, 0.42f, rgb(0xFFFFFF), C2D_AlignCenter);
-    } else if (gOptions.craftStyle == 1) { // Pocket: the craft button
+    if (gOptions.craftStyle == 1) { // Pocket: the craft button    } else if (gOptions.craftStyle == 1) { // Pocket: the craft button
         float bw = RESULT_X + SLOT_IN - CRAFT_X, bh = SLOT + SLOT_IN;
         bevel(CRAFT_X, TOP_ROW_Y, bw, bh, true, 0x8B8B8B);
         ItemStack bench;
@@ -626,207 +486,6 @@ void BottomScreen::drawItemsTab() {
             slotFrame(x, y);
             itemIcon(inv->main[9 + row * 9 + col], x, y);
         }
-}
-
-void BottomScreen::drawAlmanacTab() {
-    C2D_DrawRectSolid(0, TAB_H, 0.5f, 320, HOTBAR_Y - 4 - TAB_H, rgb(0x6B5433));
-    for (int i = 0; i < 4; i++) {
-        bool on = i == almanacPage;
-        C2D_DrawRectSolid(8 + i * (ALM_TAB_W + 2), 26, 0.5f, ALM_TAB_W, 20, rgb(on ? PARCH : 0xB8A47C));
-        text(ALMANAC_PAGES[i], 8 + i * (ALM_TAB_W + 2) + ALM_TAB_W / 2, 28, 0.42f, rgb(INK), C2D_AlignCenter);
-    }
-    C2D_DrawRectSolid(8, 46, 0.5f, 304, 152, rgb(PARCH));
-    if (almanacPage == 1) return drawAlmanacHunt();
-    if (almanacPage == 2) return drawAlmanacRecipes();
-    if (almanacPage == 3) return drawAlmanacCharms();
-    // the achievements (GuiAlmanac's achievement map, as a list)
-    int shown = 0, earned = 0;
-    for (int i = 0; i < progress::COUNT; ++i) {
-        const progress::Achievement& a = progress::ALL[i];
-        bool got = progress::has(*inv, a.id);
-        if (got) ++earned;
-        if (!progress::visible(*inv, a)) continue;
-        float x = shown < 7 ? 12.0f : 162.0f, y = 50.0f + float(shown % 7) * 20.0f;
-        ItemStack icon;
-        icon.id = uint16_t(a.icon);
-        icon.count = 1;
-        C2D_DrawRectSolid(x, y, 0.5f, 146, 19, rgb(got ? 0xD8C79A : 0xC9B98E));
-        itemIcon(icon, x - 2, y - 2, 0.75f);
-        text(a.name, x + 18, y + 1, 0.38f, rgb(got ? INK : 0x8A7A5A));
-        text(a.description, x + 18, y + 10, 0.3f, rgb(got ? 0x5A4A30 : 0x9A8A6A));
-        ++shown;
-    }
-    char buf[48];
-    snprintf(buf, sizeof buf, "%d / %d", earned, progress::COUNT);
-    text(buf, 304, 188, 0.38f, rgb(INK), C2D_AlignRight);
-}
-
-// GuiAlmanac.drawHunt
-void BottomScreen::drawAlmanacHunt() {
-    const u32 INK_LIGHT = 0x6B4A2A;
-    auto para = [&](const char* s, float y, u32 c) {
-        std::vector<std::string> lines = wrap(s, 288, 0.42f);
-        for (size_t l = 0; l < lines.size(); ++l) text(lines[l].c_str(), 16, y + float(l) * 13, 0.42f, rgb(c));
-        return y + float(lines.size()) * 13;
-    };
-    if (!progress::has(*inv, progress::READY_COLD)) {
-        text("The Hunt", 16, 52, 0.5f, rgb(INK));
-        para("These pages are blank. Something waits in the cold, but you are not ready for it yet.", 72, INK_LIGHT);
-        return;
-    }
-    text("The next to be hunted", 16, 50, 0.42f, rgb(INK_LIGHT));
-    text("Tabish, the Bear Queen", 16, 63, 0.55f, rgb(INK));
-    float y = para("Far to the north, where the snow never melts, a crack in the hillside leads down to her cave.", 84, INK);
-    para("Follow the arrow on the edge of the map. When the cave comes into view, it will be drawn there.", y + 6, INK);
-    text(progress::has(*inv, progress::KING) ? "Status: defeated" : "Status: sleeping", 16, 182, 0.42f, rgb(INK_LIGHT));
-}
-
-// GuiAlmanac.drawRecipes: every recipe for something you've had in your hands, two to a page
-void BottomScreen::drawAlmanacRecipes() {
-    const u32 INK_LIGHT = 0x6B4A2A;
-    struct Page { survival::Stack out; survival::Ingredient grid[9]; bool smelting; bool locked; };
-    std::vector<Page> list;
-    auto known = [&](const Page& e) {
-        if (inv->creative || inv->hasSeen(e.out.id)) return true;
-        for (const survival::Ingredient& g : e.grid)
-            if (g.id > 0 && inv->hasSeen(g.id)) return true;
-        return false;
-    };
-    static const std::string* ach = nullptr;
-    ach = &inv->achievements;
-    auto has = [](const char* a) {
-        size_t n = std::strlen(a), p = 0;
-        while (p <= ach->size()) {
-            size_t e = ach->find(',', p);
-            if (e == std::string::npos) e = ach->size();
-            if (e - p == n && ach->compare(p, n, a) == 0) return true;
-            p = e + 1;
-        }
-        return false;
-    };
-    for (int r = 0; r < survival::SHAPED_COUNT; ++r) {
-        const survival::Shaped& sh = survival::SHAPED[r];
-        Page e{};
-        e.out = sh.out;
-        for (int i = 0; i < 9; ++i) e.grid[i] = survival::Ingredient{-1, 0};
-        for (int y = 0; y < sh.h; ++y)
-            for (int x = 0; x < sh.w; ++x) e.grid[y * 3 + x] = sh.in[y * sh.w + x];
-        e.locked = !inv->creative && survival::locked(sh.out.id, has);
-        if (known(e)) list.push_back(e);
-    }
-    for (int r = 0; r < survival::SHAPELESS_COUNT; ++r) {
-        const survival::Shapeless& sl = survival::SHAPELESS[r];
-        Page e{};
-        e.out = sl.out;
-        for (int i = 0; i < 9; ++i) e.grid[i] = i < sl.n ? sl.in[i] : survival::Ingredient{-1, 0};
-        e.locked = !inv->creative && survival::locked(sl.out.id, has);
-        if (known(e)) list.push_back(e);
-    }
-    for (int r = 0; r < survival::SMELT_COUNT; ++r) {
-        Page e{};
-        e.out = survival::SMELTING[r].out;
-        for (int i = 0; i < 9; ++i) e.grid[i] = survival::Ingredient{-1, 0};
-        e.grid[4] = survival::Ingredient{int16_t(survival::SMELTING[r].in), 0};
-        e.smelting = true;
-        if (known(e)) list.push_back(e);
-    }
-    std::stable_sort(list.begin(), list.end(), [](const Page& a, const Page& b) {
-        return a.out.id != b.out.id ? a.out.id < b.out.id : a.out.damage < b.out.damage;
-    });
-    if (list.empty()) {
-        std::vector<std::string> lines = wrap("No recipes yet. Pick things up and their recipes will appear here.", 280, 0.42f);
-        for (size_t l = 0; l < lines.size(); ++l) text(lines[l].c_str(), 16, 54 + float(l) * 13, 0.42f, rgb(INK_LIGHT));
-        return;
-    }
-    int pages = (int(list.size()) + 1) / 2;
-    if (recipePage >= pages) recipePage = pages - 1;
-    char buf[32];
-    snprintf(buf, sizeof buf, "Page %d of %d", recipePage + 1, pages);
-    text(buf, 160, 181, 0.42f, rgb(INK_LIGHT), C2D_AlignCenter);
-    if (recipePage > 0) button(12, 176, 40, 20, "<");
-    if (recipePage + 1 < pages) button(268, 176, 40, 20, ">");
-    C2D_DrawRectSolid(159, 50, 0.5f, 1, 122, rgb(0xC4B080)); // the spine
-    for (int side = 0; side < 2; ++side) {
-        int index = recipePage * 2 + side;
-        if (index >= int(list.size())) break;
-        const Page& e = list[index];
-        float x = 16 + side * 152, y = 52;
-        if (e.locked) {
-            text("???", x, y, 0.45f, rgb(0x8F7F5F));
-            std::vector<std::string> lines = wrap("This page is still blank. Keep exploring, and it will fill itself in.", 136, 0.38f);
-            for (size_t l = 0; l < lines.size(); ++l) text(lines[l].c_str(), x, y + 20 + float(l) * 12, 0.38f, rgb(0x8F7F5F));
-            continue;
-        }
-        const ItemInfo* info = itemInfo(e.out.id, e.out.damage);
-        std::vector<std::string> name = wrap(info ? info->name : "?", 136, 0.45f);
-        for (size_t l = 0; l < name.size() && l < 2; ++l) text(name[l].c_str(), x, y + float(l) * 12, 0.45f, rgb(INK));
-        if (e.smelting) text("Smelt in a furnace", x, y + 12 * float(std::min<size_t>(name.size(), 2)), 0.36f, rgb(INK_LIGHT));
-        float gy = y + 40;
-        for (int i = 0; i < 9; ++i) {
-            if (e.smelting && i != 4) continue;
-            float sx = x + float(i % 3) * 22, sy = gy + float(i / 3) * 22;
-            C2D_DrawRectSolid(sx, sy, 0.5f, 21, 21, rgb(0x9C8A62));
-            C2D_DrawRectSolid(sx + 1, sy + 1, 0.5f, 19, 19, rgb(0xC9B98E));
-            if (e.grid[i].id > 0) {
-                ItemStack ic;
-                ic.id = uint16_t(e.grid[i].id);
-                ic.damage = int16_t(e.grid[i].damage < 0 ? 0 : e.grid[i].damage);
-                ic.count = 1;
-                itemIcon(ic, sx - 1, sy - 1, 1.0f);
-            }
-        }
-        text("->", x + 72, gy + 26, 0.45f, rgb(INK));
-        C2D_DrawRectSolid(x + 94, gy + 18, 0.5f, 30, 30, rgb(0x9C8A62));
-        C2D_DrawRectSolid(x + 95, gy + 19, 0.5f, 28, 28, rgb(0xC9B98E));
-        ItemStack res;
-        res.id = uint16_t(e.out.id);
-        res.damage = e.out.damage;
-        res.count = e.out.count;
-        itemIcon(res, x + 94, gy + 18, 1.5f);
-    }
-}
-
-// GuiAlmanac.drawCharms: where each charm is found
-void BottomScreen::drawAlmanacCharms() {
-    const u32 INK_LIGHT = 0x6B4A2A;
-    struct Charm { int id; const char* name; const char* where; const char* needs; const char* blank; };
-    static const Charm CHARMS[7] = {
-        {1007, "Glide", "Found in dungeon chests. Wear it and you fall slowly. Sneak to drop fast.", nullptr, nullptr},
-        {1008, "Swift", "Found in dungeon chests. Wear it to run faster.", nullptr, nullptr},
-        {1014, "Silk Touch", "Found in dungeon chests. Blocks you mine drop as themselves.", nullptr, nullptr},
-        {1009, "Lucky Mining", "Found in dungeon chests. Craft two of the same tier to make the next tier.", nullptr, nullptr},
-        {1041, "Wolf", "Hunt dire wolves for their pelts. Craft four pelts around a bone.", progress::PACK_HUNTER,
-         "Kill a dire wolf and this page will fill in."},
-        {1045, "Bear", "Beat the Bear Queen and she drops her pelt. Craft it with three bones and a string.", progress::KING,
-         "Something sleeps far to the north. This page is still blank."},
-        {1039, "Spawn", "Unlocked by beating the Bear Queen. Craft four gold ingots around a diamond.", progress::KING,
-         "Something sleeps far to the north. This page is still blank."}};
-    const int ROW = 36, TOP = 50, VIEW = 148;
-    int maxScroll = 7 * ROW - VIEW;
-    if (charmScroll > maxScroll) charmScroll = maxScroll;
-    for (int i = 0; i < 7; ++i) {
-        float y = TOP + i * ROW - charmScroll;
-        if (y < TOP - 2 || y + ROW - 6 > TOP + VIEW) continue; // only rows that fit whole
-        const Charm& c = CHARMS[i];
-        bool open = !c.needs || inv->creative || progress::has(*inv, c.needs);
-        if (open) {
-            ItemStack ic;
-            ic.id = uint16_t(c.id);
-            ic.count = 1;
-            itemIcon(ic, 10, y - 3, 1.0f);
-        } else {
-            text("?", 19, y + 2, 0.5f, rgb(INK_LIGHT), C2D_AlignCenter);
-        }
-        text(open ? c.name : "???", 36, y, 0.42f, rgb(INK));
-        std::vector<std::string> lines = wrap(open ? c.where : c.blank, 262, 0.36f);
-        for (size_t l = 0; l < lines.size() && l < 2; ++l) text(lines[l].c_str(), 36, y + 12 + float(l) * 10, 0.36f, rgb(INK_LIGHT));
-    }
-    if (maxScroll > 0) {
-        float h = VIEW * float(VIEW) / float(VIEW + maxScroll);
-        float y = TOP + (VIEW - h) * charmScroll / float(maxScroll);
-        C2D_DrawRectSolid(304, TOP, 0.5f, 4, VIEW, rgb(0xC4B080));
-        C2D_DrawRectSolid(304, y, 0.5f, 4, h, rgb(INK));
-    }
 }
 
 void BottomScreen::drawMenuTab() {
@@ -858,8 +517,6 @@ void BottomScreen::drawMenuTab() {
     button(40, MENU_Y0 + 5 * MENU_ROW, 118, MENU_H, buf);
     button(162, MENU_Y0 + 5 * MENU_ROW, 118, MENU_H, o.bobView ? "View bobbing: ON" : "View bobbing: OFF");
     button(40, MENU_Y0 + 6 * MENU_ROW, 118, MENU_H, o.invertY ? "Invert look: ON" : "Invert look: OFF");
-    static const char* const DYN[3] = {"Dynamic lights: OFF", "Dynamic lights: Fast", "Dynamic lights: Fancy"};
-    button(162, MENU_Y0 + 6 * MENU_ROW, 118, MENU_H, DYN[o.dynamicLights % 3]);
     button(40, MENU_Y0 + 7 * MENU_ROW, 240, MENU_H, "Save and Quit to Title");
     if (o.showStats) { // (tap just right of Save and Quit to show or hide)
         snprintf(buf, sizeof buf, "%d fps  %d sections  %dk tris  %u KB", stats.fps, stats.sections, stats.triangles / 1000, stats.gpuKB);
@@ -883,7 +540,7 @@ void BottomScreen::draw() {
     switch (current) {
     case Tab::Items:
         if (mattisShowing()) { drawMattis(); title = "Craft"; }
-        else if (creativeShowing()) { drawCreative(); title = "Select blocks"; }
+        else if (buildShowing()) { drawBuild(); title = buildTier == 0 ? "Select block" : buildTier == 1 ? "Select block/item" : "Select item"; }
         else {
             drawItemsTab();
             if (inv->containerKind == Inventory::CHEST) title = "Chest";
@@ -891,12 +548,15 @@ void BottomScreen::draw() {
             else if (inv->tableOpen) title = "Crafting";
         }
         break;
-    case Tab::Almanac: drawAlmanacTab(); title = "Almanac"; break;
     case Tab::Menu: drawMenuTab(); title = "Game Paused"; break;
     default: break;
     }
     drawPeHeader(title, current == Tab::Items && gOptions.craftStyle == 1 && inv->containerKind == Inventory::NONE &&
-                            !mattisShowing());
+                            !mattisShowing() && !buildShowing());
+    if (current == Tab::Items && buildShowing()) peButton(2, 1, 70, TAB_H - 2, "Inventory");
+    else if (current == Tab::Items && inv->creative && !mattisShowing() && inv->containerKind == Inventory::NONE &&
+             !inv->tableOpen)
+        peButton(2, 1, 70, TAB_H - 2, "Blocks");
     drawHotbar();
 
     // Stack being carried by the stylus
@@ -956,7 +616,7 @@ void BottomScreen::drawPeHeader(const char* title, bool craftButton) {
     // PE's screen header: a raised bar with the title, Craft on the left and the X on the right
     ninePatch(peSheet, 128, 128, 0, 0, 16, 16, 4, 0, 0, 320, TAB_H, 1.0f);
     if (craftButton) peButton(2, 1, 70, TAB_H - 2, "Craft");
-    if (mattisShowing() && inv->containerKind == Inventory::NONE && !inv->tableOpen && !inv->cutterOpen)
+    if (mattisShowing() && inv->containerKind == Inventory::NONE && !inv->tableOpen)
         peButton(2, 1, 70, TAB_H - 2, "Back");
     text(title, 161, 3, 0.55f, rgb(0x3F3F3F), C2D_AlignCenter);
     text(title, 160, 2, 0.55f, rgb(0xFFFFFF), C2D_AlignCenter);
@@ -983,7 +643,7 @@ void BottomScreen::drawHome() {
              (int)std::floor(camera->z));
     text(buf, 161, 47, 0.6f, rgb(0x3F3F3F), C2D_AlignCenter);
     text(buf, 160, 46, 0.6f, rgb(0xFFFFFF), C2D_AlignCenter);
-    // the map (explored-only parchment, the player's arrow, waypoints)
+    // the map and the player's arrow
     drawMapTab();
     // Inventory / Crafting / Pause
     for (int b = 0; b < 3; b++) {
@@ -1007,10 +667,9 @@ void BottomScreen::touchHome(int x, int y) {
         if (i >= 0 && i < Inventory::HOTBAR) inv->currentItem = i;
         return;
     }
-    if (in(x, y, MAP_X, MAP_Y, MAP_PX, MAP_PX)) {
-        int wx = map->centreX() + (int)std::floor(((x - MAP_X) / MAP_SCALE - AlmanacMap::SIZE / 2) * map->zoom());
-        int wz = map->centreZ() + (int)std::floor(((y - MAP_Y) / MAP_SCALE - AlmanacMap::SIZE / 2) * map->zoom());
-        map->toggleWaypoint(wx, wz, 3 * map->zoom());
+    if (in(x, y, MAP_X, MAP_Y, MAP_PX, MAP_PX)) { // zoom: 1, 2, 4, back to 1
+        mapZoom = mapZoom >= 4 ? 1 : mapZoom * 2;
+        mapTimer = 1;
         return;
     }
     for (int b = 0; b < 3; b++) {
@@ -1029,7 +688,7 @@ void BottomScreen::touchHome(int x, int y) {
 
 bool BottomScreen::mattisShowing() const {
     return current == Tab::Items && gOptions.craftStyle == 1 && inv->containerKind == Inventory::NONE &&
-           (mattisOpen || inv->tableOpen || inv->cutterOpen);
+           (mattisOpen || inv->tableOpen);
 }
 
 void BottomScreen::returnCraftGrid() {
@@ -1062,20 +721,16 @@ const recipes::Entry* BottomScreen::mattisSelected() const {
 }
 
 bool BottomScreen::isPicked(const recipes::Entry& e) const {
-    if (e.out.id != mattisSelId || e.out.damage != mattisSelDamage) return false;
-    // the stonecutter can make the same piece from two stones: the input tells them apart
-    return !inv->cutterOpen || (e.needs[0].what.id == mattisSelIn && e.needs[0].what.damage == mattisSelInDamage);
+    return e.out.id == mattisSelId && e.out.damage == mattisSelDamage;
 }
 
 void BottomScreen::pick(const recipes::Entry& e) {
     mattisSelId = e.out.id;
     mattisSelDamage = e.out.damage;
-    mattisSelIn = e.needs.empty() ? -1 : e.needs[0].what.id;
-    mattisSelInDamage = e.needs.empty() ? 0 : e.needs[0].what.damage;
 }
 
 void BottomScreen::touchMattis(int x, int y, bool alt) {
-    for (int c = 0; c < recipes::CATEGORIES && !inv->cutterOpen; ++c)
+    for (int c = 0; c < recipes::CATEGORIES; ++c)
         if (in(x, y, MT_CAT_X, MT_LIST_Y + c * MT_CAT_STEP, MT_CAT_W, MT_CAT_H)) {
             if (c != mattisCat) {
                 mattisCat = c;
@@ -1087,7 +742,6 @@ void BottomScreen::touchMattis(int x, int y, bool alt) {
         }
     if (in(x, y, 300, MT_LIST_Y, 18, 16)) { // close
         if (inv->tableOpen) inv->closeTable();
-        if (inv->cutterOpen) inv->closeStonecutter();
         openMattis(false);
         sound::playUi("random.click", 1.0f, 1.0f);
         return;
@@ -1147,7 +801,7 @@ std::vector<std::string> BottomScreen::wrap(const std::string& s, float width, f
 
 void BottomScreen::drawMattis() {
     // rebuilt every redraw: the inventory may have changed (a pickup, a craft)
-    mattisList = inv->cutterOpen ? recipes::stonecutList(*inv) : recipes::list(*inv, inv->tableOpen, recipes::Category(mattisCat));
+    mattisList = recipes::list(*inv, inv->tableOpen, recipes::Category(mattisCat));
     if (!mattisSelected() && !mattisList.empty()) pick(mattisList[0]);
     int maxScroll = std::max(0, int(mattisList.size()) * MT_ROW - MT_LIST_H);
     if (mattisScroll > maxScroll) mattisScroll = maxScroll;
@@ -1156,12 +810,12 @@ void BottomScreen::drawMattis() {
 
     // the four groups
     static const uint16_t ICON[4] = {5, 274, 307, 321};
-    for (int c = 0; c < (inv->cutterOpen ? 1 : int(recipes::CATEGORIES)); ++c) {
+    for (int c = 0; c < int(recipes::CATEGORIES); ++c) {
         float y = MT_LIST_Y + c * MT_CAT_STEP;
-        bool on = c == mattisCat || inv->cutterOpen;
+        bool on = c == mattisCat;
         bevel(MT_CAT_X, y, MT_CAT_W, MT_CAT_H, !on, on ? 0xC6C6C6 : 0x8B8B8B);
         ItemStack ic;
-        ic.id = inv->cutterOpen ? 110 : ICON[c];
+        ic.id = ICON[c];
         ic.count = 1;
         itemIcon(ic, MT_CAT_X + 4, y + 4, 2.0f);
     }
@@ -1200,7 +854,7 @@ void BottomScreen::drawMattis() {
         C2D_DrawRectSolid(MT_LIST_X + MT_LIST_W, y, 0.5f, 4, h, rgb(0xC6C6C6));
     }
     if (mattisList.empty())
-        text(inv->cutterOpen ? "No stone to cut." : inv->tableOpen ? "Nothing here yet." : "Use a crafting table for more.",
+        text(inv->tableOpen ? "Nothing here yet." : "Use a crafting table for more.",
              MT_LIST_X + 6, MT_LIST_Y + 6, 0.38f, rgb(0x303030));
 
     // the picked recipe
@@ -1238,7 +892,7 @@ void BottomScreen::drawMattis() {
         text(buf, x + 11, y + 21, 0.32f, rgb(n.have >= n.count ? 0x303030 : 0xB02020), C2D_AlignCenter);
     }
     float dy = iy + (e->needs.size() > 4 ? 62 : 32);
-    std::string d = recipes::describe(e->out.id, e->out.damage);
+    std::string d;
     std::vector<std::string> lines = wrap(d, 110, 0.34f);
     for (size_t l = 0; l < lines.size(); ++l) {
         float y = dy + float(l) * 10.5f;
@@ -1248,107 +902,47 @@ void BottomScreen::drawMattis() {
 }
 
 // --------------------------------------------------------------------------
-// The creative inventory (GuiContainerCreative / CraftingInventoryCreativeCB): six rows of every block
-// and item over your 27 slots. Tap = a full stack (L/R held: just one); tapping the palette while
-// carrying something deletes it, as in the mod. Drag or use the arrows to scroll.
+// GuiBuild: NSSS's creative block picker. 45 to a page (9 x 5); tap one and it goes in your hand
+// (L/R held: a full stack, like holding shift). The arrows step through the tiers.
 // --------------------------------------------------------------------------
 
 namespace {
-constexpr int CR_TOP = 24, CR_X = CONT_X, CR_INV_Y = CR_TOP + creative::VISIBLE_ROWS * CSLOT + 2;
-constexpr int CR_ARROW_X = 262, CR_ARROW_W = 50, CR_ARROW_H = 54;
+constexpr int BM_X = 25, BM_Y = 30, BM_STEP = 30, BM_ARROW_Y = 180;
 }
 
-bool BottomScreen::creativeShowing() const {
-    return inv->creative && !creativeOwnPage && inv->containerKind == Inventory::NONE && !inv->tableOpen && !inv->cutterOpen;
+bool BottomScreen::buildShowing() const {
+    return inv->creative && !buildOwnPage && inv->containerKind == Inventory::NONE && !inv->tableOpen;
 }
 
-void BottomScreen::creativePick(int index, bool alt) {
-    if (!inv->cursor.empty()) { // GuiContainerCreative: anything dropped on the palette is gone
-        inv->cursor.clear();
-        return;
-    }
-    if (index < 0) return;
-    const std::vector<creative::Row>& rows = creative::rows();
-    int r = index / 9, c = index % 9;
-    if (r >= int(rows.size()) || !rows[size_t(r)].title.empty() || rows[size_t(r)].items[c].empty()) return;
-    inv->cursor = rows[size_t(r)].items[c];
-    inv->cursor.count = alt ? 1 : survival::maxStack(inv->cursor.id);
+void BottomScreen::touchBuild(int x, int y, bool alt) {
+    if (in(x, y, 4, BM_ARROW_Y, 60, 22)) { buildTier = buildTier > 0 ? buildTier - 1 : buildmenu::MAX_TIER; return; }
+    if (in(x, y, 256, BM_ARROW_Y, 60, 22)) { buildTier = buildTier < buildmenu::MAX_TIER ? buildTier + 1 : 0; return; }
+    if (!in(x, y, BM_X, BM_Y, 9 * BM_STEP, 5 * BM_STEP)) return;
+    int n = (y - BM_Y) / BM_STEP * 9 + (x - BM_X) / BM_STEP;
+    int i = buildTier * buildmenu::PER_PAGE + n;
+    if (i >= buildmenu::pageEnd(buildTier)) return;
+    int id = buildmenu::idAt(i);
+    int count = 1;
+    if (alt) // (GuiBuild's shift path reads the item 81 back for the stack size)
+        count = survival::maxStack(i < buildmenu::BLOCK_COUNT ? id : buildmenu::ITEMS[i - 81]);
+    inv->setCurrentItem(id, count);
     sound::playUi("random.click", 1.0f, 1.0f);
+    setTab(Tab::Map);
 }
 
-void BottomScreen::touchCreative(int x, int y, bool alt) {
-    const std::vector<creative::Row>& rows = creative::rows();
-    int maxScroll = std::max(0, int(rows.size()) - creative::VISIBLE_ROWS) * CSLOT;
-    if (in(x, y, 4, CR_TOP + 2, 60, 16)) { creativeOwnPage = true; return; } // armour, charms, crafting
-    auto scrollBy = [&](int dr) {
-        creativeScroll = std::min(maxScroll, std::max(0, (creativeScroll + CSLOT / 2) / CSLOT * CSLOT + dr * CSLOT));
-    };
-    if (in(x, y, CR_ARROW_X, CR_TOP, CR_ARROW_W, CR_ARROW_H)) { scrollBy(-5); return; }
-    if (in(x, y, CR_ARROW_X, CR_TOP + 6 * CSLOT - CR_ARROW_H, CR_ARROW_W, CR_ARROW_H)) { scrollBy(5); return; }
-    if (in(x, y, CR_X, CR_TOP, 9 * CSLOT, creative::VISIBLE_ROWS * CSLOT)) {
-        int first = (creativeScroll + CSLOT / 2) / CSLOT;
-        int r = first + (y - CR_TOP) / CSLOT, c = (x - CR_X) / CSLOT;
-        creativePending = r < int(rows.size()) && rows[size_t(r)].title.empty() && !rows[size_t(r)].items[c].empty() ? r * 9 + c : -2;
-        creativePendingAlt = alt;
-        dragging = true;
-        dragMoved = false;
-        dragY0 = y;
-        creativeScroll = first * CSLOT;
-        dragScroll0 = creativeScroll;
-        dragTarget = &creativeScroll;
-        dragMax = maxScroll;
-        return;
+void BottomScreen::drawBuild() {
+    C2D_DrawRectSolid(0, TAB_H, 0.5f, 320, HOTBAR_Y - 4 - TAB_H, rgb(0x101018));
+    int end = buildmenu::pageEnd(buildTier);
+    for (int i = buildTier * buildmenu::PER_PAGE; i < end; ++i) {
+        int n = i - buildTier * buildmenu::PER_PAGE;
+        ItemStack st;
+        st.id = uint16_t(buildmenu::idAt(i));
+        st.count = 1;
+        itemIcon(st, BM_X + n % 9 * BM_STEP, BM_Y + n / 9 * BM_STEP, 1.0f);
     }
-    for (int i = 0; i < 27; i++)
-        if (in(x, y, CR_X + (i % 9) * CSLOT, CR_INV_Y + (i / 9) * CSLOT, CSLOT - 2, CSLOT - 2)) {
-            alt ? inv->rightClickSlot(SlotGroup::Main, 9 + i) : inv->clickSlot(SlotGroup::Main, 9 + i);
-            return;
-        }
-}
-
-void BottomScreen::drawCreative() {
-    C2D_DrawRectSolid(0, TAB_H, 0.5f, 320, HOTBAR_Y - 4 - TAB_H, rgb(GUI_BG));
-    const std::vector<creative::Row>& rows = creative::rows();
-    int first = (creativeScroll + CSLOT / 2) / CSLOT;
-    for (int r = 0; r < creative::VISIBLE_ROWS; ++r) {
-        int idx = first + r;
-        float y = CR_TOP + r * CSLOT;
-        if (idx >= int(rows.size())) break;
-        const creative::Row& row = rows[size_t(idx)];
-        if (!row.title.empty()) {
-            text(row.title.c_str(), CR_X + 2, y + 5, 0.4f, rgb(0x404040));
-            continue;
-        }
-        for (int c = 0; c < 9; ++c) {
-            float sx = CR_X + c * CSLOT;
-            bevel(sx, y, CSLOT - 2, CSLOT - 2, false, SLOT_BG);
-            itemIcon(row.items[c], sx - 2, y - 2, 1.0f);
-        }
-    }
-    // the scroll position, and the arrows
-    int total = std::max(1, int(rows.size()) - creative::VISIBLE_ROWS);
-    float trackH = creative::VISIBLE_ROWS * CSLOT;
-    C2D_DrawRectSolid(CR_X + 9 * CSLOT + 2, CR_TOP, 0.5f, 4, trackH, rgb(0x8B8B8B));
-    C2D_DrawRectSolid(CR_X + 9 * CSLOT + 2, CR_TOP + (trackH - 16) * std::min(1.0f, float(first) / float(total)), 0.5f, 4, 16, rgb(0xFFFFFF));
-    bevel(CR_ARROW_X, CR_TOP, CR_ARROW_W, CR_ARROW_H, true, 0x9C9C9C);
-    text("^", CR_ARROW_X + CR_ARROW_W / 2 - 3, CR_TOP + CR_ARROW_H / 2 - 6, 0.6f, rgb(0x303030));
-    bevel(CR_ARROW_X, CR_TOP + 6 * CSLOT - CR_ARROW_H, CR_ARROW_W, CR_ARROW_H, true, 0x9C9C9C);
-    text("v", CR_ARROW_X + CR_ARROW_W / 2 - 3, CR_TOP + 6 * CSLOT - CR_ARROW_H / 2 - 7, 0.55f, rgb(0x303030));
-    // which section you're in
-    std::string section;
-    for (int i = std::min(first, int(rows.size()) - 1); i >= 0; --i)
-        if (!rows[size_t(i)].title.empty()) { section = rows[size_t(i)].title; break; }
-    text("Creative", 6, CR_TOP + 24, 0.42f, rgb(0x404040));
-    {
-        std::vector<std::string> lines = wrap(section, 58, 0.34f);
-        for (size_t i = 0; i < lines.size() && i < 4; ++i) text(lines[i].c_str(), 6, CR_TOP + 40 + float(i) * 10, 0.34f, rgb(0x606060));
-    }
-    bevel(4, CR_TOP + 2, 60, 16, true, 0x9C9C9C);
-    text("Inventory", 9, CR_TOP + 5, 0.36f, rgb(0x303030));
-    text("Inventory", 6, CR_INV_Y - 11, 0.36f, rgb(0x404040));
-    for (int i = 0; i < 27; i++) {
-        float sx = CR_X + (i % 9) * CSLOT, sy = CR_INV_Y + (i / 9) * CSLOT;
-        bevel(sx, sy, CSLOT - 2, CSLOT - 2, false, SLOT_BG);
-        itemIcon(inv->main[9 + i], sx - 2, sy - 2, 1.0f);
-    }
+    peButton(4, BM_ARROW_Y, 60, 22, "<");
+    peButton(256, BM_ARROW_Y, 60, 22, ">");
+    char buf[16];
+    snprintf(buf, sizeof buf, "%d / %d", buildTier + 1, buildmenu::MAX_TIER + 1);
+    text(buf, 160, BM_ARROW_Y + 3, 0.5f, rgb(0xFFFFFF), C2D_AlignCenter);
 }

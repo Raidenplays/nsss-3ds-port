@@ -141,11 +141,6 @@ bool placeBlock(World& w, Player& p, Inventory& inv, int id, int meta, int x, in
     if (!canPlaceAt(w, p, id, x, y, z)) return true;
     if (w.setBlockAndMetadataWithNotify(x, y, z, id, meta)) {
         placed(w, p, id, x, y, z, side, upper);
-        // BlockCrate.onBlockPlacedBy: what it held goes back in
-        const ItemStack& h = inv.held();
-        if (BP[id].cls == BC::Crate && h.tag)
-            if (nbt::Tag* items = h.tag->getList("Items"))
-                if (nbt::Tag* te = w.tileEntityAt(x, y, z)) te->set("Items", nbt::clone(*items));
         stepSound(id, x, y, z);
         consume(inv, creative);
     }
@@ -250,42 +245,39 @@ bool useOnBlock(World& w, Player& p, Inventory& inv, const RayHit& hit, float hi
         wear(inv, 1, creative, p, w);
         return true;
     }
-    case 351: // ItemDye: bone meal grows saplings and wheat; lapis lazuli lays lapis dust
-        if (h.damage == 4 && side != 0) {
-            static const int DX[6] = {0, 0, 0, 0, -1, 1}, DY[6] = {-1, 1, 0, 0, 0, 0}, DZ[6] = {0, 0, -1, 1, 0, 0};
-            int lx = x + DX[side], ly = y + DY[side], lz = z + DZ[side];
-            if (side >= 2 && w.isBlockOpaqueCube(x, y, z)) { // dust on that wall
-                int here = w.getBlockId(lx, ly, lz);
-                int wall = (side == 4 ? 0 : side == 5 ? 1 : side == 2 ? 2 : 3) ^ 1;
-                if (here != 0 && here != 95) return false;
-                int meta = here == 0 ? 0 : w.getBlockMetadata(lx, ly, lz);
-                w.setBlockAndMetadataWithNotify(lx, ly, lz, 234 + wall, meta);
-                sound::play("step.stone", lx + 0.5, ly + 0.5, lz + 0.5, 1.0f, 0.8f);
-                consume(inv, creative);
-                return true;
-            }
-            bool supported = w.isBlockOpaqueCube(lx, ly - 1, lz) || w.isBlockOpaqueCube(lx - 1, ly, lz) ||
-                             w.isBlockOpaqueCube(lx + 1, ly, lz) || w.isBlockOpaqueCube(lx, ly, lz - 1) ||
-                             w.isBlockOpaqueCube(lx, ly, lz + 1);
-            if (w.getBlockId(lx, ly, lz) != 0 || !supported) return false;
-            w.setBlockWithNotify(lx, ly, lz, 95);
-            sound::play("step.stone", lx + 0.5, ly + 0.5, lz + 0.5, 1.0f, 0.8f);
+    case 363: { // NSSS ItemDye (bonemeal): a sapling grows now, crops ripen, grass sprouts flowers
+        static JavaRandom itemRand(int64_t(0x5DEECE66DLL) ^ 8682522807148012LL); // Item.itemRand (new Random())
+        if (target == 6) { // BlockSapling.growTree
+            int l = w.getBlockMetadata(x, y, z) & 3;
+            w.setBlock(x, y, z, 0);
+            if (!nsssSaplingTree(w, w.rand, x, y, z)) w.setBlockAndMetadata(x, y, z, 6, l);
             consume(inv, creative);
             return true;
         }
-        if (h.damage == 15) {
-            if (target == 6) {
-                growSapling(w, w.rand, x, y, z, target, w.getBlockMetadata(x, y, z));
-                consume(inv, creative);
-                return true;
-            }
-            if (target == 59) {
-                w.setBlockMetadataWithNotify(x, y, z, 7);
-                consume(inv, creative);
-                return true;
-            }
+        if (target == 59) { // BlockCrops.fertilize
+            w.setBlockMetadataWithNotify(x, y, z, 7);
+            consume(inv, creative);
+            return true;
         }
-        return false;
+        if (target != 2) return false;
+        consume(inv, creative);
+        for (int j1 = 0; j1 < 128; ++j1) {
+            int k1 = x, l1 = y + 1, i2 = z;
+            bool ok = true;
+            for (int j2 = 0; j2 < j1 / 16; ++j2) {
+                k1 += itemRand.nextInt(3) - 1;
+                int a = itemRand.nextInt(3) - 1;
+                l1 += a * itemRand.nextInt(3) / 2;
+                i2 += itemRand.nextInt(3) - 1;
+                if (w.getBlockId(k1, l1 - 1, i2) != 2 || w.isBlockOpaqueCube(k1, l1, i2)) { ok = false; break; }
+            }
+            if (!ok || w.getBlockId(k1, l1, i2) != 0) continue;
+            if (itemRand.nextInt(7) > 1) w.setBlockWithNotify(k1, l1, i2, 37);
+            else if (itemRand.nextInt(3) == 1) w.setBlockWithNotify(k1, l1, i2, 88);
+            else w.setBlockWithNotify(k1, l1, i2, 38);
+        }
+        return true;
+    }
     default: return false;
     }
 }

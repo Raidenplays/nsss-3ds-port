@@ -9,8 +9,6 @@
 namespace {
 
 constexpr float PI_F = 3.1415927f;
-const char* const WOOD[] = {"oak", "spruce", "birch", "drogwood", "thramwood",
-                            "charred_oak", "charred_spruce", "charred_birch", "charred_drogwood", "charred_thramwood"};
 
 struct M4 {
     float m[16];
@@ -94,8 +92,6 @@ void Signs::refresh(World& w, double px, double pz, int radius) {
             if (id != 63 && id != 68) continue;
             s.post = id == 63;
             s.meta = w.getBlockMetadata(s.x, s.y, s.z);
-            s.wood = t->getInt("Wood");
-            if (s.wood < 0 || s.wood > 9) s.wood = 0;
             for (int i = 0; i < 4; ++i) {
                 s.text[i] = t->getString(("Text" + std::to_string(i + 1)).c_str());
                 if (s.text[i].size() > 15) s.text[i].resize(15);
@@ -108,16 +104,15 @@ void Signs::refresh(World& w, double px, double pz, int radius) {
 void Signs::render(const World& w, Renderer& r, const Font& font, double camX, double camY, double camZ) {
     if (signs.empty()) return;
     C3D_Tex* fontTex = r.texture("romfs:/textures/font/default.rgba");
-    for (int wood = 0; wood < 10; ++wood) {
+    {
         board.clear();
         text.clear();
         bool any = false;
         for (const Sign& s : signs) {
-            if (s.wood != wood) continue;
             double dx = s.x + 0.5 - camX, dy = s.y + 0.5 - camY, dz = s.z + 0.5 - camZ;
             if (dx * dx + dy * dy + dz * dz > 48.0 * 48.0) continue;
             any = true;
-            float light = BlockModels::lightBrightness(w, s.x, s.y, s.z);
+            float light = w.getBrightness(s.x, s.y, s.z);
             const float f = 2.0f / 3.0f;
             M4 t;
             if (s.post) {
@@ -138,7 +133,7 @@ void Signs::render(const World& w, Renderer& r, const Font& font, double camX, d
             const float k = float(1.0 / 60.0) * f;
             tt.translate(0.0f, 0.5f * f, 0.07f * f);
             tt.scale(k, -k, k);
-            float colour = wood >= 3 ? light : 0.0f; // AxeolonWood.darkSign: white on dark wood
+            const float colour = 0.0f; // black writing
             for (int i = 0; i < 4; ++i) {
                 const std::string& line = s.text[i];
                 if (line.empty()) continue;
@@ -154,9 +149,8 @@ void Signs::render(const World& w, Renderer& r, const Font& font, double camX, d
                 }
             }
         }
-        if (!any) continue;
-        std::string tex = wood == 0 ? "romfs:/textures/item/sign.rgba" : std::string("romfs:/axeolon/sign/") + WOOD[wood] + ".rgba";
-        r.drawTriangles(board, r.texture(tex));
+        if (!any) return;
+        r.drawTriangles(board, r.texture("romfs:/textures/item/sign.rgba"));
         if (!text.empty() && fontTex) r.drawTriangles(text, fontTex, nullptr, 1);
     }
 }

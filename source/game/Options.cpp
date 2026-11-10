@@ -28,7 +28,6 @@ void Options::load() {
         else if (!std::strcmp(k, "difficulty")) difficulty = std::atoi(v) & 3;
         else if (!std::strcmp(k, "renderDistance")) renderDistance = std::atoi(v);
         else if (!std::strcmp(k, "showStats")) showStats = isTrue();
-        else if (!std::strcmp(k, "dynamicLights")) dynamicLights = std::atoi(v) % 3;
         else if (!std::strcmp(k, "craftStyle")) craftStyle = std::atoi(v) & 1;
     }
     std::fclose(f);
@@ -43,8 +42,7 @@ void Options::save() const {
     if (!f) return;
     std::fprintf(f, "music:%g\nsound:%g\ninvertYMouse:%s\nmouseSensitivity:%g\nbobView:%s\ndifficulty:%d\n", music, sound,
                  invertY ? "true" : "false", sensitivity, bobView ? "true" : "false", difficulty);
-    std::fprintf(f, "renderDistance:%d\nshowStats:%s\ndynamicLights:%d\ncraftStyle:%d\n", renderDistance, showStats ? "true" : "false",
-                 dynamicLights, craftStyle);
+    std::fprintf(f, "renderDistance:%d\nshowStats:%s\ncraftStyle:%d\n", renderDistance, showStats ? "true" : "false", craftStyle);
     std::fclose(f);
 }
 

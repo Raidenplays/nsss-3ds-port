@@ -14,8 +14,7 @@ struct Camera;
 class FirstPerson {
 public:
     // ItemRenderer.updateEquippedItem (once a tick)
-    void tick(const Inventory& inv, bool blocking = false);
-    void swingOffhand(); // AxeolonBattleInput.offhandSwing
+    void tick(const Inventory& inv);
     // After the world, before the 2D overlay. bright: World.getLightBrightness where the player is.
     void draw(Renderer& r, const Player& p, const Camera& cam, float partial, float bright);
 
@@ -24,9 +23,5 @@ private:
     int shownSlot = -1;    // field_20099_f
     float equipped = 0, prevEquipped = 0;
     std::vector<axm::ModelVertex> tris;
-    ItemStack offShown;
-    int offSwing = 0;
-    float raise_ = 0, prevRaise = 0; // the shield coming up
-    void drawOffhand(Renderer& r, const Player& p, const float baseM[16], float partial, float bright);
     void addQuad(const float m[16], const float p[4][3], const float uv[4][2], float shade);
 };

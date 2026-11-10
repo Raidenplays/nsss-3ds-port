@@ -4,7 +4,7 @@
 //                the left, and Inventory / Crafting / Pause buttons on the right
 //   Items      — inventory, chests, furnaces, crafting (MATTIS), under a PE header with Craft and X
 //   Menu       — the pause menu (options, save and quit), under a PE header with X
-//   (Almanac is Axeolon's and isn't reachable in NSSS)
+//   (in creative, Items opens on GuiBuild's block picker)
 //
 // Old 3DS budget: only redrawn when something changes (markDirty), never
 // every frame. The bottom screen is single-buffered so the last image stays up.
@@ -12,7 +12,7 @@
 #include <citro3d.h>
 #include <citro2d.h>
 #include "game/Inventory.h"
-#include "game/AlmanacMap.h"
+#include "game/Minimap.h"
 #include "game/RecipeBook.h"
 #include <string>
 #include <vector>
@@ -30,9 +30,9 @@ struct FrameStats {
 
 class BottomScreen {
 public:
-    enum class Tab { Map, Items, Almanac, Menu };
+    enum class Tab { Map, Items, Menu };
 
-    bool init(Renderer& renderer, Camera& camera, Inventory& inventory, AlmanacMap& map);
+    bool init(Renderer& renderer, Camera& camera, Inventory& inventory, Minimap& map);
     void shutdown();
 
     // Touch + buttons. Call every frame before drawing.
@@ -53,7 +53,7 @@ private:
     Renderer* renderer = nullptr;
     Camera* camera = nullptr;
     Inventory* inv = nullptr;
-    AlmanacMap* map = nullptr;
+    Minimap* map = nullptr;
 
     C3D_RenderTarget* target = nullptr;
     C2D_TextBuf textBuf = nullptr;
@@ -76,8 +76,6 @@ private:
     u32* mapStaging = nullptr;
 
     Tab current = Tab::Map;
-    int almanacPage = 0;
-    bool battlePage = false; // Items tab: crafting grid or the battle weapon pairs
     int mapZoom = 1;
     bool dirty = true;
     bool quit = false;
@@ -90,33 +88,23 @@ private:
     int mattisCat = 0;
     int mattisScroll = 0;              // pixels down the list
     int mattisSelId = -1, mattisSelDamage = 0; // the picked result (kept across list rebuilds)
-    int mattisSelIn = -1, mattisSelInDamage = 0; // ... and, at the stonecutter, what it's cut from
     bool isPicked(const recipes::Entry& e) const;
     void pick(const recipes::Entry& e);
     std::vector<recipes::Entry> mattisList;
     bool dragging = false, dragMoved = false;
     int dragY0 = 0, dragScroll0 = 0;
-    int* dragTarget = nullptr; // what the drag scrolls (the MATTIS list, the Almanac's charms)
+    int* dragTarget = nullptr; // what the drag scrolls (the MATTIS list)
     int dragMax = 0;
-    // the Almanac's Recipes and Charms pages
-    int recipePage = 0;
-    int charmScroll = 0;
-    void drawAlmanacRecipes();
-    void drawAlmanacHunt();
-    void drawAlmanacCharms();
     bool mattisShowing() const;
     void openMattis(bool on);
     void returnCraftGrid();            // the 2x2 grid's items go back to the inventory
     void drawMattis();
-    // the creative inventory (GuiContainerCreative): the item palette over your 27 slots
-    bool creativeOwnPage = false;   // the normal Items page instead (armour, charms, crafting)
-    int creativeScroll = 0;         // pixels down the palette
-    int creativePending = -1;       // a palette tap waiting for the release (-2: a tap on no item)
-    bool creativePendingAlt = false;
-    bool creativeShowing() const;
-    void drawCreative();
-    void touchCreative(int x, int y, bool alt);
-    void creativePick(int index, bool alt);
+    // GuiBuild (creative): the block picker, page = buildMenuTier
+    bool buildOwnPage = false;   // the normal Items page instead (armour, crafting)
+    int buildTier = 0;
+    bool buildShowing() const;
+    void drawBuild();
+    void touchBuild(int x, int y, bool alt);
     void touchMattis(int x, int y, bool alt);
     const recipes::Entry* mattisSelected() const;
     std::vector<std::string> wrap(const std::string& s, float width, float scale);
@@ -129,16 +117,12 @@ private:
     void itemIcon(const ItemStack& st, float x, float y, float scale = 1.5f);
     void button(float x, float y, float w, float h, const char* label);
 
-    void drawTabs();
     void drawHotbar();
     void drawMapTab();
     void drawItemsTab();
-    void drawAlmanacTab();
     void drawMenuTab();
 
-    void touchMapTab(int x, int y);
     void touchItemsTab(int x, int y, bool alt);
-    void touchAlmanacTab(int x, int y);
     void touchMenuTab(int x, int y);
     bool touchHotbar(int x, int y, bool alt);
 };

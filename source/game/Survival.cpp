@@ -56,110 +56,72 @@ float blockStrength(int block, int held, bool inWater, bool onGround) {
 }
 
 namespace {
-bool anyCobble(int id) { return id == 4 || id == 101 || id == 178; }
-bool anyStone(int id) { return id == 1 || id == 102 || (id >= 171 && id <= 177); }
-bool usesAnyCobble(int out) {
-    // pickaxe/shovel/axe/hoe/sword/dagger/spear/war axe (stone), furnace, lever, dispenser
-    static const int OUT[] = {274, 273, 275, 291, 272, 1016, 1021, 1026, 61, 69, 23};
-    for (int o : OUT)
-        if (o == out) return true;
-    return false;
-}
-const Stack* at(const Stack* grid, int w, int x, int y) {
+const Stack* at(const Stack* grid, int w, int x, int y) { // InventoryCrafting.getStackInPos
     if (x < 0 || x >= w || y < 0 || y >= w) return nullptr;
     const Stack* s = &grid[x + y * w];
     return s->id == 0 ? nullptr : s;
 }
+
+bool shapedFits(const Shaped& s, const Stack* grid, int w, int ox, int oy, bool mirror) { // ShapedRecipes.fits
+    for (int x = 0; x < 3; ++x)
+        for (int y = 0; y < 3; ++y) {
+            int rx = x - ox, ry = y - oy;
+            const Ingredient* want = nullptr;
+            if (rx >= 0 && ry >= 0 && rx < s.w && ry < s.h) {
+                const Ingredient& in = mirror ? s.in[s.w - rx - 1 + ry * s.w] : s.in[rx + ry * s.w];
+                if (in.id >= 0) want = &in;
+            }
+            const Stack* got = at(grid, w, x, y);
+            if (!got && !want) continue;
+            if (!got || !want) return false;
+            if (want->id != got->id) return false;
+            if (want->damage != -1 && want->damage != got->damage) return false;
+        }
+    return true;
+}
+
+bool shapelessMatches(const Shapeless& s, const Stack* grid, int w) { // ShapelessRecipes.matches
+    bool used[9] = {};
+    for (int y = 0; y < 3; ++y)
+        for (int x = 0; x < 3; ++x) {
+            const Stack* got = at(grid, w, x, y);
+            if (!got) continue;
+            bool found = false;
+            for (int i = 0; i < s.n; ++i)
+                if (!used[i] && got->id == s.in[i].id && (s.in[i].damage == -1 || got->damage == s.in[i].damage)) {
+                    used[i] = true;
+                    found = true;
+                    break;
+                }
+            if (!found) return false;
+        }
+    for (int i = 0; i < s.n; ++i)
+        if (!used[i]) return false;
+    return true;
+}
 } // namespace
 
-bool accepts(const Ingredient& want, int id, int damage, int out) {
-    if (want.id < 0) return false;
-    if (want.id != id)
-        return (want.id == 4 && anyCobble(id) && usesAnyCobble(out)) || (want.id == 1 && anyStone(id) && out == 1031);
+bool accepts(const Ingredient& want, int id, int damage) {
+    if (want.id < 0 || want.id != id) return false;
     return want.damage == -1 || want.damage == damage;
 }
 
-bool locked(int out, bool (*has)(const char*)) {
-    for (int i = 0; i < LOCK_COUNT; ++i)
-        if (LOCKS[i].out == out) return !(has && has(LOCKS[i].achievement));
-    return false;
-}
-
-Stack craft(const Stack* grid, int w, bool (*has)(const char*)) {
-    auto locked = [&](int out) {
-        for (int i = 0; i < LOCK_COUNT; ++i)
-            if (LOCKS[i].out == out) return !(has && has(LOCKS[i].achievement));
-        return false;
-    };
-    // CraftingManager keeps shaped and shapeless in one list; the dump lists shaped first, which
-    // only matters if two recipes match the same grid (none do)
-    for (int r = 0; r < SHAPED_COUNT; ++r) {
-        const Shaped& s = SHAPED[r];
-        for (int ox = 0; ox <= 3 - s.w; ++ox)
-            for (int oy = 0; oy <= 3 - s.h; ++oy)
-                for (int mirror = 1; mirror >= 0; --mirror) {
-                    bool ok = true;
-                    for (int x = 0; x < 3 && ok; ++x)
-                        for (int y = 0; y < 3 && ok; ++y) {
-                            int rx = x - ox, ry = y - oy;
-                            const Ingredient* want = nullptr;
-                            if (rx >= 0 && ry >= 0 && rx < s.w && ry < s.h) {
-                                const Ingredient& in = mirror ? s.in[s.w - rx - 1 + ry * s.w] : s.in[rx + ry * s.w];
-                                if (in.id >= 0) want = &in;
-                            }
-                            const Stack* got = at(grid, w, x, y);
-                            if (!got && !want) continue;
-                            if (!got || !want) { ok = false; break; }
-                            if (want->id != got->id) {
-                                // AxeolonRecipeSubs: any cobblestone for stone tools etc., any stone for the mace
-                                bool sub = (want->id == 4 && anyCobble(got->id) && usesAnyCobble(s.out.id)) ||
-                                           (want->id == 1 && anyStone(got->id) && s.out.id == 1031);
-                                if (!sub) ok = false;
-                            } else if (want->damage != -1 && want->damage != got->damage) {
-                                ok = false;
-                            }
-                        }
-                    if (ok) return locked(s.out.id) ? Stack{0, 0, 0} : s.out;
-                }
-    }
-    for (int r = 0; r < SHAPELESS_COUNT; ++r) {
-        const Shapeless& s = SHAPELESS[r];
-        bool used[9] = {};
-        bool ok = true;
-        for (int y = 0; y < 3 && ok; ++y)
-            for (int x = 0; x < 3 && ok; ++x) {
-                const Stack* got = at(grid, w, x, y);
-                if (!got) continue;
-                bool found = false;
-                for (int i = 0; i < s.n; ++i)
-                    if (!used[i] && got->id == s.in[i].id && (s.in[i].damage == -1 || got->damage == s.in[i].damage)) {
-                        used[i] = true;
-                        found = true;
-                        break;
-                    }
-                if (!found) ok = false;
-            }
-        for (int i = 0; i < s.n && ok; ++i)
-            if (!used[i]) ok = false;
-        if (ok) return locked(s.out.id) ? Stack{0, 0, 0} : s.out;
+Stack craft(const Stack* grid, int w) { // CraftingManager.findMatchingRecipe
+    for (int r = 0; r < RECIPE_COUNT; ++r) {
+        int k = RECIPE_ORDER[r];
+        if (k >= 0) {
+            const Shaped& s = SHAPED[k];
+            for (int ox = 0; ox <= 3 - s.w; ++ox)
+                for (int oy = 0; oy <= 3 - s.h; ++oy)
+                    if (shapedFits(s, grid, w, ox, oy, true) || shapedFits(s, grid, w, ox, oy, false)) return s.out;
+        } else if (shapelessMatches(SHAPELESS[~k], grid, w)) {
+            return SHAPELESS[~k].out;
+        }
     }
     return Stack{0, 0, 0};
 }
 
-Stack smelt(int id, int damage) {
-    if (id == 178) return Stack{int16_t(171 + (damage >= 0 && damage < 7 ? damage : 0)), 1, 0};
-    if (id >= 217 && id <= 223) {
-        int k = id == 223 ? 3 : id - 217;
-        switch (k) {
-        case 1: return Stack{265, 1, 0};
-        case 2: return Stack{266, 1, 0};
-        case 0: return Stack{263, 1, 0};
-        case 4: return Stack{264, 1, 0};
-        case 5: return Stack{351, 1, 4};
-        default: return Stack{0, 0, 0};
-        }
-    }
-    if (id == 6) return Stack{119, 1, int16_t(damage & 7)};
+Stack smelt(int id, int) {
     for (int i = 0; i < SMELT_COUNT; ++i)
         if (SMELTING[i].in == id) return SMELTING[i].out;
     return Stack{0, 0, 0};

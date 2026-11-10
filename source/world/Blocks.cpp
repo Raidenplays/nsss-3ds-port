@@ -789,20 +789,8 @@ void onBlockRemoval(World& w, int x, int y, int z, int id) {
         if (BP[id].container) w.removeTileEntity(x, y, z);
         return;
     }
-    if (BP[id].cls == BC::Crate) {
-        // BlockCrate: it drops itself with what's inside (like a shulker box)
-        std::shared_ptr<nbt::Tag> tag;
-        if (nbt::Tag* te = w.tileEntityAt(x, y, z))
-            if (nbt::Tag* items = te->getList("Items"); items && !items->items.empty()) {
-                tag = std::shared_ptr<nbt::Tag>(nbt::makeCompound().release());
-                tag->set("Items", nbt::clone(*items));
-            }
-        w.drops.push_back(World::Drop{x + 0.5, y + 0.5, z + 0.5, id, 1, 0, tag});
-        w.removeTileEntity(x, y, z);
-        return;
-    }
     if (BP[id].container) {
-        // BlockChest / BlockFurnace / BlockCrate: what was inside spills out
+        // BlockChest / BlockFurnace: what was inside spills out
         static JavaRandom spill(0xC4E57ULL); // the block's own Random in Java, not the world's
         if (nbt::Tag* te = w.tileEntityAt(x, y, z))
             if (nbt::Tag* items = te->getList("Items"))

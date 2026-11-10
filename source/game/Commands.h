@@ -1,6 +1,6 @@
 #pragma once
-// CommandHandler (Axeolon): what you type in chat. Plain text is said as "<Player> text"; a leading
-// slash runs a command. Lines go back through say().
+// NSSS's chat commands (GuiChat.handleCommand), when the world allows them (cheatsDisabled off).
+// Plain text is said as "<Player> text"; a leading slash runs a command. Lines go back through say().
 #include <functional>
 #include <string>
 

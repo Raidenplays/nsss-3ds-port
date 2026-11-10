@@ -41,7 +41,6 @@ ItemStack fromNBT(const nbt::Tag& t) {
     s.id = uint16_t(t.getShort("id"));
     s.count = t.getByte("Count");
     s.damage = t.getShort("Damage");
-    if (nbt::Tag* tag = t.getCompound("tag")) s.tag = std::shared_ptr<nbt::Tag>(nbt::clone(*tag).release());
     return s;
 }
 
@@ -49,7 +48,6 @@ void toNBT(const ItemStack& s, nbt::Tag& t) {
     t.setShort("id", int16_t(s.id));
     t.setByte("Count", int8_t(s.count));
     t.setShort("Damage", s.damage);
-    if (s.tag) t.set("tag", nbt::clone(*s.tag));
 }
 
 bool isContainer(int id) { return id == 54 || id == 142 || id == 61 || id == 62; }

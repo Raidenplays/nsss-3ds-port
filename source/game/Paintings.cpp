@@ -234,7 +234,7 @@ void Paintings::render(const World& w, Renderer& r) { // RenderPainting
     for (const P& p : list) {
         const Art& a = ARTS[p.art];
         float yaw = float(p.dir * 90) * 3.1415927f / 180.0f, c = std::cos(yaw), s = std::sin(yaw);
-        float shade = BlockModels::lightBrightness(w, fl(p.x), fl(p.y), fl(p.z));
+        float shade = w.getBrightness(fl(p.x), fl(p.y), fl(p.z));
         auto at = [&](float lx, float ly, float lz, float u, float v) { // glRotatef(yaw, 0, 1, 0), 1/16 scale
             lx /= 16.0f;
             ly /= 16.0f;

@@ -20,8 +20,6 @@
 namespace {
 constexpr double PI_D = 3.141592653589793;
 constexpr float W = 1.5f, H = 0.6f, YOFF = 0.3f; // setSize(1.5, 0.6), yOffset = height / 2
-const char* const WOOD[] = {"oak", "spruce", "birch", "drogwood", "thramwood",
-                            "charred_oak", "charred_spruce", "charred_birch", "charred_drogwood", "charred_thramwood"};
 JavaRandom rnd{0xB0A7ULL}; // Entity.rand
 int fl(double v) { int i = int(v); return v < double(i) ? i - 1 : i; }
 Vehicles* active = nullptr;
@@ -132,7 +130,6 @@ void Vehicles::chunkLoaded(Chunk& c) {
         }
         if (nbt::Tag* rot = e->getList("Rotation"); rot && !rot->items.empty()) b.yaw = b.prevYaw = float(rot->items[0]->d);
         b.onGround = e->getBool("OnGround");
-        b.wood = std::max(0, std::min(9, int(e->getByte("Wood")))); // AxeolonWood.clamp
         b.id = nextId++;
         boats.push_back(std::move(b));
         v.erase(v.begin() + i);
@@ -174,7 +171,6 @@ void Vehicles::writeToChunk(Chunk& c) const {
         t->setShort("Fire", -1);
         t->setShort("Air", 300);
         t->setBool("OnGround", b.onGround);
-        t->setByte("Wood", int8_t(b.wood));
         v.push_back(std::move(t));
         any = true;
     }
@@ -234,7 +230,7 @@ void Vehicles::chunkUnloaded(int cx, int cz) {
 
 // ---------------------------------------------------------------- the player and boats
 
-bool Vehicles::placeBoat(World& w, const Player& p, int wood) {
+bool Vehicles::placeBoat(World& w, const Player& p) {
     // ItemBoat.onItemRightClick: along the look for 5 blocks, stopping at still water too
     float yaw = p.rotationYaw, pitch = p.rotationPitch;
     float c = MathHelper::cos(-yaw * (3.1415927f / 180.0f) - 3.1415927f), s = MathHelper::sin(-yaw * (3.1415927f / 180.0f) - 3.1415927f);
@@ -245,7 +241,6 @@ bool Vehicles::placeBoat(World& w, const Player& p, int wood) {
     Boat b;
     setPosition(b, double(float(h.x) + 0.5f), double(float(h.y) + 1.5f) + double(YOFF), double(float(h.z) + 0.5f));
     b.px = b.x; b.py = b.y; b.pz = b.z;
-    b.wood = std::max(0, std::min(9, wood));
     b.id = nextId++;
     boats.push_back(std::move(b));
     return true;
@@ -270,11 +265,10 @@ void Vehicles::hit(int index, int damage, ItemEntities& items) {
     b.hurtDir = -b.hurtDir;
     b.hurtTime = 10;
     b.damage += damage * 10;
-    if (b.damage > 40) { // Axeolon: the boat itself comes back
+    if (b.damage > 40) { // EntityBoat.attackEntityFrom: the boat comes back as an item
         ItemStack st;
         st.id = 333;
         st.count = 1;
-        st.damage = int16_t(b.wood);
         items.spawn(b.x, b.y, b.z, st, 10);
         if (b.id == riddenId) riddenId = excludedId = 0;
         b.dead = true;
@@ -422,20 +416,11 @@ void Vehicles::tick(World& w, Player& p, ItemEntities& items, Mobs* mobsIn) {
                 gParticles->spawn(Particles::SPLASH, sx, b.y - 0.125, sz, b.mx, b.my, b.mz);
             }
         }
-        if (b.collidedH && speed > 0.35) { // Axeolon: only a hard crash breaks it, into the boat itself
-            ItemStack st;
-            st.id = 333;
-            st.count = 1;
-            st.damage = int16_t(b.wood);
-            items.spawn(b.x, b.y, b.z, st, 10);
-            sound::play("random.break", b.x, b.y, b.z, 0.8f, 0.8f + rnd.nextFloat() * 0.4f);
-            if (ridden) riddenId = excludedId = 0;
-            b.dead = true;
-            continue;
+        if (!b.collidedH || !(speed > 0.15)) { // (a boat never breaks up: running aground just doesn't slow it)
+            b.mx *= double(0.99f);
+            b.my *= double(0.95f);
+            b.mz *= double(0.99f);
         }
-        b.mx *= double(0.99f);
-        b.my *= double(0.95f);
-        b.mz *= double(0.99f);
         // it turns toward where it's going, 20 degrees a tick at most
         double want = double(b.yaw);
         double ddx = b.px - b.x, ddz = b.pz - b.z;
@@ -857,13 +842,6 @@ void Vehicles::cartCollisions(Player& p, Mobs* mobsIn) {
                 o.mx += mx + dx;
                 o.mz += mz + dz;
             }
-            for (Cart* k : {&a, &o}) { // Axeolon: capBoostSpeed
-                double v = std::sqrt(k->mx * k->mx + k->mz * k->mz);
-                if (v > 2.0) {
-                    k->mx = k->mx / v * 2.0;
-                    k->mz = k->mz / v * 2.0;
-                }
-            }
         } else {
             a.mx -= dx;
             a.mz -= dz;
@@ -903,14 +881,13 @@ void Vehicles::cartCollisions(Player& p, Mobs* mobsIn) {
 void Vehicles::render(const World& w, Renderer& r, float partial) {
     using namespace boxmodel;
     std::vector<axm::ModelVertex> q;
-    for (int wood = 0; wood < 10; ++wood) {
-        q.clear();
+    {
         for (const Boat& b : boats) {
-            if (b.dead || b.wood != wood) continue;
+            if (b.dead) continue;
             float x = float(b.px + (b.x - b.px) * partial), y = float(b.py + (b.y - b.py) * partial),
                   z = float(b.pz + (b.z - b.pz) * partial);
             float yaw = b.prevYaw + (b.yaw - b.prevYaw) * partial;
-            float light = BlockModels::lightBrightness(w, fl(x), fl(double(y) - double(YOFF) + double(H) * 0.66), fl(z));
+            float light = w.getBrightness(fl(x), fl(double(y) - double(YOFF) + double(H) * 0.66), fl(z));
             M4 t;
             t.translate(x, y, z);
             t.rotate(180.0f - yaw, 1);
@@ -925,11 +902,8 @@ void Vehicles::render(const World& w, Renderer& r, float partial) {
             box(q, part(t, 0, Y, -Wd / 2 + 1, 0, 3.1415927f, 0), -L / 2 + 2, -Hh - 1, -1, int(L - 4), int(Hh), 2, 0, 0, light);
             box(q, part(t, 0, Y, Wd / 2 - 1, 0, 0, 0), -L / 2 + 2, -Hh - 1, -1, int(L - 4), int(Hh), 2, 0, 0, light);
         }
-        if (q.empty()) continue;
-        std::string path = wood == 0 ? "romfs:/textures/item/boat.rgba" : std::string("romfs:/axeolon/boat/") + WOOD[wood] + ".rgba";
-        C3D_Tex* tex = r.texture(path);
-        if (!tex) tex = r.texture("romfs:/textures/item/boat.rgba");
-        if (tex) r.drawTriangles(q, tex);
+        C3D_Tex* tex = r.texture("romfs:/textures/item/boat.rgba");
+        if (tex && !q.empty()) r.drawTriangles(q, tex);
     }
     renderCarts(w, r, partial);
 }
@@ -985,7 +959,7 @@ void Vehicles::renderCarts(const World& w, Renderer& r, float partial) {
                 pitch = float(std::atan(dy) * 73.0);
             }
         }
-        float light = BlockModels::lightBrightness(w, fl(x), fl(y - double(CYOFF) + double(CH) * 0.66), fl(z));
+        float light = w.getBrightness(fl(x), fl(y - double(CYOFF) + double(CH) * 0.66), fl(z));
         M4 t;
         t.translate(float(rx), float(ry), float(rz));
         t.rotate(180.0f - yaw, 1);

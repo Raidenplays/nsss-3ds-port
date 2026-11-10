@@ -48,7 +48,6 @@ void ItemEntities::spawnFromWorld(World& w) {
         s.id = uint16_t(d.id);
         s.count = d.count;
         s.damage = int16_t(d.damage);
-        s.tag = d.tag;
         spawn(d.x, d.y, d.z, s, 10);
     }
     w.drops.clear();
@@ -157,7 +156,7 @@ void ItemEntities::render(World& w, Renderer& r, float partial, float camYaw, fl
         double x = e.px + (e.x - e.px) * partial, y = e.py + (e.y - e.py) * partial, z = e.pz + (e.z - e.pz) * partial;
         float t = float(e.age) + partial;
         float bob = std::sin(t / 10.0f + e.spin) * 0.1f + 0.1f;
-        float shade = BlockModels::lightBrightness(w, fl(x), fl(y + 0.2), fl(z));
+        float shade = w.getBrightness(fl(x), fl(y + 0.2), fl(z));
         const ItemInfo* info = itemInfo(e.item.id, e.item.damage);
         tris.clear();
         bool cube = e.item.id < 256 && (BLOCKS[e.item.id].flags & BF_CUBE) && info && (info->flags & IF_BLOCK3D);
@@ -252,7 +251,6 @@ void ItemEntities::chunkLoaded(Chunk& c) {
             e.item.id = uint16_t(it->getShort("id"));
             e.item.count = it->getByte("Count");
             e.item.damage = it->getShort("Damage");
-            if (nbt::Tag* tag = it->getCompound("tag")) e.item.tag = std::shared_ptr<nbt::Tag>(nbt::clone(*tag).release());
         }
         if (!e.item.empty()) items.push_back(e);
         v.erase(v.begin() + i);
@@ -299,7 +297,6 @@ void ItemEntities::writeToChunk(Chunk& c) const {
         it.setShort("id", int16_t(e.item.id));
         it.setByte("Count", int8_t(e.item.count));
         it.setShort("Damage", e.item.damage);
-        if (e.item.tag) it.set("tag", nbt::clone(*e.item.tag));
         list->listType = nbt::Compound;
         v.push_back(std::move(t));
         changed = true;

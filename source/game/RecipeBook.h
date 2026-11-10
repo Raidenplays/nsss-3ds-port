@@ -1,6 +1,6 @@
 #pragma once
 // MATTIS ("Minecraft Advanced Touch Technology Interface System"): Pocket Edition's crafting screen
-// before 0.9.0, built on this mod's own CraftingManager recipes. Every recipe the player can use
+// before 0.9.0, built on NSSS's own CraftingManager recipes. Every recipe the player can use
 // is listed by what it makes, in four groups like the Pocket tabs. One tap crafts: the
 // ingredients come straight out of the inventory, with no grid to fill.
 //
@@ -42,13 +42,5 @@ bool craft(Inventory& inv, const Entry& e);
 
 // How many times in a row `e` could be crafted now (stops at what one stack of the result holds)
 int timesCraftable(const Inventory& inv, const Entry& e);
-
-// StonecutterRecipes.getResults: what one of this block can be cut into (none: it can't)
-std::vector<survival::Stack> stonecut(int id, int damage);
-// Every stonecutter cut the inventory can pay for, one entry per (input, piece), like Pocket's stonecutter
-std::vector<Entry> stonecutList(const Inventory& inv);
-
-// The short "what's it for" line under the picture, like Pocket Edition's descriptions
-std::string describe(int id, int damage);
 
 } // namespace recipes

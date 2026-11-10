@@ -1,22 +1,21 @@
-// Axeolon 3DS
-// Top screen: gameplay. Bottom screen: Almanac map, inventory (with battle slots and charms),
-// menus, hotbar.
+// Not So Seecret Saturday (NSSS a1.1.12, Minecraft Alpha 1.1.2_01) for the Nintendo 3DS.
+// Top screen: gameplay. Bottom screen: the New 3DS Edition home layout (hotbar, map,
+// Inventory / Crafting / Pause) with Pocket Edition 0.5.0's screens.
 // Budget: 60 fps on an Old 3DS (268 MHz, no C-stick, no ZL/ZR).
 //
-// Worlds: your Java Axeolon saves, copied as-is to sdmc:/3ds/nsss3ds/saves/<World>/.
-// Loads player position, look, inventory, armour, charms, battle slots and the Almanac map
-// and waypoints; saves them all back on quit in the same format, so the world goes straight
+// Worlds: NSSS saves, copied as-is to sdmc:/3ds/nsss3ds/saves/<World>/. Loads and saves the
+// player's position, look, health and inventory in the same format, so a world goes straight
 // back to the PC.
 //
 // Controls, Old 3DS:
 //   Circle Pad        move              ABXY      look (X up, B down, Y left, A right)
 //   R                 break block       L         use (doors, levers, buttons, chests) or place
-//   D-pad left/right  hotbar (battle mode: weapon pair)
+//   D-pad left/right  hotbar
 //   D-pad up          jump (swim up)    D-pad down  sneak
 // New 3DS, or an Old 3DS with the Circle Pad Pro (console "Xbox" layout):
 //   Circle Pad move, C-stick / CPP stick look, A jump, B sneak, X items (D-pad still works).
 //   New 3DS: ZR break, ZL use/place, L / R hotbar. Old 3DS + CPP: R break, L use, D-pad hotbar.
-//   SELECT            fly on/off (noclip, for getting unstuck)   START  Menu tab
+//   SELECT            fly on/off in creative   START  pause
 //   Touch             bottom screen (hold L or R while tapping = split stack)
 #include <3ds.h>
 #include <citro3d.h>
@@ -52,21 +51,16 @@
 #include "ui/Hud.h"
 #include "audio/Sound.h"
 #include "game/Inventory.h"
-#include "game/AlmanacMap.h"
-#include "game/Spells.h"
-#include "game/Teleporter.h"
+#include "game/Minimap.h"
 #include "game/Vehicles.h"
 #include "game/Options.h"
 #include "world/Physics.h"
 #include "render/TextureFX.h"
-#include "render/DynamicLights.h"
-#include "game/Progress.h"
 #include "game/Commands.h"
 #include "game/Paintings.h"
 #include "game/Mobs.h"
 #include "game/EntityDamage.h"
 #include "game/ItemUse.h"
-#include "world/Bosses.h"
 #include "game/ItemEntities.h"
 #include "game/Survival.h"
 #include "game/Containers.h"
@@ -224,71 +218,9 @@ void drawCracks(Renderer& r, int x, int y, int z, int stage) {
 
 bool hookChunkPending(int x, int y, int z) { return rebuild.has(x >> 4, y >> 4, z >> 4); }
 
-// ---------------------------------------------------------------- bundled worlds
-// Worlds shipped inside the app (romfs:/worlds/<name>) are copied to the SD card the first time,
-// so they show up in the world list and save like any other world.
-bool copyFile(const std::string& from, const std::string& to) {
-    FILE* in = fopen(from.c_str(), "rb");
-    if (!in) return false;
-    FILE* out = fopen(to.c_str(), "wb");
-    if (!out) { fclose(in); return false; }
-    static char buf[64 * 1024];
-    size_t n;
-    bool ok = true;
-    while ((n = fread(buf, 1, sizeof buf, in)) > 0) ok &= fwrite(buf, 1, n, out) == n;
-    fclose(in);
-    fclose(out);
-    return ok;
-}
-
-// copies what's missing: a file already on the SD card with something in it is kept (it may be progress),
-// except level.dat / level.dat_old when `freshLevel` (they were unreadable)
-bool copyDir(const std::string& from, const std::string& to, bool freshLevel = false) {
-    DIR* d = opendir(from.c_str());
-    if (!d) return false;
-    mkdir(to.c_str(), 0777);
-    bool ok = true;
-    while (dirent* e = readdir(d)) {
-        std::string n = e->d_name;
-        if (n == "." || n == "..") continue;
-        std::string src = from + "/" + n, dst = to + "/" + n;
-        struct stat st;
-        if (stat(src.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) { ok &= copyDir(src, dst, false); continue; }
-        struct stat have;
-        bool levelFile = n == "level.dat" || n == "level.dat_old";
-        if (!(freshLevel && levelFile) && stat(dst.c_str(), &have) == 0 && have.st_size > 0) continue;
-        ok &= copyFile(src, dst);
-    }
-    closedir(d);
-    return ok;
-}
-
-static bool levelReadable(const std::string& dir) {
-    return nbt::readGzipFile(dir + "/level.dat") || nbt::readGzipFile(dir + "/level.dat_old");
-}
-
-// Copies the worlds shipped in romfs to the SD card. Straight into place, no directory rename: on
-// Azahar for Android the SD card is a storage-access-framework folder where renaming a folder can
-// leave it empty. A world whose level.dat can't be read (a copy cut short) is repaired from romfs
-// without touching the chunks already there.
-void installBundledWorlds() {
-    DIR* d = opendir("romfs:/worlds");
-    if (!d) return;
-    while (dirent* e = readdir(d)) {
-        std::string n = e->d_name;
-        if (n == "." || n == "..") continue;
-        std::string dst = std::string(SAVES_DIR) + "/" + n;
-        struct stat st;
-        bool there = stat(dst.c_str(), &st) == 0;
-        if (there && levelReadable(dst)) continue; // already on the SD card: never overwrite progress
-        if (!copyDir("romfs:/worlds/" + n, dst, there)) continue;
-    }
-    closedir(d);
-}
-
 // ---------------------------------------------------------------- world list
 // ---------------------------------------------------------------- player <-> save
-void loadPlayer(SaveHandler* save, const LevelInfo& li, Camera& cam, Inventory& inv, AlmanacMap& map) {
+void loadPlayer(SaveHandler* save, const LevelInfo& li, Camera& cam, Inventory& inv) {
     if (li.hasPlayer) {
         cam.x = float(li.playerX);
         cam.y = float(li.playerY); // Beta saves posY at eye height
@@ -303,23 +235,9 @@ void loadPlayer(SaveHandler* save, const LevelInfo& li, Camera& cam, Inventory& 
     nbt::Tag* p = save ? save->player() : nullptr;
     if (!p) return;
     if (nbt::Tag* list = p->getList("Inventory")) inv.readFromNBT(*list);
-    // EntityPlayer.readEntityFromNBT order: slot first, then the mode
-    inv.selectBattleSlot(p->getInt("AxBattleSlot"));
-    inv.setBattleMode(p->getBool("AxBattleMode"));
-    map.readWaypoints(p->getString("AxWaypoints"));
-    inv.achievements = p->getString("AxAchievements");
-    inv.sawNight = p->getBool("AxSawNight");
-    inv.seenItems = p->getString("AxSeenItems");
-    // the how-to-play hints: from the start in a new world, skipped in one that's been played
-    if (p->has("AxTutorial")) inv.tutorial = p->getInt("AxTutorial");
-    else {
-        bool played = !inv.achievements.empty();
-        for (int i = 0; i < Inventory::MAIN && !played; ++i) played = !inv.main[i].empty();
-        inv.tutorial = played ? 99 : 0;
-    }
 }
 
-void storePlayer(SaveHandler* save, World& world, const Player& pl, const Inventory& inv, const AlmanacMap& map) {
+void storePlayer(SaveHandler* save, World& world, const Player& pl, const Inventory& inv) {
     LevelInfo& li = world.info;
     li.hasPlayer = true;
     li.playerX = pl.posX; // posY at eye level, like Java
@@ -331,13 +249,6 @@ void storePlayer(SaveHandler* save, World& world, const Player& pl, const Invent
     nbt::Tag* p = save->player();
     if (!p) return; // writeLevel creates the compound; inventory goes in on the next save
     p->set("Inventory", inv.writeToNBT());
-    p->setInt("AxBattleSlot", inv.battleSlot);
-    p->setBool("AxBattleMode", inv.battleMode);
-    p->setString("AxWaypoints", map.writeWaypoints());
-    p->setString("AxAchievements", inv.achievements);
-    p->setBool("AxSawNight", inv.sawNight);
-    p->setString("AxSeenItems", inv.seenItems);
-    p->setInt("AxTutorial", inv.tutorial);
     p->setShort("Health", int16_t(pl.health));
     p->setShort("HurtTime", int16_t(pl.hurtTime));
     p->setShort("DeathTime", int16_t(pl.deathTime));
@@ -345,7 +256,6 @@ void storePlayer(SaveHandler* save, World& world, const Player& pl, const Invent
     p->setFloat("FallDistance", pl.fallDistance);
     p->setShort("Fire", int16_t(pl.fire));
     p->setShort("Air", int16_t(pl.air));
-    p->setShort("Mana", int16_t(pl.mana));
 }
 
 // Where right-click and left-click aim: the screen centre on the 3DS; on Android, through the finger
@@ -364,9 +274,9 @@ void drawCrosshair() {
     C2D_DrawRectSolid(cx - 0.5f, cy - 5, 0.5f, 1, 10, light);
 }
 
-bool isDoorId(int id) { return id == 64 || id == 71 || (id >= 145 && id <= 153); }
+bool isDoorId(int id) { return id == 64 || id == 71; }
 
-// Right-click on a block (Block.blockActivated) for the blocks with Axeolon animations.
+// Right-click on a block (Block.blockActivated).
 // Returns true if the block took the click (nothing gets placed).
 struct OpenChest { int x, y, z; bool open = false; } chest;
 
@@ -388,9 +298,9 @@ bool useBlock(World& w, int x, int y, int z, bool emptyHand) {
         rebuild.markBlock(x, y + 1, z);
         return true;
     }
-    // levers, buttons, repeater delays and note blocks (they power things, so they live with redstone)
+    // levers and buttons (they power things, so they live with redstone)
     if (Redstone::blockActivated(w, x, y, z, emptyHand)) return true;
-    if (id == 54 || id == 142) { // chest / crate: the lid opens while it's "open"
+    if (id == 54) { // chest: the lid opens while it's "open"
         if (chest.open) { chest.open = false; return true; }
         BlockModels::openContainer(w, x, y, z);
         chest = {x, y, z, true};
@@ -421,8 +331,6 @@ int main() {
     mkdir(SAVES_DIR, 0777);
     remove("sdmc:/3ds/nsss3ds/log.txt");
     dbg("start");
-    installBundledWorlds();
-    dbg("bundled worlds ok");
 
     Renderer renderer;
     bool rok = renderer.init();
@@ -452,7 +360,6 @@ int main() {
     struct stat ast;
     bool autotestOn = stat("sdmc:/3ds/nsss3ds/autotest.txt", &ast) == 0;
     bool autotestNew = false; // "new" in the file: create World5 from seed 12345 instead
-    bool autotestNether = false;
     bool autotestQuit = false;
     int autotestVisits = 0;
     if (autotestOn) {
@@ -460,25 +367,17 @@ int main() {
         char buf[8] = {0};
         if (f) { fread(buf, 1, 3, f); fclose(f); }
         autotestNew = std::strncmp(buf, "new", 3) == 0;
-        autotestNether = std::strncmp(buf, "net", 3) == 0; // "nether": a new world, started in the Nether
         autotestQuit = std::strncmp(buf, "qui", 3) == 0;   // "quit": World5, saved and left every 25 s, again and again
         if (autotestQuit) autotestNew = true;
-        if (autotestNether) autotestNew = true;
     }
 
     bool appRunning = true;
-    std::string portalWorld; // Minecraft.usePortal: straight back into this world, in the other dimension
-    bool respawnHome = false; // Minecraft.respawn from the Nether: back to the overworld's spawn
     while (appRunning) {
     // ================================================================ title screen
     std::string worldName;
-    const bool arrivingByPortal = !portalWorld.empty() && !respawnHome;
-    const bool arrivingRespawn = !portalWorld.empty() && respawnHome;
-    respawnHome = false;
     bool titleCreated = false;
     int titleGameType = 0;
-    if (arrivingByPortal) { worldName = portalWorld; portalWorld.clear(); }
-    else {
+    {
         u64 last = osGetTime();
         float acc = 0;
         int frames = 0;
@@ -496,7 +395,7 @@ int main() {
             if (autotestOn && ++frames == 400) { r = TitleScreen::PLAY; }
             if (r == TitleScreen::QUIT) { appRunning = false; break; }
             if (r == TitleScreen::PLAY) {
-                worldName = autotestOn ? (autotestNether ? "World6" : autotestNew ? "World5" : "World1") : title.world();
+                worldName = autotestOn ? (autotestNew ? "World5" : "World1") : title.world();
                 titleCreated = title.createdNew();
                 titleGameType = title.gameType();
                 break;
@@ -535,21 +434,9 @@ int main() {
         worldDir = std::string(SAVES_DIR) + "/" + worldName;
         save = new SaveHandler(worldDir, 0);
         if (!save->readLevel(info)) { delete save; save = nullptr; worldDir.clear(); }
-        else if (autotestNether && brandNew) { // the Nether self-test: straight there
-            info.dimension = -1;
-            delete save;
-            save = new SaveHandler(worldDir, -1);
-            save->readLevel(info);
-            info.dimension = -1;
-            brandNew = false; // (no overworld spawn search)
-        } else if (info.dimension == -1) { // standing in the Nether
-            delete save;
-            save = new SaveHandler(worldDir, -1);
-            save->readLevel(info);
-        }
+
     }
-    dbg("level read: save=%d dim=%d player %.1f %.1f %.1f", save != nullptr, info.dimension, info.playerX, info.playerY, info.playerZ);
-    bosses::open(save ? worldDir : std::string()); // AxeolonBosses: before anything generates
+    dbg("level read: save=%d player %.1f %.1f %.1f", save != nullptr, info.playerX, info.playerY, info.playerZ);
     World world(save, info, save == nullptr);
     ItemEntities itemEntities; // before anything loads chunks: they bring their dropped items
     Mobs mobs;                 // ... and their mobs
@@ -582,17 +469,14 @@ int main() {
     world.onUnload = [&](int cx, int cz) { itemEntities.chunkUnloaded(cx, cz); mobs.chunkUnloaded(cx, cz); paintings.chunkUnloaded(cx, cz); vehicles.chunkUnloaded(cx, cz); };
     world.onSpawnEntity = [&](nbt::TagPtr t) { mobs.adopt(std::move(t)); };
     world.onFallingBlock = [&](int x, int y, int z, int id) { mobs.fallingBlock(x, y, z, id); };
-    world.onBlockAnim = [&](int kind, int x, int y, int z, const char* name) { BlockModels::play(world, kind, x, y, z, name); };
-    world.onDoorSwing = [&](int x, int y, int z, int meta) { BlockModels::door(world, x, y, z, meta); };
     world.onParticle = [&](int type, double x, double y, double z, double a, double b, double c) {
         if (!gParticles) return;
         if (type == 1) gParticles->spawn(Particles::SMOKE, x, y, z, a, b, c);
-        else if (type == 100) gParticles->spawn(Particles::NOTE, x, y, z, a, b, c);
     };
     GenFiber genFiber; // chunk loading/generation in small slices between frames
     TerrainWorker terrainWorker;
     if (world.generates() && save) {
-        bool ok = terrainWorker.start(info.seed, worldDir, world.generator()->manager->overrides, info.dimension);
+        bool ok = terrainWorker.start(info.seed);
         dbg("terrain worker on core 1: %d", ok);
         world.pregenerated = [&](int cx, int cz, uint8_t* out) {
             if (terrainWorker.take(cx, cz, out)) return true;
@@ -608,13 +492,13 @@ int main() {
     }
     Camera cam;
     Inventory inv;
-    AlmanacMap almanacMap(world, worldDir.empty() ? "" : worldDir + (info.dimension == -1 ? "/axeolon_map_nether" : "/axeolon_map"));
+    Minimap minimap(world);
     bool creative = info.gameType == 1;
     inv.creative = creative;
     struct Dig { bool active = false; int x = 0, y = 0, z = 0, id = 0, delay = 0; float damage = 0; int hits = 0, side = 1; } dig;
     BottomScreen bottom;
 
-    bool ok = bottom.init(renderer, cam, inv, almanacMap);
+    bool ok = bottom.init(renderer, cam, inv, minimap);
     dbg("bottom init %d", ok);
     if (!ok) {
         while (aptMainLoop()) {
@@ -626,7 +510,7 @@ int main() {
         return 0;
     }
 
-    loadPlayer(save, info, cam, inv, almanacMap);
+    loadPlayer(save, info, cam, inv);
     Player player;
     if (info.hasPlayer) // exact saved doubles, not the camera's floats
         player.place(info.playerX, info.playerY, info.playerZ, info.playerYaw, info.playerPitch);
@@ -651,7 +535,6 @@ int main() {
         player.fallDistance = p->getFloat("FallDistance");
         player.fire = p->getShort("Fire");
         player.air = p->get("Air") ? p->getShort("Air") : Player::MAX_AIR;
-        player.mana = p->get("Mana") ? p->getShort("Mana") : Player::MAX_MANA;
     }
     Hud hud;
     hud.load(renderer);
@@ -663,84 +546,17 @@ int main() {
     bool wasDead = player.dead();
     int gameOverSel = 0;
     bool paused = false;     // GuiIngameMenu (START)
-    bool spellPicker = false; // GuiSpellPicker (hold the use button with a spell book)
-    // the how-to-play hints
-    double tutWalked = 0, tutPrevX = 0, tutPrevZ = 0;
-    float tutTurned = 0, tutPrevYaw = 0, tutFade = 0;
-    int tutTicks = 0, tutShown = -1;
-    bool tutBroke = false, tutPlaced = false, tutJumped = false;
-    int pickerCursor = 0, bookHold = 0;
-    bool bookWasDown = false;
     int pauseSel = 0;
     bool chatRequest = false; // GuiChat: type a line or a /command
     int savingFrames = 0;    // the saving indicator stays up a moment after a save
     int autosaveTicks = 0;
     bool flying = false;
-    // PlayerControllerSP.sendBlockRemoved + Block.harvestBlock
-    auto earn = [&](const std::string& id) { (void)id; }; // NSSS (Alpha): no achievements
     static Mobs* plateMobs;
     static ItemEntities* plateItems;
     static Player* platePlayer;
     plateMobs = &mobs;
     plateItems = &itemEntities;
     platePlayer = &player;
-    world.onDispense = [&](int x, int y, int z) { // BlockDispenser.dispenseItem
-        static JavaRandom dispRand(0xD15BULL); // TileEntityDispenser.dispenserRandom
-        int meta = world.getBlockMetadata(x, y, z);
-        float fx = 0, fz = 0;
-        if (meta == 3) fz = 1; else if (meta == 2) fz = -1; else if (meta == 5) fx = 1; else fx = -1;
-        // getRandomStackFromInventory: a random non-empty slot gives up one
-        ItemStack st;
-        if (nbt::Tag* te = world.tileEntityAt(x, y, z))
-            if (nbt::Tag* list = te->getList("Items")) {
-                int pick = -1, n = 1;
-                for (size_t i = 0; i < list->items.size(); ++i)
-                    if (list->items[i]->getByte("Count") > 0 && dispRand.nextInt(n) == 0) { pick = int(i); ++n; }
-                if (pick >= 0) {
-                    nbt::Tag& t = *list->items[pick];
-                    st.id = uint16_t(t.getShort("id"));
-                    st.count = 1;
-                    st.damage = t.getShort("Damage");
-                    int left = t.getByte("Count") - 1;
-                    if (left <= 0) list->items.erase(list->items.begin() + pick);
-                    else t.setByte("Count", int8_t(left));
-                }
-            }
-        double ox = x + fx * 0.5 + 0.5, oy = y + 0.5, oz = z + fz * 0.5 + 0.5;
-        if (st.empty()) { sound::play("random.click", x, y, z, 1.0f, 1.2f); return; }
-        if (st.id == 351 && st.damage == 4) { // Axeolon: lapis fires a homing magic bolt
-            mobs.castBoltAt(Mobs::MISSILE, ox + fx * 0.2, oy, oz + fz * 0.2, fx, 0.0, fz);
-            sound::play("random.bow", x, y, z, 1.0f, 1.6f);
-        } else if (st.id == 262 || st.id == 344 || st.id == 332) {
-            mobs.shootFrom(ox, oy, oz, fx, double(0.1f), fz, 1.1f, 6.0f,
-                           st.id == 262 ? Mobs::T_ARROW : st.id == 344 ? Mobs::T_EGG : Mobs::T_SNOWBALL);
-            sound::play("random.bow", x, y, z, 1.0f, 1.2f);
-        } else {
-            double v = dispRand.nextDouble() * 0.1 + 0.2;
-            itemEntities.spawnMoving(ox, oy - 0.3, oz, st, fx * v + dispRand.nextGaussian() * 0.0075 * 6.0,
-                                     double(0.2f) + dispRand.nextGaussian() * 0.0075 * 6.0,
-                                     fz * v + dispRand.nextGaussian() * 0.0075 * 6.0, 10);
-            sound::play("random.click", x, y, z, 1.0f, 1.0f);
-        }
-        if (gParticles)
-            for (int i = 0; i < 10; ++i) {
-                double k = dispRand.nextDouble() * 0.2 + 0.01;
-                gParticles->spawn(Particles::SMOKE, ox + fx * 0.01 + (dispRand.nextDouble() - 0.5) * fz * 0.5,
-                                  oy + (dispRand.nextDouble() - 0.5) * 0.5, oz + fz * 0.01 + (dispRand.nextDouble() - 0.5) * fx * 0.5,
-                                  fx * k + dispRand.nextGaussian() * 0.01, -0.03 + dispRand.nextGaussian() * 0.01,
-                                  fz * k + dispRand.nextGaussian() * 0.01);
-            }
-    };
-    world.onLaunch = [&](const AABB& box, double mx, double my, double mz) { // BlockPistonBase.launch
-        if (box.intersects(player.boundingBox)) {
-            player.motionX += mx;
-            player.motionY += my;
-            player.motionZ += mz;
-            if (my > 0) player.onGround = false;
-        }
-        mobs.launch(box, mx, my, mz);
-        itemEntities.launch(box, mx, my, mz);
-    };
     Redstone::anythingOn = [](const AABB& box, bool livingOnly) { // BlockPressurePlate: who's on it
         if (!platePlayer->dead() && platePlayer->boundingBox.intersects(box)) return true;
         if (plateMobs->anyIn(box)) return true;
@@ -752,60 +568,10 @@ int main() {
         tntMobs->primeTnt(x, y, z, false);
         sound::play("random.fuse", x + 0.5, y + 0.5, z + 0.5, 1.0f, 1.0f);
     };
-    // ---- Axeolon spawn crystals: placed by the Spawn charm, they move your spawn ----
-    struct Crystal { int x, y, z; };
-    std::vector<Crystal> crystals;
-    std::unordered_map<int64_t, int64_t> crystalSetAt; // when each was placed (the "activate" burst)
-    auto crystalKey = [](int x, int y, int z) { return (int64_t(x) & 0xFFFFFF) << 32 | (int64_t(z) & 0xFFFFFF) << 8 | (y & 0xFF); };
-    auto crystalActive = [&](int x, int y, int z) { // BlockSpawnCrystal.isActive
-        return world.info.spawnX == x && world.info.spawnY == y + 1 && world.info.spawnZ == z;
-    };
-    auto refreshCrystals = [&]() {
-        crystals.clear();
-        world.forEachChunk([&](Chunk& c) {
-            if (!c.level) return;
-            if (nbt::Tag* list = c.level->getList("TileEntities"))
-                for (auto& t : list->items)
-                    if (t && t->getString("id") == "AxeolonSpawnCrystal") {
-                        int x = t->getInt("x"), y = t->getInt("y"), z = t->getInt("z");
-                        if (world.getBlockId(x, y, z) == 143) crystals.push_back({x, y, z});
-                    }
-        });
-    };
-    auto placeCrystal = [&](int x, int y, int z, int side) -> bool { // ItemSpawnCharm.onItemUse
-        if (side == 0) --y;
-        if (side == 1) ++y;
-        if (side == 2) --z;
-        if (side == 3) ++z;
-        if (side == 4) --x;
-        if (side == 5) ++x;
-        if (!Blocks::canPlaceBlockAt(world, 143, x, y, z) || world.getBlockId(x, y + 1, z) != 0 || world.getBlockId(x, y + 2, z) != 0) {
-            hud.addChat("The crystal needs two blocks of open air above it.");
-            return true;
-        }
-        if (!world.setBlockWithNotify(x, y, z, 143)) return true;
-        if (!bosses::hasInt("spawn.origX")) { // AxeolonSpawnCrystals.rememberOriginal
-            bosses::setInt("spawn.origX", world.info.spawnX);
-            bosses::setInt("spawn.origY", world.info.spawnY);
-            bosses::setInt("spawn.origZ", world.info.spawnZ);
-        }
-        world.info.spawnX = x;
-        world.info.spawnY = y + 1;
-        world.info.spawnZ = z;
-        crystalSetAt[crystalKey(x, y, z)] = world.info.time;
-        sound::play("note.harp", x + 0.5, y + 1.5, z + 0.5, 1.0f, 1.5f);
-        sound::play("note.harp", x + 0.5, y + 1.5, z + 0.5, 0.8f, 2.0f);
-        sound::play(BS[143].step, x + 0.5, y + 0.5, z + 0.5, 1.0f, 0.8f);
-        hud.addChat("Your spawn is set at the crystal.");
-        if (!creative) inv.consumeHeld();
-        refreshCrystals();
-        return true;
-    };
     auto ejectRecord = [&](int x, int y, int z) { // BlockJukeBox.ejectRecord
         int m = world.getBlockMetadata(x, y, z);
         if (m <= 0) return;
         sound::playRecord("", x, y, z);
-        mobs.jukebox(x, y, z, false);
         world.setBlockMetadataWithNotify(x, y, z, 0);
         const float k = 0.7f;
         double ox = double(world.rand.nextFloat() * k) + double(1.0f - k) * 0.5;
@@ -816,28 +582,10 @@ int main() {
         disc.count = 1;
         itemEntities.spawn(x + ox, y + oy, z + oz, disc, 10);
     };
-    auto eatCake = [&](int x, int y, int z) { // BlockCake.func_21029_c: a slice heals 3 when you're hurt
-        if (player.health >= 20 || creative) return;
-        player.heal(3);
-        int m = world.getBlockMetadata(x, y, z) + 1;
-        if (m >= 6) world.setBlockWithNotify(x, y, z, 0);
-        else world.setBlockMetadataWithNotify(x, y, z, m);
-        rebuild.markBlock(x, y, z);
-    };
     auto breakBlock = [&](int x, int y, int z) {
         int id = world.getBlockId(x, y, z);
         if (id == 0 || id == 7) return; // bedrock
-        tutBroke = true;
         if (id == 84) ejectRecord(x, y, z); // a jukebox gives up its record as it breaks
-        if (id == 143 && crystalActive(x, y, z)) { // BlockSpawnCrystal.onBlockRemoval: the spawn goes back
-            if (bosses::hasInt("spawn.origX")) {
-                world.info.spawnX = bosses::getInt("spawn.origX");
-                world.info.spawnY = bosses::getInt("spawn.origY");
-                world.info.spawnZ = bosses::getInt("spawn.origZ");
-            }
-            hud.addChat("The spawn crystal shattered. You'll respawn where the world began.");
-            sound::play("random.glass", x + 0.5, y + 1.5, z + 0.5, 1.0f, 0.8f);
-        }
         int meta = world.getBlockMetadata(x, y, z);
         ItemStack& h = inv.held();
         int heldId = h.empty() ? 0 : h.id;
@@ -861,56 +609,27 @@ int main() {
             if (meta & 8) meta = world.getBlockMetadata(x, oy, z); // drop from the bottom half
         }
         if (!creative) {
-            // ItemTool / ItemSword.hitBlock: wear (instant-break blocks don't wear tools, like modern)
-            if (heldId >= 256 && survival::maxDamage(heldId) > 0 && survival::HARDNESS[id] > 0.0f &&
-                survival::toolSpeed(heldId, 1) != 0.0f) {
-                bool tool = false;
-                for (int i = 0; i < survival::TOOL_ENTRY_COUNT; ++i)
-                    if (survival::TOOL_ENTRIES[i].item == heldId) { tool = true; break; }
-                bool sword = heldId == 267 || heldId == 268 || heldId == 272 || heldId == 276 || heldId == 283;
-                if (tool) {
-                    h.damage += sword ? 2 : 1;
-                    if (h.damage > survival::maxDamage(heldId)) { // renderBrokenItemStack
-                        h.clear();
-                        sound::play("random.break", player.posX, player.posY - 1.62, player.posZ, 0.8f,
-                                    0.8f + world.rand.nextFloat() * 0.4f);
-                    }
+            // PlayerControllerSP.doDigBlock -> ItemStack.onDestroyBlock: ItemSword wears 2, ItemTool 1
+            if (heldId >= 256 && survival::mineWear(heldId) > 0) {
+                h.damage += survival::mineWear(heldId);
+                if (h.damage > survival::maxDamage(heldId)) { // ItemStack.damageItem: one used up
+                    h.clear();
+                    sound::play("random.break", player.posX, player.posY - 1.62, player.posZ, 0.8f,
+                                0.8f + world.rand.nextFloat() * 0.4f);
                 }
             }
-            ItemStack* silk = player.findCharm(1014);
-            if (id == 79 && pickaxe && !silk) // PlayerControllerSP: pickaxes collect ice
+            if (id == 79 && pickaxe) // PlayerControllerSP: pickaxes collect ice
                 world.drops.push_back(World::Drop{x + 0.5, y + 0.5, z + 0.5, 79, 1, 0});
             if (harvest) {
-                // AxeolonCharms.harvest: Silk Touch and Lucky Mining decide the drops
-                bool ore = id == 14 || id == 15 || id == 16 || id == 21 || id == 56 || id == 73 || id == 74 || (id >= 217 && id <= 223);
-                bool silkable = ore || id == 1 || id == 2 || id == 20 || id == 79 || id == 18 || id == 89 || id == 47 || id == 82 || id == 80;
-                if (silk && silkable) {
-                    int dropId = id == 74 ? 73 : id == 223 ? 220 : id;
-                    int leaf = (meta & 3) | ((meta & 8) >> 1); // BlockLeaves.leafType
-                    int dropMeta = id == 18 ? (((leaf & 3) | ((leaf & 4) << 1)) & ~4) : (id >= 217 && id <= 223) ? (meta & 7) : 0;
-                    world.drops.push_back(World::Drop{x + 0.5, y + 0.5, z + 0.5, dropId, 1, dropMeta});
-                    player.wearCharm(silk, 1);
-                } else if (id == 78) { // BlockSnow.harvestBlock: one snowball
+                if (id == 78) { // BlockSnow.harvestBlock: one snowball
                     world.drops.push_back(World::Drop{x + 0.5, y + 0.5, z + 0.5, 332, 1, 0});
                 } else {
                     Blocks::dropBlockAsItem(world, x, y, z, id, meta);
-                    if (ore) {
-                        static const int LUCKY_DOUBLE[5] = {10, 20, 30, 35, 40}, LUCKY_TRIPLE[5] = {0, 0, 0, 10, 20};
-                        for (int tier = 4; tier >= 0; --tier) {
-                            ItemStack* lucky = player.findCharm(1009 + tier);
-                            if (!lucky) continue;
-                            int roll = world.rand.nextInt(100);
-                            int extra = roll < LUCKY_TRIPLE[tier] ? 2 : (roll < LUCKY_TRIPLE[tier] + LUCKY_DOUBLE[tier] ? 1 : 0);
-                            for (int i = 0; i < extra; ++i) Blocks::dropBlockAsItem(world, x, y, z, id, meta);
-                            player.wearCharm(lucky, 1);
-                            break;
-                        }
-                    }
                 }
             }
         }
         rebuild.markBlock(x, y, z);
-        almanacMap.invalidate();
+        minimap.invalidate();
         bottom.markDirty();
     };
     // Automatic movement test (sdmc:/3ds/nsss3ds/autotest.txt present): replays
@@ -923,35 +642,12 @@ int main() {
         for (int i = 0; i < 9; i++) { inv.main[i].id = hotbar[i]; inv.main[i].count = 64; }
     }
 
-    // ---- Minecraft.usePortal: the Teleporter finds (or builds) the portal on this side ----
-    if (arrivingRespawn) { // preparePlayerToSpawn
-        world.setWindow(world.info.spawnX >> 4, world.info.spawnZ >> 4);
-        double feet = world.info.spawnY;
-        int fx = world.info.spawnX, fz = world.info.spawnZ;
-        while (feet < 255 && (world.blockAt(fx, int(feet), fz) != 0 || world.blockAt(fx, int(feet) + 1, fz) != 0)) feet += 1.0;
-        player.place(fx + 0.5, feet + 1.62, fz + 0.5, player.rotationYaw, 0);
-        cam.x = float(player.posX); cam.y = float(player.posY); cam.z = float(player.posZ);
-    }
-    if (arrivingByPortal && world.generates()) {
-        C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-        renderer.beginFrame();
-        title.drawLoading(info.dimension == -1 ? "Entering the Nether" : "Leaving the Nether", "Building terrain", 0.0f);
-        C3D_FrameEnd(0);
-        world.setWindow(int(std::floor(player.posX)) >> 4, int(std::floor(player.posZ)) >> 4);
-        u64 t0 = osGetTime();
-        teleporter::place(world, player);
-        while (world.updatingLighting()) {}
-        dbg("teleporter: %.1f %.1f %.1f in %d ms", player.posX, player.posY, player.posZ, int(osGetTime() - t0));
-        player.portalCooldown = 10; // field_9373_b: standing in the portal doesn't send you straight back
-        cam.x = float(player.posX); cam.y = float(player.posY); cam.z = float(player.posZ);
-    }
     // ---- Minecraft.func_6255_d: build the area around the player before play starts ----
     {
         int pcx = int(std::floor(player.posX)) >> 4, pcz = int(std::floor(player.posZ)) >> 4;
         const int R = LOAD_RADIUS + 1;
         const int total = (2 * R + 1) * (2 * R + 1);
-        const char* heading = arrivingByPortal ? (info.dimension == -1 ? "Entering the Nether" : "Leaving the Nether")
-                              : brandNew ? "Generating level" : "Loading level";
+        const char* heading = brandNew ? "Generating level" : "Loading level";
         u64 t0 = osGetTime();
         int done = 0;
         for (int ring = 0; ring <= R && aptMainLoop(); ring++)
@@ -973,16 +669,13 @@ int main() {
         dbg("built %d chunks in %d ms", done, int(osGetTime() - t0));
     }
     JavaRandom deathRand{int64_t(osGetTime())};
-    const bool nether = info.dimension == -1;
     float fogLightPrev = 1.0f, fogLight = 1.0f; // EntityRenderer q / r: fog darkens where it's dark
-    double skyTemperature = 0.5;
     int cloudTicks = 0; // RenderGlobal.field_1435_x
-    int skyTempX = INT_MIN, skyTempZ = INT_MIN;
     auto renderDistanceOption = [&]() { // Beta's far/normal/short/tiny (0..3) from the blocks drawn
         float o = std::log2(256.0f / renderer.renderDistance);
         return o < 0.0f ? 0.0f : o > 3.0f ? 3.0f : o;
     };
-    world.skylightSubtracted = nether ? 0 : atmosphere::skylightSubtracted(atmosphere::celestialAngle(info.time, 1.0f, false));
+    world.skylightSubtracted = atmosphere::skylightSubtracted(atmosphere::celestialAngle(info.time, 1.0f, false));
     bool fiberOn = world.generates() && genFiber.start(world);
     dbg("gen fiber: %d", fiberOn);
     std::unordered_set<int64_t> shown; // chunk columns the renderer is drawing
@@ -1005,16 +698,13 @@ int main() {
         dbg("save: world (heap %lu KB)", (unsigned long)(mallinfo().uordblks / 1024));
         world.saveAll();                                   // writes level.dat (creates Player if needed)
         dbg("save: player (heap %lu KB)", (unsigned long)(mallinfo().uordblks / 1024));
-        storePlayer(save, world, player, inv, almanacMap); // position, inventory, battle slots, waypoints
+        storePlayer(save, world, player, inv); // position, health, inventory
         dbg("save: world again (heap %lu KB)", (unsigned long)(mallinfo().uordblks / 1024));
         world.saveAll();
-        dbg("save: map (heap %lu KB)", (unsigned long)(mallinfo().uordblks / 1024));
-        almanacMap.save();
         dbg("save: done (heap %lu KB)", (unsigned long)(mallinfo().uordblks / 1024));
     };
     int frameNo = 0;
     bool leftToTitle = false;
-    bool portalTravel = false;
     while (aptMainLoop()) {
         frameNo++;
         static int traceUntil = 0;
@@ -1079,35 +769,6 @@ int main() {
             pad.dx = pad.dy = 0;
             cstick.dx = cstick.dy = 0;
         }
-        if (mobs.introPlaying()) { // the boss intro: the camera isn't yours for a moment
-            down &= KEY_START;
-            held &= KEY_TOUCH;
-            pad.dx = pad.dy = 0;
-            cstick.dx = cstick.dy = 0;
-            spellPicker = false;
-        }
-        if (spellPicker) { // GuiSpellPicker doesn't pause the game, but it takes the controls
-            ItemStack& book = inv.held();
-            int n = book.id == spells::BOOK ? int(spells::spellsIn(book).size()) : 0;
-            if (n == 0 || player.dead()) spellPicker = false;
-            else {
-                if (down & KEY_DRIGHT) pickerCursor = (pickerCursor + 1) % n;
-                if (down & KEY_DLEFT) pickerCursor = (pickerCursor + n - 1) % n;
-                if ((down & KEY_DDOWN) && pickerCursor + 9 < n) pickerCursor += 9;
-                if ((down & KEY_DUP) && pickerCursor >= 9) pickerCursor -= 9;
-                if (down & KEY_A) {
-                    spells::setSelected(book, pickerCursor);
-                    sound::playUi("random.click", 1.0f, 1.0f);
-                    spellPicker = false;
-                    bottom.markDirty();
-                }
-                if (down & (KEY_B | KEY_START)) spellPicker = false;
-            }
-            down = 0;
-            held &= KEY_TOUCH;
-            pad.dx = pad.dy = 0;
-            cstick.dx = cstick.dy = 0;
-        }
         auto axis = [](int v, float range) { return std::fabs((float)v) > 15.0f ? v / range : 0.0f; };
         float lookX = axis(cstick.dx, 146.0f), lookY = axis(cstick.dy, 146.0f);
         bool jumpHeld, sneakHeld;
@@ -1142,10 +803,6 @@ int main() {
             player.place(cam.x, cam.y, cam.z, player.rotationYaw, player.rotationPitch);
         }
 
-        if ((down & KEY_SELECT) && !creative && inv.tutorial >= 0 && inv.tutorial < 99) { // skip the how-to-play hints
-            inv.tutorial = 99;
-            sound::playUi("random.click", 1.0f, 1.0f);
-        }
         if ((down & KEY_SELECT) && creative) { // creative flight
             flying = !flying;
             player.motionX = player.motionY = player.motionZ = 0;
@@ -1242,23 +899,6 @@ int main() {
             autotestDusk = true;
             world.info.time = (world.info.time / 24000 + 1) * 24000 - 11500;
         }
-        // autotest in the Nether: after 20 s, the Pocket crafting list at a crafting table on the bottom screen
-        static bool autotestCraft = false;
-        if (autotestNether && !autotestCraft && osGetTime() - playStart > 20000) {
-            autotestCraft = true;
-            gOptions.craftStyle = 1;
-            const int give[][3] = {{17, 6, 0}, {4, 20, 0}, {280, 8, 0}, {265, 7, 0}, {264, 3, 0}, {263, 4, 0}, {35, 3, 0}};
-            for (auto& g : give) {
-                ItemStack st;
-                st.id = uint16_t(g[0]);
-                st.count = g[1];
-                st.damage = int16_t(g[2]);
-                inv.addStack(st);
-            }
-            inv.openTable();
-            bottom.setTab(BottomScreen::Tab::Items);
-            bottom.markDirty();
-        }
         // ---- game ticks (20 per second) ----
         if (!paused) tickAcc += dt;
         // autosave every five minutes of play (when no chunk is half made)
@@ -1269,22 +909,6 @@ int main() {
             ticks++;
             world.info.time++;
             texfx::tick([&](int tile, const uint8_t* rgba) { renderer.updateTerrainTile(tile, rgba); });
-            { // AxeolonDynamicLights.tick: what's glowing now
-                std::vector<dynlight::Emitter> glow;
-                int held = inv.held().empty() ? 0 : inv.held().id;
-                int lvl = dynlight::itemLight(held);
-                if (ItemStack* off = inv.offhand(); off && !off->empty()) lvl = std::max(lvl, dynlight::itemLight(off->id));
-                bool fancy = gOptions.dynamicLights == dynlight::FANCY;
-                if (fancy && player.fire > 0) lvl = 15;
-                if (lvl > 0 && !player.dead())
-                    glow.push_back({&player, player.posX, player.posY + double(0.12f) * 0.5, player.posZ, lvl}); // posY + getEyeHeight / 2
-                if (fancy) {
-                    for (const ItemEntity& e : itemEntities.all())
-                        if (int l = dynlight::itemLight(e.item.id)) glow.push_back({&e, e.x, e.y, e.z, l});
-                    mobs.forEachBurning([&](const void* k, double x, double y, double z) { glow.push_back({k, x, y, z, 15}); });
-                }
-                dynlight::tick(gOptions.dynamicLights, glow, worldDirty);
-            }
             {
                 texfx::ItemView iv;
                 iv.inWorld = true;
@@ -1293,14 +917,13 @@ int main() {
                 iv.yaw = player.rotationYaw;
                 iv.spawnX = world.info.spawnX;
                 iv.spawnZ = world.info.spawnZ;
-                iv.celestial = atmosphere::celestialAngle(world.info.time, 1.0f, nether);
-                iv.nether = nether;
+                iv.celestial = atmosphere::celestialAngle(world.info.time, 1.0f, false);
                 C3D_Tex* itemsTex = renderer.texture("romfs:/textures/gui/items.rgba");
                 texfx::tickItems(iv, [&](int tile, const uint8_t* rgba) { renderer.updateTile(itemsTex, tile, rgba); });
             }
             ++cloudTicks;
             // World.tick: skylightSubtracted follows the sun (the shader relights every section)
-            if (!nether) world.skylightSubtracted = atmosphere::skylightSubtracted(atmosphere::celestialAngle(world.info.time, 1.0f, false));
+            world.skylightSubtracted = atmosphere::skylightSubtracted(atmosphere::celestialAngle(world.info.time, 1.0f, false));
             { // EntityRenderer.updateRenderer: the fog's brightness follows the light where you are
                 fogLightPrev = fogLight;
                 int lx = int(std::floor(player.posX)), ly = int(std::floor(player.posY)), lz = int(std::floor(player.posZ));
@@ -1308,11 +931,6 @@ int main() {
                 float lb = ChunkMesher::LIGHT_BRIGHTNESS[lv < 0 ? 0 : lv > 15 ? 15 : lv];
                 float v2 = (3.0f - renderDistanceOption()) / 3.0f;
                 fogLight += (lb * (1.0f - v2) + v2 - fogLight) * 0.1f;
-                if (lx != skyTempX || lz != skyTempZ) {
-                    skyTempX = lx;
-                    skyTempZ = lz;
-                    if (world.generates() && world.generator()) skyTemperature = world.generator()->manager->rawTemperature(lx, lz);
-                }
             }
             // scheduled block updates: flowing water, falling sand... (not while a chunk is half
             // generated: a tick could reach into an unloaded chunk and start generating it)
@@ -1349,50 +967,16 @@ int main() {
                     bool wet = Physics::isMaterialInBB(world, player.boundingBox.expand(0.0, double(-0.4f), 0.0), false);
                     vehicles.setRiderInput(in.strafe, in.forward, player.rotationYaw, wet);
                     if (in.sneak) vehicles.dismount(player);
-                } else if (mobs.riding()) { // EntityAxeolonCreature: the rider steers; sneak to hop off
-                    Mobs::RiderInput ri;
-                    ri.forward = in.forward;
-                    ri.strafe = in.strafe;
-                    ri.yaw = player.rotationYaw;
-                    ri.jump = in.jump;
-                    mobs.setRiderInput(ri);
-                    if (in.sneak) mobs.dismount(player);
+                } else if (mobs.riding()) { // EntityPig: it goes where it likes (right-click it to get off)
                 } else if (autotest < 0 || frameNo > 300) {
                     player.tick(world, in);
                 }
             }
             ++hudCounter;
             hud.tickChat();
-            { // SpellBookInput.tick: a quick press casts, holding opens the picker
-                const ItemStack& h = inv.held();
-                bool holdingBook = h.id == spells::BOOK && !h.empty();
-                bool useDown = !spellPicker && !(held & KEY_TOUCH) && !player.dead() &&
-                               (held & (zButtons ? KEY_ZL : (KEY_L | KEY_ZL))) && holdingBook;
-                if (useDown) {
-                    if (++bookHold == 8) {
-                        if (spells::spellsIn(h).empty()) hud.addChat("The book is empty.");
-                        else {
-                            spellPicker = true;
-                            pickerCursor = std::max(0, spells::selectedIndex(h));
-                        }
-                    }
-                } else {
-                    if (bookWasDown && bookHold > 0 && bookHold < 8 && holdingBook) {
-                        std::string msg;
-                        if (spells::castSelected(inv.held(), world, player, mobs, creative, !genFiber.busy(), msg))
-                            earn(progress::SPARK);
-                        hud.addChat(msg);
-                        almanacMap.invalidate();
-                        bottom.markDirty();
-                    }
-                    bookHold = 0;
-                }
-                bookWasDown = useDown;
-            }
-            firstPerson.tick(inv, player.blocking);
+            firstPerson.tick(inv);
             particles.tick(world);
             if (signs.needsRefresh() || hudCounter % 20 == 0) signs.refresh(world, player.posX, player.posZ, LOAD_RADIUS);
-            if (hudCounter % 20 == 0) refreshCrystals();
             particles.ambient(world, player.posX, player.posY, player.posZ);
             if (dig.active && !creative && dig.delay == 0) particles.blockHit(world, dig.x, dig.y, dig.z, dig.side);
             if (dig.active && !creative) player.swingItem(); // digging keeps the arm going
@@ -1411,10 +995,8 @@ int main() {
                 };
                 for (ItemStack& st : inv.main) scatter(st);
                 for (ItemStack& st : inv.armour) scatter(st);
-                for (ItemStack& st : inv.charms) scatter(st);
                 if (inv.containerKind != Inventory::NONE) { containers::close(world, inv); chest.open = false; }
                 if (inv.tableOpen) inv.closeTable();
-                if (inv.cutterOpen) inv.closeStonecutter();
                 for (ItemStack& st : inv.craft) scatter(st);
                 scatter(inv.cursor);
                 bottom.markDirty();
@@ -1425,11 +1007,8 @@ int main() {
             for (const Player::SoundEvent& e : player.sounds)
                 sound::play(e.name, player.posX, player.posY - double(Player::YOFFSET), player.posZ, e.volume, e.pitch);
             player.sounds.clear();
-            for (const std::string& msg : player.messages) { hud.addChat(msg); bottom.markDirty(); }
-            player.messages.clear();
             sound::tick();
             BlockModels::tick(world, chest.open);
-            mobs.bossTick(world, player, creative);
             player.difficulty = gOptions.difficulty;
             player.peaceful = gOptions.difficulty == 0;
             mobs.tick(world, player, itemEntities, !genFiber.busy(), player.peaceful);
@@ -1464,74 +1043,6 @@ int main() {
                 }
             }
             if (mobs.pickedUpSomething) { mobs.pickedUpSomething = false; bottom.markDirty(); }
-            for (const std::string& a : mobs.earned) earn(a);
-            mobs.earned.clear();
-            if (!creative && inv.tutorial < 99 && !player.dead()) { // the how-to-play hints, one step at a time
-                if (inv.tutorial < 0) inv.tutorial = 0;
-                if (tutShown != inv.tutorial) {
-                    tutShown = inv.tutorial;
-                    tutTicks = 0;
-                    tutWalked = 0;
-                    tutTurned = 0;
-                    tutPrevX = player.posX;
-                    tutPrevZ = player.posZ;
-                    tutPrevYaw = player.rotationYaw;
-                    tutBroke = tutPlaced = tutJumped = false;
-                }
-                ++tutTicks;
-                double wdx = player.posX - tutPrevX, wdz = player.posZ - tutPrevZ;
-                tutWalked += std::sqrt(wdx * wdx + wdz * wdz);
-                tutPrevX = player.posX;
-                tutPrevZ = player.posZ;
-                tutTurned += std::fabs(player.rotationYaw - tutPrevYaw);
-                tutPrevYaw = player.rotationYaw;
-                if (!player.onGround && player.motionY > 0.3) tutJumped = true;
-                bool hasWood = false;
-                for (int i = 0; i < Inventory::MAIN; ++i) {
-                    int id = inv.main[i].empty() ? 0 : inv.main[i].id;
-                    if (id == 5 || id == 58 || id == 280) hasWood = true;
-                }
-                bool done = false;
-                switch (inv.tutorial) {
-                case 0: done = tutWalked > 6.0 && tutTicks > 60; break;
-                case 1: done = tutTurned > 200.0f && tutTicks > 60; break;
-                case 2: done = tutJumped && tutTicks > 40; break;
-                case 3: done = tutBroke; break;
-                case 4: done = bottom.tab() == BottomScreen::Tab::Items; break;
-                case 5: done = hasWood; break;
-                case 6: done = tutPlaced; break;
-                default: done = tutTicks > 240; break; // the last hints just show for a while
-                }
-                if (done) {
-                    sound::playUi("random.pop", 0.6f, 1.6f);
-                    inv.tutorial = inv.tutorial >= 8 ? 99 : inv.tutorial + 1;
-                }
-            }
-            { // AxeolonProgress.tick
-                long t = long(world.info.time % 24000);
-                if (t >= 13000 && t < 23000 && !player.dead()) inv.sawNight = true;
-                else if (inv.sawNight && t < 1000) {
-                    inv.sawNight = false;
-                    earn(progress::NIGHT_WATCH);
-                }
-                if (hudCounter % 20 == 0) {
-                    inv.markSeen(); // AxeolonProgress.tick: for the Almanac's recipes
-                    bool iron[4] = {false, false, false, false};
-                    for (int i = 0; i < Inventory::ARMOUR; ++i) {
-                        int id = inv.armour[i].empty() ? 0 : inv.armour[i].id;
-                        if (id >= 306 && id <= 309) iron[id - 306] = true;
-                    }
-                    if (iron[0] && iron[1] && iron[2] && iron[3]) earn(progress::READY_COLD);
-                    // AxeolonLair.tick: down in the bear's cave
-                    if (bosses::hasInt("lair.floor") && bosses::hasInt("lair.x")) {
-                        double dx = player.posX - bosses::getInt("lair.x"), dz = player.posZ - bosses::getInt("lair.z");
-                        int bx = int(std::floor(player.posX)), by = int(std::floor(player.posY)), bz = int(std::floor(player.posZ));
-                        if (dx * dx + dz * dz < 40.0 * 40.0 && player.posY < bosses::getInt("lair.floor") + 14.0 &&
-                            by >= 0 && by < 256 && !world.canBlockSeeTheSky(bx, by, bz))
-                            earn(progress::SNOW);
-                    }
-                }
-            }
             // SpawnerAnimals: monsters every tick, animals every 400 (World.tick)
             if (!genFiber.busy()) mobs.spawn(world, player, gOptions.difficulty > 0, world.info.time % 400 == 0);
             if (!genFiber.busy()) containers::tickFurnaces(world);
@@ -1587,7 +1098,7 @@ int main() {
                     }
                 }
             }
-            almanacMap.tick(int(std::floor(cam.x)), int(std::floor(cam.z)));
+            minimap.tick(int(std::floor(cam.x)), int(std::floor(cam.z)));
         }
         float partial = tickAcc / 0.05f;
         if (!flying) { // the camera sits at the eyes, between the last two ticks
@@ -1606,23 +1117,6 @@ int main() {
             cam.bobPitch = (std::fabs(std::cos(d * PI + 0.2f) * b) * 5.0f + cp) * PI / 180.0f;
         } else {
             cam.bobX = cam.bobY = cam.bobRoll = cam.bobPitch = 0.0f;
-        }
-        { // AxeolonCinematic.applyCamera: the boss intro flies the camera on its own
-            double cx, cy, cz;
-            float cyaw, cpitch, croll, cfov;
-            float pyaw = player.rotationYaw, ppitch = player.rotationPitch;
-            if (!flying && mobs.cinematic(partial, cam.x, cam.y, cam.z, pyaw, ppitch, cx, cy, cz, cyaw, cpitch, croll, cfov)) {
-                cam.x = float(cx);
-                cam.y = float(cy);
-                cam.z = float(cz);
-                cam.yaw = cyaw * PI / 180.0f + PI;
-                cam.pitch = cpitch * PI / 180.0f;
-                cam.bobX = cam.bobY = cam.bobPitch = 0.0f;
-                cam.bobRoll = croll * PI / 180.0f;
-                renderer.fovDeg = cfov;
-            } else {
-                renderer.fovDeg = Renderer::FOV_DEG;
-            }
         }
         { // EntityRenderer.hurtCameraEffect
             float f = float(player.hurtTime) - partial;
@@ -1647,46 +1141,6 @@ int main() {
         bool placeHeld = !touching && (held & (zButtons ? KEY_ZL : (KEY_L | KEY_ZL)));
         breakTimer = breakHeld ? breakTimer - dt : 0;
         placeTimer = placeHeld ? placeTimer - dt : 0;
-        if (inv.held().id == spells::BOOK) placeHeld = false; // SpellBookInput has it
-        { // AxeolonBattleInput: in battle mode the off hand blocks (shield) or fights (sword, dagger)
-            static float offCooldown = 0;
-            offCooldown -= dt;
-            bool useBtn = !touching && (held & (zButtons ? KEY_ZL : (KEY_L | KEY_ZL)));
-            bool usePress = !touching && (down & (zButtons ? KEY_ZL : (KEY_L | KEY_ZL)));
-            ItemStack* off = inv.offhand();
-            int offId = off && !off->empty() ? off->id : 0;
-            bool shield = (offId >= 1035 && offId <= 1038) || offId == 1042;
-            bool weapon = offId == 267 || offId == 268 || offId == 272 || offId == 276 || offId == 283 ||
-                          (offId >= 1015 && offId <= 1019); // swords and daggers fit the off hand
-            player.blocking = inv.battleMode && shield && useBtn && !player.dead() && !spellPicker;
-            if (inv.battleMode && (shield || weapon)) placeHeld = false;
-            if (inv.battleMode && weapon && usePress && offCooldown <= 0 && !player.dead()) {
-                float fx, fy, fz;
-                aimDir(cam, renderer.fovDeg, fx, fy, fz);
-                RayHit bh = world.rayTrace(cam.x, cam.y, cam.z, fx, fy, fz, 3.0f);
-                double blockDist = 3.0, md;
-                if (bh.hit) {
-                    double bx = bh.x + 0.5 - cam.x, by = bh.y + 0.5 - cam.y, bz = bh.z + 0.5 - cam.z;
-                    blockDist = std::sqrt(bx * bx + by * by + bz * bz) - 0.5;
-                }
-                int target = mobs.pick(cam.x, cam.y, cam.z, fx, fy, fz, 3.0, md);
-                if (target >= 0 && md <= blockDist) {
-                    mobs.attack(target, player, survival::entityDamage(offId), false, itemEntities);
-                    int wear = creative ? 0 : survival::hitWear(offId);
-                    if (wear > 0) {
-                        off->damage = int16_t(off->damage + wear);
-                        if (off->damage > survival::maxDamage(offId)) {
-                            off->clear();
-                            sound::play("random.break", player.posX, player.posY - 1.62, player.posZ, 0.8f, 0.8f + world.rand.nextFloat() * 0.4f);
-                        }
-                    }
-                    bottom.markDirty();
-                } else {
-                    offCooldown = 0.5f; // swung at nothing: the hand is locked for 10 ticks
-                }
-                firstPerson.swingOffhand();
-            }
-        }
         if (placeHeld && placeTimer <= 0 && !player.dead() &&
             (inv.held().id == 261 || inv.held().id == 332 || inv.held().id == 344) && !inv.held().empty()) {
             // right-click repeats every 4 ticks while held (Minecraft.rightClickDelayTimer)
@@ -1717,21 +1171,13 @@ int main() {
         }
         if (placeHeld && placeTimer <= 0 && !player.dead() && inv.held().id == 333 && !inv.held().empty()) {
             // ItemBoat.onItemRightClick: a boat on the block (or still water) looked at
-            if (vehicles.placeBoat(world, player, inv.held().damage)) {
+            if (vehicles.placeBoat(world, player)) {
                 if (!creative) inv.consumeHeld();
                 player.swingItem();
                 bottom.markDirty();
             }
             placeTimer = 0.3f;
             placeHeld = false;
-        }
-        if (placeHeld && placeTimer <= 0 && inv.held().id == spells::PAGE && !inv.held().empty()) {
-            bool used = false; // ItemSpellPage.onItemRightClick
-            hud.addChat(spells::usePage(inv, inv.held(), used));
-            if (used) sound::play("random.pop", player.posX, player.posY, player.posZ, 1.0f, 0.8f);
-            placeTimer = 0.3f;
-            placeHeld = false;
-            bottom.markDirty();
         }
         if (placeHeld && placeTimer <= 0 && !player.dead()) { // Entity.interact: right-click on a mob
             float fx, fy, fz;
@@ -1780,7 +1226,7 @@ int main() {
             float fx, fy, fz;
             aimDir(cam, renderer.fovDeg, fx, fy, fz);
             int heldId = inv.held().empty() ? 0 : inv.held().id;
-            double reach = survival::isSpear(heldId) ? 5.0 : 3.0;
+            const double reach = 3.0;
             RayHit bh = world.rayTrace(cam.x, cam.y, cam.z, fx, fy, fz, float(reach));
             double blockDist = reach;
             if (bh.hit) {
@@ -1812,14 +1258,6 @@ int main() {
                     }
                 }
             }
-            { // EntityFireball.attackEntityFrom: a punch sends a ghast's fireball back where you look
-                double fd;
-                if (breakPressed && mobs.punchFireball(cam.x, cam.y, cam.z, fx, fy, fz, mobInFront ? md : blockDist, fd)) {
-                    player.swingItem();
-                    mobInFront = true;
-                    target = -1;
-                }
-            }
             double pd;
             int art = paintings.pick(cam.x, cam.y, cam.z, fx, fy, fz, reach, pd);
             if (art >= 0 && pd <= blockDist && (!mobInFront || pd < md)) { // a painting is in the way
@@ -1829,7 +1267,8 @@ int main() {
             }
             if (mobInFront && breakPressed && target >= 0) {
                 // attackTargetEntityWithCurrentItem: damage, then the weapon wears
-                mobs.attack(target, player, survival::entityDamage(heldId), survival::isMace(heldId), itemEntities);
+                // EntityPlayer.attackTargetEntityWithCurrentItem: a point more while falling
+                mobs.attack(target, player, survival::entityDamage(heldId) + (player.motionY < 0.0 ? 1 : 0), itemEntities);
                 player.swingItem();
                 ItemStack& h = inv.held();
                 int wear = creative ? 0 : survival::hitWear(heldId);
@@ -1848,7 +1287,7 @@ int main() {
             float fx, fy, fz;
             aimDir(cam, renderer.fovDeg, fx, fy, fz);
             RayHit hit = world.rayTrace(cam.x, cam.y, cam.z, fx, fy, fz, REACH);
-            bool locked = hit.hit && !creative && mobs.arenaLocked(hit.x, hit.z); // AxeolonBossFight.isLocked
+            const bool locked = false;
             if (hit.hit && !locked && breakHeld && !mobInFront && (breakTimer <= 0 || !creative)) {
                 if (creative) { // PlayerControllerCreative: gone at once, nothing drops
                     breakTimer = REPEAT;
@@ -1858,7 +1297,6 @@ int main() {
                     dig = Dig{};
                     dig.x = hit.x; dig.y = hit.y; dig.z = hit.z;
                     Redstone::blockClicked(world, hit.x, hit.y, hit.z); // Block.onBlockClicked: note blocks play
-                    if (world.getBlockId(hit.x, hit.y, hit.z) == 92) eatCake(hit.x, hit.y, hit.z); // ... and a punch eats cake
                     dig.side = itemuse::sideOf(hit);
                     dig.id = world.getBlockId(hit.x, hit.y, hit.z);
                     dig.active = dig.id != 0;
@@ -1875,7 +1313,7 @@ int main() {
                 // Item.onItemRightClick in the air: food, buckets
                 if (itemuse::useItem(world, player, inv, creative, cam.x, cam.y, cam.z, fx, fy, fz)) {
                     placeTimer = 0.3f;
-                    almanacMap.invalidate();
+                    minimap.invalidate();
                     bottom.markDirty();
                 }
             }
@@ -1884,18 +1322,13 @@ int main() {
                 int useId = world.getBlockId(hit.x, hit.y, hit.z);
                 if (containers::isContainer(useId) && !player.isSneaking()) {
                     if (containers::open(world, inv, hit.x, hit.y, hit.z)) {
-                        if (useId == 54 || useId == 142) { // the lid opens while it's open
+                        if (useId == 54) { // the lid opens while it's open
                             BlockModels::openContainer(world, hit.x, hit.y, hit.z);
                             chest = {hit.x, hit.y, hit.z, true};
                         }
                         bottom.setTab(BottomScreen::Tab::Items);
                         bottom.markDirty();
                     }
-                    placeTimer = 0.3f;
-                } else if (useId == 110 && !player.isSneaking()) { // BlockStonecutter.blockActivated
-                    inv.openStonecutter();
-                    bottom.setTab(BottomScreen::Tab::Items);
-                    bottom.markDirty();
                     placeTimer = 0.3f;
                 } else if (useId == 58 && !player.isSneaking()) { // BlockWorkbench
                     inv.openTable();
@@ -1911,14 +1344,10 @@ int main() {
                     world.setBlockMetadataWithNotify(hit.x, hit.y, hit.z, disc - 2256 + 1);
                     const char* name = disc == 2256 ? "13" : "cat";
                     sound::playRecord(name, hit.x, hit.y, hit.z);
-                    mobs.jukebox(hit.x, hit.y, hit.z, true);
                     hud.setRecordPlaying(std::string("C418 - ") + name);
                     if (!creative) inv.consumeHeld();
                     player.swingItem();
                     bottom.markDirty();
-                    placeTimer = 0.3f;
-                } else if (useId == 92) { // BlockCake.blockActivated
-                    eatCake(hit.x, hit.y, hit.z);
                     placeTimer = 0.3f;
                 } else if (useBlock(world, hit.x, hit.y, hit.z, inv.held().empty())) {
                     placeTimer = 0.3f;
@@ -1932,9 +1361,7 @@ int main() {
                     }
                     bool used = false;
                     int heldNow = inv.held().empty() ? 0 : inv.held().id;
-                    if (heldNow == 1039) { // the Spawn charm
-                        used = placeCrystal(hit.x, hit.y, hit.z, itemuse::sideOf(hit));
-                    } else if ((heldNow == 328 || heldNow == 342 || heldNow == 343) && useId == 66) { // ItemMinecart.onItemUse
+                    if ((heldNow == 328 || heldNow == 342 || heldNow == 343) && useId == 66) { // ItemMinecart.onItemUse
                         used = vehicles.placeCart(world, hit.x, hit.y, hit.z, heldNow == 328 ? 0 : heldNow == 342 ? 1 : 2);
                         if (used && !creative) inv.consumeHeld();
                     } else if (inv.held().id == 321 && !inv.held().empty()) { // ItemPainting
@@ -1944,11 +1371,10 @@ int main() {
                     } else {
                         used = itemuse::useOnBlock(world, player, inv, hit, hitY, creative);
                     }
-                    if (used) tutPlaced = true;
                     if (!used) used = itemuse::useItem(world, player, inv, creative, cam.x, cam.y, cam.z, fx, fy, fz);
                     if (used) {
                         player.swingItem();
-                        almanacMap.invalidate();
+                        minimap.invalidate();
                         bottom.markDirty();
                     }
                 }
@@ -1960,12 +1386,6 @@ int main() {
             if ((down & KEY_TOUCH) && touch.py > 120) gameOverSel = touch.py > 168 ? 1 : 0;
             if (player.deathTime >= 20 && (down & (KEY_A | KEY_TOUCH))) {
                 if (gameOverSel == 1) { leftToTitle = true; break; }
-                if (nether && world.canSave()) { // Minecraft.respawn: out of the Nether first
-                    player.resetAfterRespawn();
-                    respawnHome = true;
-                    portalTravel = true;
-                    break;
-                }
                 // Minecraft.respawn: a new player at the world spawn (preparePlayerToSpawn)
                 world.setWindow(world.info.spawnX >> 4, world.info.spawnZ >> 4);
                 double feet = world.info.spawnY;
@@ -2035,10 +1455,7 @@ int main() {
             lastTick = osGetTime(); // the save's time isn't game time
         }
         bottom.handleInput(down, held, touch);
-        if ((down & KEY_TOUCH) && (bottom.tab() == BottomScreen::Tab::Map || bottom.tab() == BottomScreen::Tab::Almanac))
-            earn(progress::NEW_PAGE); // GuiAlmanac opened
         if (bottom.quitRequested()) { leftToTitle = true; break; }
-        if (player.travelNow && !player.dead() && world.canSave()) { portalTravel = true; break; }
 
         // ---- lighting: Minecraft.run calls World.func_6465_g once a frame (up to 500 updates) ----
         {
@@ -2072,24 +1489,23 @@ int main() {
 
         { // EntityRenderer.updateFogColor + setupFog
             using namespace atmosphere;
-            float angle = celestialAngle(world.info.time, partial, nether);
+            float angle = celestialAngle(world.info.time, partial, false);
             float opt = renderDistanceOption();
             float k = 1.0f - std::pow(1.0f / (4.0f - opt), 0.25f);
-            RGB sky = skyColour(angle, skyTemperature), fog = fogColour(angle, nether);
+            RGB sky = skyColour(angle, 0.5), fog = fogColour(angle, false);
             fog.r += (sky.r - fog.r) * k;
             fog.g += (sky.g - fog.g) * k;
             fog.b += (sky.b - fog.b) * k;
             float far = renderer.renderDistance, start = far * 0.25f, end = far;
-            if (nether) start = 0.0f;
             if (player.isEyeIn(world, false)) { fog = {0.02f, 0.02f, 0.2f}; start = 0.0f; end = 24.0f; }
             else if (player.isEyeIn(world, true)) { fog = {0.6f, 0.1f, 0.0f}; start = 0.0f; end = 1.5f; }
             float lit = fogLightPrev + (fogLight - fogLightPrev) * partial;
             fog.r *= lit;
             fog.g *= lit;
             fog.b *= lit;
-            renderer.setAtmosphere(world.skylightSubtracted, nether ? 0.1f : 0.05f, pack(fog), start, end);
+            renderer.setAtmosphere(world.skylightSubtracted, 0.05f, pack(fog), start, end);
             Renderer::SkyState& st = renderer.sky;
-            st.enabled = !nether;
+            st.enabled = true;
             st.angle = angle;
             st.sky[0] = sky.r; st.sky[1] = sky.g; st.sky[2] = sky.b;
             st.sunrise = atmosphere::sunrise(angle, st.sunriseColour);
@@ -2114,34 +1530,6 @@ int main() {
         animQuads.clear();
         animBatches.clear();
         BlockModels::render(world, partial, animQuads, animBatches);
-        { // TileEntitySpawnCrystalRenderer: the crystal floats over its pedestal, glowing while it's your spawn
-            static axm::Model crystalModel;
-            static bool crystalTried = false;
-            if (!crystalTried) { crystalTried = true; crystalModel.load("romfs:/axeolon/block/spawn_crystal.axm"); }
-            const RigTexture* ctex = BlockModels::rigTexture("spawn_crystal");
-            for (const Crystal& c : crystals) {
-                double dx = c.x + 0.5 - cam.x, dz = c.z + 0.5 - cam.z;
-                if (!ctex || dx * dx + dz * dz > 48.0 * 48.0) continue;
-                bool active = crystalActive(c.x, c.y, c.z);
-                float t = float(world.info.time % 100000) + partial;
-                auto it = crystalSetAt.find(crystalKey(c.x, c.y, c.z));
-                float since = it == crystalSetAt.end() ? 99.0f : (t - float(it->second % 100000)) / 20.0f;
-                const char* anim = active ? (since >= 0.0f && since < 1.5f ? "activate" : "active") : "dormant";
-                size_t start = animQuads.size();
-                crystalModel.emitRig(animQuads, anim, active && since < 1.5f ? since : t / 20.0f, 0.0f, 0.0f,
-                                     axm::Model::HALF_ALL, c.x, c.y + 1.2, c.z, nullptr, nullptr);
-                float b = BlockModels::lightBrightness(world, c.x, c.y + 1, c.z);
-                const float cx = c.x + 0.5f, cy = c.y + 1.2f, cz = c.z + 0.5f;
-                for (size_t i = start; i < animQuads.size(); ++i) { // 0.9 the size, about its foot
-                    axm::ModelVertex& v = animQuads[i];
-                    v.x = cx + (v.x - cx) * 0.9f;
-                    v.y = cy + (v.y - cy) * 0.9f;
-                    v.z = cz + (v.z - cz) * 0.9f;
-                    v.shade = active ? 1.0f : 0.6f * b;
-                }
-                animBatches.push_back({ctex, start, animQuads.size() - start});
-            }
-        }
         // 3D slider: 0 draws one picture; up draws one per eye (twice the GPU work)
         float slider = osGet3DSliderState();
         int eyes = slider > 0.0f ? 2 : 1;
@@ -2152,69 +1540,34 @@ int main() {
         renderer.drawAtlasQuads(animQuads, animBatches);
         mobs.render(world, renderer, partial, cam.x, cam.y, cam.z, renderer.renderDistance);
         itemEntities.render(world, renderer, partial, cam.yaw, cam.pitch);
-        mobs.renderBolts(renderer, partial, (cam.yaw - PI) * 180.0f / PI, cam.pitch * 180.0f / PI);
         mobs.renderTnt(world, renderer, partial);
         mobs.renderFalling(world, renderer, partial);
         paintings.render(world, renderer);
         const float viewYaw = (cam.yaw - PI) * 180.0f / PI, viewPitch = cam.pitch * 180.0f / PI; // billboards face the camera
         mobs.renderThrown(renderer, partial, viewYaw, viewPitch);
-        mobs.renderFireballs(renderer, partial, viewYaw, viewPitch);
         vehicles.render(world, renderer, partial);
         mobs.renderBobber(renderer, player, partial, viewYaw, viewPitch);
-        mobs.renderIcicles(renderer, partial);
         particles.render(world, renderer, partial, viewYaw, viewPitch);
         signs.render(world, renderer, hud.textFont(), cam.x, cam.y, cam.z);
         if (dig.active && dig.damage > 0) drawCracks(renderer, dig.x, dig.y, dig.z, int(dig.damage * 10.0f));
         if (trace) dbg(" mobs drawn (%d)", int(mobs.count()));
-        if ((!flying || !creative) && !mobs.cinematicActive()) {
-            float hb = BlockModels::lightBrightness(world, int(std::floor(player.posX)), int(std::floor(player.posY)),
+        if (!flying || !creative) {
+            float hb = world.getBrightness(int(std::floor(player.posX)), int(std::floor(player.posY)),
                                                     int(std::floor(player.posZ)));
             firstPerson.draw(renderer, player, cam, partial, hb);
         }
         renderer.prepare2D();
         C2D_SceneBegin(renderer.topTarget(eye));
-        bool cine = mobs.cinematicActive(); // AxeolonCinematic.renderBars hides the HUD
-        if (!player.dead() && !cine) {
-            float eb = BlockModels::lightBrightness(world, int(std::floor(player.posX)), int(std::floor(player.posY)),
+        if (!player.dead()) {
+            float eb = world.getBrightness(int(std::floor(player.posX)), int(std::floor(player.posY)),
                                                     int(std::floor(player.posZ)));
             hud.drawOverlays(eb, player.isInsideOfWater(world), player.fire > 0 && !creative, player.rotationYaw,
                              player.rotationPitch, renderer);
-            hud.drawPortal(player.prevTimeInPortal + (player.timeInPortal - player.prevTimeInPortal) * partial, renderer);
             drawCrosshair(); // Pocket Edition has none: you aim with your finger
         }
-        { // the how-to-play hint
-            bool want = false /* NSSS (Alpha): no How to Play hints */ && !creative && inv.tutorial >= 0 && inv.tutorial < 99 && !cine && !paused && !spellPicker && !player.dead();
-            tutFade += ((want ? 1.0f : 0.0f) - tutFade) * 0.15f;
-            if (tutFade > 0.01f && inv.tutorial >= 0 && inv.tutorial < 99) {
-                const char* look = xboxLayout ? (isNew3DS ? "the C-Stick" : "the Circle Pad Pro's stick") : "A, B, X and Y";
-                const char* jump = xboxLayout ? "A" : "Up on the D-Pad";
-                const char* brk = zButtons ? "ZR" : "R";
-                const char* use = zButtons ? "ZL" : "L";
-                char buf[200];
-                switch (inv.tutorial) {
-                case 0: snprintf(buf, sizeof buf, "Use the Circle Pad to walk around."); break;
-                case 1: snprintf(buf, sizeof buf, "Look around with %s.", look); break;
-                case 2: snprintf(buf, sizeof buf, "Press %s to jump.", jump); break;
-                case 3: snprintf(buf, sizeof buf, "Hold %s to mine a block. Punch a tree to collect wood.", brk); break;
-                case 4: snprintf(buf, sizeof buf, "Your inventory is on the touch screen: tap Items%s.", xboxLayout ? " or press X" : ""); break;
-                case 5: snprintf(buf, sizeof buf, "Drag wood into the 2x2 crafting grid to make planks, then take them from the result slot."); break;
-                case 6: snprintf(buf, sizeof buf, "Press %s to place blocks, and to open doors and chests.", use); break;
-                case 7: snprintf(buf, sizeof buf, "Monsters come out at night. Build a shelter and light it with torches before dark."); break;
-                default: snprintf(buf, sizeof buf, "The Almanac on the touch screen maps where you've been. Tap the map to drop a waypoint."); break;
-                }
-                char title[48];
-                snprintf(title, sizeof title, "How to Play  %d/9   SELECT: skip", std::min(inv.tutorial, 8) + 1);
-                hud.drawHint(title, buf, tutFade);
-            }
-        }
-        if (cine) {
-            hud.drawCinemaBars(mobs.cinemaBars());
-        } else {
-            hud.draw(player, player.isInsideOfWater(world), hudCounter, !creative);
-            hud.drawChat();
-            hud.drawRecordPlaying(partial);
-        }
-        // (NSSS is Alpha: no boss bars, spell picker or achievement toasts)
+        hud.draw(player, player.isInsideOfWater(world), hudCounter, !creative);
+        hud.drawChat();
+        hud.drawRecordPlaying(partial);
         if (player.dead()) hud.drawGameOver(gameOverSel, player.deathTime >= 20, 0);
         if (paused) hud.drawPause(pauseSel);
         if (savingFrames > 0) hud.drawSaving(frameNo);
@@ -2230,24 +1583,6 @@ int main() {
     dbg("leaving: fiber (heap %lu KB)", (unsigned long)(mallinfo().uordblks / 1024));
     genFiber.stop(); // finish the chunk in progress
     dbg("leaving: fiber stopped (heap %lu KB)", (unsigned long)(mallinfo().uordblks / 1024));
-    if (portalTravel) {
-        // Minecraft.usePortal: the other dimension, 8 times nearer (or further) on the ground plan
-        player.travelNow = false;
-        if (mobs.riding()) mobs.dismount(player);
-        if (vehicles.riding()) vehicles.dismount(player);
-        int to = nether ? 0 : -1;
-        double f = to == -1 ? 1.0 / 8.0 : 8.0;
-        if (respawnHome) f = 1.0; // placed at the spawn on arrival
-        player.place(player.posX * f, player.posY, player.posZ * f, player.rotationYaw, player.rotationPitch);
-        world.info.dimension = to;
-        portalWorld = worldName;
-        leftToTitle = true;
-        // the trip's own loading screen, while this side saves
-        C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-        renderer.beginFrame();
-        title.drawLoading(to == -1 ? "Entering the Nether" : respawnHome ? "Respawning" : "Leaving the Nether", "Saving", 0.0f);
-        C3D_FrameEnd(0);
-    }
     saveGame();
     dbg("saved, %s (heap used %lu KB)", leftToTitle ? "back to the title" : "closing", (unsigned long)(mallinfo().uordblks / 1024));
 
@@ -2258,13 +1593,8 @@ int main() {
     gParticles = nullptr;
     Blocks::onTntIgnited = nullptr;
     Redstone::anythingOn = nullptr;
-    world.onBlockAnim = nullptr;
-    world.onDoorSwing = nullptr;
     world.onParticle = nullptr;
-    world.onLaunch = nullptr;
-    world.onDispense = nullptr;
     world.onFallingBlock = nullptr;
-    progress::clearToasts();
     paintings.clear();
     chest.open = false;
     delete save;

@@ -11,7 +11,7 @@ class Renderer;
 
 class Particles {
 public:
-    enum Type : uint8_t { DIG, SMOKE, FLAME, EXPLODE, LAVA, BUBBLE, REDDUST, PORTAL, SNOWPOOF, NOTE, SPLASH };
+    enum Type : uint8_t { DIG, SMOKE, FLAME, EXPLODE, LAVA, BUBBLE, REDDUST, PORTAL, SNOWPOOF, NOTE, SPLASH, SLIME };
     // EffectRenderer.func_1186_a: a block breaking, in 4 x 4 x 4 pieces
     void blockBroken(const World& w, int x, int y, int z, int id, int meta);
     // func_1191_a: chips flying off the face being dug (side as Beta numbers it)

@@ -7,7 +7,6 @@
 #include "BlockTable.h"
 #include "Blocks.h"
 #include "gen/ChunkGenerator.h"
-#include "gen/Biome.h"
 
 namespace {
 inline bool inRange(int x, int z) { return x >= -32000000 && z >= -32000000 && x < 32000000 && z <= 32000000; }
@@ -16,24 +15,7 @@ inline int opacity(int id) { return BP[id & 255].opacity; }
 
 World::World(SaveHandler* s, const LevelInfo& li, bool test) : info(li), save(s), testTerrain(test) {
     rand.setSeed(int64_t(li.seed) ^ 0x2B992DDFA23249D6LL);
-    hell = li.dimension == -1;
-    if (!test) {
-        gen.reset(new ChunkGenerator(li.seed, s ? s->worldPath() : std::string(), li.dimension));
-        // Axeolon's /biome place overrides live in level.dat
-        if (s) {
-            if (nbt::Tag* d = s->levelData()) {
-                if (nbt::Tag* list = d->getList("AxeolonBiomes")) {
-                    for (auto& t : list->items) {
-                        Biome b = Biomes::byName(t->getString("Biome").c_str());
-                        if (b == Biome::Count) continue;
-                        BiomeOverride o{t->getInt("X"), t->getInt("Z"), t->getInt("Radius"), b, 0, 0};
-                        Biomes::climateFor(b, o.temperature, o.humidity);
-                        gen->manager->overrides.push_back(o);
-                    }
-                }
-            }
-        }
-    }
+    if (!test) gen.reset(new ChunkGenerator(li.seed));
 }
 
 World::~World() = default;
@@ -107,7 +89,7 @@ Chunk* World::loadOrGenerate(int cx, int cz) {
         } else {
             // ChunkProviderGenerate.provideChunk: blocks, then func_1024_c (heightmap + skylight),
             // before the provider has stored the chunk
-            if (pregenerated && pregenerated(cx, cz, c->blocks)) gen->providedElsewhere(cx, cz);
+            if (pregenerated && pregenerated(cx, cz, c->blocks)) (void)0;
             else gen->provideChunk(cx, cz, c->blocks);
             chunkGenerateSkylight(*c);
         }
@@ -167,12 +149,8 @@ void World::findSpawn() {
     info.spawnY = 64;
     int tries = 0;
     auto ok = [&](int x, int z) {
-        if (getFirstUncoveredBlock(x, z) != 12) return false; // sand
-        if (++tries < 3000) {
-            Biome b = gen->manager->biomeAt(x, z);
-            if (b == Biome::Tundra || b == Biome::IceDesert || b == Biome::Taiga) return false;
-        }
-        return true;
+        (void)tries; // NSSS World.isThisBlockSpawnable: sand (grass in the floating/corruption/desert types)
+        return getFirstUncoveredBlock(x, z) == 12;
     };
     for (info.spawnZ = 0; !ok(info.spawnX, info.spawnZ);) {
         int a = rand.nextInt(64);
@@ -416,7 +394,6 @@ void World::setLightValue(Sky t, int x, int y, int z, int v) {
 }
 
 void World::neighborLightPropagationChanged(Sky t, int x, int y, int z, int v) {
-    if (hell && t == Sky::Sky) return;
     if (!blockExists(x, y, z)) return;
     if (t == Sky::Sky) {
         if (canExistingBlockSeeTheSky(x, y, z)) v = 15;
@@ -430,7 +407,6 @@ void World::neighborLightPropagationChanged(Sky t, int x, int y, int z, int v) {
 // ================================================================ lighting queue
 
 void World::scheduleLightingUpdate(Sky t, int x1, int y1, int z1, int x2, int y2, int z2, bool merge) {
-    if (hell && t == Sky::Sky) return; // func_627_a: no sky in the Nether
     ++lightAdding;
     if (lightAdding == 50) {
         --lightAdding;
@@ -767,7 +743,6 @@ void World::chunkGenerateSkylight(Chunk& c) {
             while (h > 0 && opacity(c.blocks[col + h - 1]) == 0) --h;
             c.heightMap[z << 4 | x] = uint8_t(std::min(h, 255));
             if (h < low) low = h;
-            if (hell) continue; // func_1024_c: no sky to light it
             int light = 15, y = 255;
             do {
                 light -= opacity(c.blocks[col + y]);
@@ -872,7 +847,7 @@ bool World::chunkSetBlockIDWithMetadata(Chunk& c, int x, int y, int z, int id, i
     c.blocks[Chunk::index(x, y, z)] = uint8_t(id);
     if (old != 0) Blocks::onBlockRemoval(*this, wx, y, wz, old);
     c.data.set(x, y, z, meta);
-    if (!hell) {
+    {
         if (opacity(id) != 0) {
             if (y >= h) chunkRelight(c, x, y + 1, z);
         } else if (y == h - 1) {
@@ -897,7 +872,7 @@ bool World::chunkSetBlockID(Chunk& c, int x, int y, int z, int id) {
     c.blocks[Chunk::index(x, y, z)] = uint8_t(id);
     if (old != 0) Blocks::onBlockRemoval(*this, wx, y, wz, old);
     c.data.set(x, y, z, 0);
-    if (!hell) {
+    {
         if (opacity(id) != 0) {
             if (y >= h) chunkRelight(c, x, y + 1, z);
         } else if (y == h - 1) {
@@ -956,4 +931,42 @@ void World::generateTestChunk(Chunk& c) {
             }
             for (int y = h + 1; y < Chunk::HEIGHT; y++) c.skylight.set(lx, y, lz, 15);
         }
+}
+
+int World::getBlockLightValue(int x, int y, int z) const {
+    int id = getBlockId(x, y, z);
+    if (id == 44 || id == 60) { // Block.useNeighborBrightness: stepSingle, tilledField
+        int l = getLightValue(x, y + 1, z);
+        l = std::max(l, getLightValue(x + 1, y, z));
+        l = std::max(l, getLightValue(x - 1, y, z));
+        l = std::max(l, getLightValue(x, y, z + 1));
+        l = std::max(l, getLightValue(x, y, z - 1));
+        return l;
+    }
+    return getLightValue(x, y, z);
+}
+
+float World::getBrightness(int x, int y, int z) const {
+    static float table[16];
+    static bool made = false;
+    if (!made) { // World's static lightBrightnessTable (f = 0.05)
+        for (int i = 0; i <= 15; ++i) {
+            float f1 = 1.0f - float(i) / 15.0f;
+            table[i] = (1.0f - f1) / (f1 * 3.0f + 1.0f) * (1.0f - 0.05f) + 0.05f;
+        }
+        made = true;
+    }
+    return table[getBlockLightValue(x, y, z) & 15];
+}
+
+int World::currentSeason() const {
+    if (season != CYCLE) return season;
+    int64_t span = int64_t(24000) * daysInSeason;
+    return int(info.time % (span * 4) / span);
+}
+
+float World::mobRatio() const {
+    static const float RATIO[4] = {1.0f, 0.6f, 0.2f, 1.5f}; // summer, fall, winter, spring
+    int s = currentSeason();
+    return s >= 0 && s < 4 ? RATIO[s] : 1.0f;
 }

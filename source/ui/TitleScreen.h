@@ -5,12 +5,11 @@
 // dirt background, the Pocket Edition logo and the version line. Bottom screen: the three square
 // touchgui.png buttons (Join Game, Start Game, Options) that light up while held and act on release,
 // like PE. D-pad left/right + A works too; START quits.
-// The other screens (world select, create, delete, options) are still Axeolon's Java-style ones.
+// The other screens (world select, create, delete, options) are still Java-style ones.
 #include <3ds.h>
 #include <citro2d.h>
 #include <string>
 #include <vector>
-#include "model/AxmModel.h"
 #include "ui/Font.h"
 
 class Renderer;
@@ -56,7 +55,6 @@ private:
     std::string savesDir;
     C3D_RenderTarget* bottom = nullptr;
     Font font;
-    C3D_Tex* panorama[6] = {};
     C3D_Tex* black = nullptr;
     C3D_Tex* gui = nullptr;
     C3D_Tex* background = nullptr;
@@ -65,7 +63,7 @@ private:
     C3D_Tex* peDirt = nullptr;  // PE bg32.png
     int held = -1;              // the PE button under a held touch
     bool padUsed = false;       // the D-pad picked a button: show it lit
-    Tex3DS_SubTexture panoSub, bgSub;
+    Tex3DS_SubTexture bgSub;
 
     Screen screen = MAIN;
     std::vector<Button> buttons;
@@ -77,22 +75,13 @@ private:
     bool newWorld = false;
     int chosenGameType = 0;
 
-    std::string splash = "missingno";
-    int panoramaTimer = 0;
-    struct Fall { double now, prev, speed; };
-    std::vector<Fall> logoFx, subFx;
     uint32_t rng = 0x2545F491;
-
-    std::vector<axm::ModelVertex> tris;
 
     float randf();
     void open(Screen s);
     void nudge(const Button& b, int dir);
     void scanSlots();
     void press(const Button& b);
-    void drawPanorama(float partial);
-    void drawLogo(float partial);
-    void drawTop2D();
     void drawBottom();
     void drawButton(const Button& b, bool hover);
     void drawPeButton(const Button& b, bool lit);

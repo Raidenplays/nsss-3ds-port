@@ -1,12 +1,11 @@
 #pragma once
-// Beta's SoundManager + SoundPool on the 3DS DSP (ndsp).
+// SoundManager + SoundPool on the 3DS DSP (ndsp).
 //  - Effects: romfs .snd files (PCM made from the game's .ogg by tools/gen_sounds.py), named the
 //    way SoundPool names them ("random/hurt1.ogg" -> "random.hurt", one of the numbered ones at
 //    random). Positioned like paulscode's linear attenuation: silent 16 blocks away (further when
 //    the volume is over 1), panned by where the listener faces.
 //  - Music: Ogg Vorbis streamed and decoded on a thread (stb_vorbis); a random track after 10-20
-//    minutes of quiet, like playRandomMusicIfReady. Axeolon's boss tracks (intro then loop)
-//    crossfade over two seconds and replace it while they last.
+//    minutes of quiet, like playRandomMusicIfReady.
 // Without the DSP firmware (sdmc:/3ds/dspfirm.cdc) everything here quietly does nothing.
 #include <string>
 
@@ -28,11 +27,8 @@ void play(const std::string& name, double x, double y, double z, float volume, f
 // SoundManager.func_337_a: not positioned (GUI clicks, toasts), a quarter as loud
 void playUi(const std::string& name, float volume, float pitch);
 
-// Once a game tick: background music and forced-music fades
+// Once a game tick: the background music
 void tick();
-// AxeolonSounds.playMusic / stopMusic
-void playMusic(const std::string& name);
-void stopMusic();
 // SoundManager.func_331_a: a record from a jukebox at (x, y, z) ("13", "cat"); "" stops it
 void playRecord(const std::string& name, double x, double y, double z);
 // Once a frame: re-pan playing effects for where the listener is now

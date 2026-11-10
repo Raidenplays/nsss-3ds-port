@@ -98,7 +98,9 @@ Particles::P Particles::make(Type t, double x, double y, double z, double mx, do
         break;
     }
     case SNOWPOOF: // EntitySlimeFX with the snowball: a little white puff
-        p.r = p.g = p.b = 1.0f;
+    case SLIME:    // ... and with the slimeball (TODO(particles): the item's own icon, as in the jar)
+        p.r = p.b = t == SLIME ? 0.5f : 1.0f;
+        p.g = 1.0f;
         p.tex = 7;
         p.gravity = 0.25f;
         p.scale = p.baseScale = p.scale / 2.0f;
@@ -391,7 +393,7 @@ void Particles::render(const World& w, Renderer& r, float partial, float yaw, fl
         else if (p.type == FLAME) s *= 1.0f - t * t * 0.5f;
         else if (p.type == LAVA) s *= 1.0f - t * t;
         float sz = 0.1f * s;
-        float light = BlockModels::lightBrightness(w, fl(x), fl(y), fl(z));
+        float light = w.getBrightness(fl(x), fl(y), fl(z));
         if (p.type == LAVA) light = 1.0f;
         else if (p.type == FLAME) { float a = std::min(1.0f, std::max(0.0f, t)); light = light * a + (1.0f - a); }
         float shade = light * (p.r + p.g + p.b) / 3.0f;

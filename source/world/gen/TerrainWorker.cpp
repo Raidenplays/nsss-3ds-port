@@ -48,14 +48,13 @@ struct TerrainWorker::Impl {
     static void entry(void* p) { static_cast<Impl*>(p)->run(); }
 };
 
-bool TerrainWorker::start(int64_t seed, const std::string& worldDir, const std::vector<BiomeOverride>& overrides, int dimension) {
+bool TerrainWorker::start(int64_t seed) {
     stop();
     // Old 3DS: let this app use most of core 1 (the system keeps the rest)
     APT_SetAppCpuTimeLimit(80);
     Impl* i = new Impl();
     LightLock_Init(&i->lock);
-    i->gen.reset(new ChunkGenerator(seed, worldDir, dimension));
-    i->gen->manager->overrides = overrides;
+    i->gen.reset(new ChunkGenerator(seed));
     i->thread = threadCreate(Impl::entry, i, 256 * 1024, 0x3F, 1, false);
     if (!i->thread) {
         delete i;
@@ -107,7 +106,7 @@ bool TerrainWorker::take(int cx, int cz, uint8_t* out) {
 }
 #else
 struct TerrainWorker::Impl {};
-bool TerrainWorker::start(int64_t, const std::string&, const std::vector<BiomeOverride>&, int) { return false; }
+bool TerrainWorker::start(int64_t) { return false; }
 void TerrainWorker::stop() {}
 void TerrainWorker::want(const std::vector<std::pair<int, int>>&) {}
 bool TerrainWorker::take(int, int, uint8_t*) { return false; }

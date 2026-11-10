@@ -3,7 +3,6 @@
 #include <cmath>
 #include "render/Renderer.h"
 #include "game/Player.h"
-#include "game/Progress.h"
 #include "game/ItemTable.h"
 #include "audio/Sound.h"
 #include "world/BlockTable.h"
@@ -21,10 +20,8 @@ float edgeR() {
 void Hud::load(Renderer& r) {
     renderer = &r;
     icons = r.texture("romfs:/textures/gui/icons.rgba");
-    axIcons = r.texture("romfs:/axeolon/gui/icons.rgba");
     gui = r.texture("romfs:/textures/gui/gui.rgba");
     items = r.texture("romfs:/textures/gui/items.rgba");
-    bossbar = r.texture("romfs:/axeolon/gui/bossbar.rgba");
     vignette = r.texture("romfs:/textures/misc/vignette.rgba");
     water = r.texture("romfs:/textures/misc/water.rgba");
     font.load(r);
@@ -159,23 +156,6 @@ void Hud::drawOverlays(float brightness, bool underwater, bool burning, float ya
     }
 }
 
-void Hud::drawPortal(float f, Renderer& r) {
-    if (f <= 0.0f) return;
-    if (f < 1.0f) {
-        f *= f;
-        f *= f;
-        f = f * 0.8f + 0.2f;
-    }
-    C3D_Tex* atlas = r.terrainTexture();
-    if (!atlas) return;
-    const int tile = 14; // Block.portal
-    float u0 = float(tile & 15) / 16.0f, v0 = 1.0f - float(tile >> 4) / 64.0f;
-    Tex3DS_SubTexture sub = {16, 16, u0, v0, u0 + 1.0f / 16.0f, v0 - 1.0f / 64.0f};
-    C2D_ImageTint t;
-    C2D_AlphaImageTint(&t, f);
-    C2D_DrawImageAt({atlas, &sub}, edgeL(), 0, 0.5f, &t, (edgeR() - edgeL()) / 16.0f, 240.0f / 16.0f);
-}
-
 void Hud::drawPause(int selected) {
     // drawDefaultBackground in a world: a dark gradient over the game
     u32 top = C2D_Color32(0x10, 0x10, 0x10, 0xC0), bottom = C2D_Color32(0x10, 0x10, 0x10, 0xD0);
@@ -286,82 +266,6 @@ void Hud::drawChat() {
     }
 }
 
-void Hud::drawSpellPicker(const std::vector<uint8_t>& ids, const std::vector<int>& uses, int selected, int cursor,
-                          int mana, bool creative) {
-    static const char* NAMES[6] = {"Magic Missile", "Fireball", "Heal", "Frost Bolt", "Light", "Blink"};
-    static const int COST[6] = {2, 6, 8, 4, 3, 20};
-    const int SLOT = 20, ROW = 22;
-    int n = int(ids.size());
-    C2D_DrawRectSolid(edgeL(), 0, 0.5f, edgeR() - edgeL(), 240, C2D_Color32(0, 0, 0, 0xA0));
-    int cols = std::min(9, n), rows = (n + 8) / 9;
-    int left = 200 - cols * SLOT / 2, top = 120 - rows * ROW / 2;
-    font.drawCentered("Spells", 200, float(top - 14), 0xFFFFFF);
-    for (int i = 0; i < n; ++i) {
-        float x = float(left + i % 9 * SLOT), y = float(top + i / 9 * ROW);
-        icon(gui, x - 1, y - 1, 0, 0, 21, 22);
-        if (i % 9 == 8 || i == n - 1) icon(gui, x + 20, y - 1, 181, 0, 1, 22);
-    }
-    if (selected >= 0 && selected < n)
-        icon(gui, float(left + selected % 9 * SLOT - 2), float(top + selected / 9 * ROW - 2), 0, 22, 24, 24);
-    for (int i = 0; i < n; ++i) {
-        int ic = 224 + ids[i];
-        float x = float(left + i % 9 * SLOT), y = float(top + i / 9 * ROW);
-        icon(items, x + 2, y + 3, ic % 16 * 16, ic / 16 * 16, 16, 16);
-        if (i == cursor) { // the console cursor: a white frame over the slot
-            uint32_t c = C2D_Color32(255, 255, 255, 200);
-            C2D_DrawRectSolid(x, y, 0.5f, 20, 1, c);
-            C2D_DrawRectSolid(x, y + 19, 0.5f, 20, 1, c);
-            C2D_DrawRectSolid(x, y, 0.5f, 1, 20, c);
-            C2D_DrawRectSolid(x + 19, y, 0.5f, 1, 20, c);
-        }
-        if (uses[i] != 255) {
-            std::string t = std::to_string(uses[i]);
-            font.draw(t, x + 19 - font.width(t), y + 11, 0xFFFFFF);
-        }
-    }
-    int shown = cursor >= 0 ? cursor : selected;
-    if (shown >= 0 && shown < n && ids[shown] < 6) {
-        int id = ids[shown];
-        uint32_t col = creative || mana >= COST[id] ? 0xFFFFFF : 0xFF5555;
-        std::string u = uses[shown] == 255 ? "permanent" : std::to_string(uses[shown]) + (uses[shown] == 1 ? " use left" : " uses left");
-        font.drawCentered(std::string(NAMES[id]) + " - " + std::to_string(COST[id]) + " mana - " + u, 200,
-                          float(top + rows * ROW + 6), col);
-    }
-    font.drawCentered("A  Select    B  Back", 200, 222, 0xA0A0A0);
-}
-
-void Hud::drawBoss(bool cutscene, int elapsed, int left, int titleTick, float health, bool enraged, const char* name,
-                   const char* title) {
-    if (cutscene) {
-        int t = elapsed - titleTick;
-        int a = t < 0 ? 0 : std::min(255, std::min(t * 8, left * 10));
-        if (a > 8) {
-            uint32_t al = uint32_t(a) << 24;
-            font.drawCentered(name, 200, 120 - 30, 0xFFFFFF | al, true, 3.0f);
-            if (title && *title) font.drawCentered(title, 200, 120 + 2, 0xAAAAAA | al);
-        }
-        return;
-    }
-    const int barW = 182;
-    float x = 200 - barW / 2, y = 12;
-    int fill = int(health * float(barW + 1));
-    auto blit = [&](float bx, float by, int u, int v, int w, int h) {
-        if (!bossbar || w <= 0) return;
-        Tex3DS_SubTexture sub = {uint16_t(w), uint16_t(h), u / 256.0f, 1.0f - v / 16.0f, (u + w) / 256.0f, 1.0f - (v + h) / 16.0f};
-        C2D_DrawImageAt({bossbar, &sub}, bx, by, 0.5f);
-    };
-    blit(x, y, 0, 0, barW, 5);
-    if (fill > 0) blit(x, y, 0, enraged ? 10 : 5, std::min(fill, barW), 5);
-    font.drawCentered(name, 200, y - 10, enraged ? 0xFF5555 : 0xFF55FF);
-}
-
-void Hud::drawCinemaBars(float w) {
-    if (w <= 0.0f) return;
-    float bar = std::floor(240.0f * 0.11f * w);
-    C2D_DrawRectSolid(edgeL(), 0, 0.5f, edgeR() - edgeL(), bar, C2D_Color32(0, 0, 0, 255));
-    C2D_DrawRectSolid(edgeL(), 240 - bar, 0.5f, edgeR() - edgeL(), bar, C2D_Color32(0, 0, 0, 255));
-}
-
 void Hud::itemIcon(int id, int damage, float x, float y) { // RenderItem.renderItemIntoGUI, flat
     const ItemInfo* info = itemInfo(id, damage);
     C3D_Tex* tex;
@@ -388,85 +292,3 @@ void Hud::itemIcon(int id, int damage, float x, float y) { // RenderItem.renderI
     C2D_DrawImageAt({tex, &sub}, x, y, 0.5f, rgb == 0xFFFFFF ? nullptr : &tint);
 }
 
-void Hud::drawToasts() {
-    const unsigned long long SHOW_MS = 4000, SLIDE_MS = 300;
-    unsigned long long now = osGetTime();
-    if (!toastShowing || now - toastAt > SHOW_MS) {
-        progress::Toast t;
-        toastShowing = progress::popToast(t);
-        toastAt = now;
-        if (toastShowing) {
-            toastTitle = t.title;
-            toastText = t.text;
-            toastColour = t.colour;
-            toastIcon = t.icon;
-            toastRare = t.rare;
-            sound::playUi(t.rare ? "axeolon.ui.challenge" : "axeolon.ui.toast", 1.0f, 1.0f);
-        }
-    }
-    if (!toastShowing) return;
-    unsigned long long age = now - toastAt;
-    float slide = 1.0f;
-    if (age < SLIDE_MS) slide = float(age) / float(SLIDE_MS);
-    else if (age > SHOW_MS - SLIDE_MS) slide = float(SHOW_MS - age) / float(SLIDE_MS);
-    const float w = 160, h = 32;
-    float x = edgeR() - std::floor(w * slide), y = 4;
-    C2D_DrawRectSolid(x, y, 0.5f, w, h, C2D_Color32(0x55, 0x55, 0x55, 255));
-    C2D_DrawRectSolid(x + 1, y + 1, 0.5f, w - 1, h - 2, C2D_Color32(0x21, 0x21, 0x21, 255));
-    if (!toastTitle.empty()) {
-        font.draw(toastTitle, x + 30, y + 7, toastColour);
-        font.draw(toastText, x + 30, y + 18, 0xFFFFFF);
-    } else { // wrapped
-        std::string line, word;
-        float ly = y + 6;
-        for (size_t i = 0; i <= toastText.size(); ++i) {
-            if (i == toastText.size() || toastText[i] == ' ') {
-                std::string next = line.empty() ? word : line + " " + word;
-                if (font.width(next) > w - 34 && !line.empty()) {
-                    font.draw(line, x + 30, ly, 0xE0E0E0);
-                    ly += 10;
-                    line = word;
-                } else {
-                    line = next;
-                }
-                word.clear();
-            } else {
-                word += toastText[i];
-            }
-        }
-        if (!line.empty()) font.draw(line, x + 30, ly, 0xE0E0E0);
-    }
-    itemIcon(toastIcon, 0, x + 8, y + 8);
-}
-
-void Hud::drawHint(const std::string& title, const std::string& text, float alpha) {
-    if (alpha <= 0.01f) return;
-    int a = std::min(255, int(alpha * 255.0f));
-    const float x = 4, w = 196;
-    // wrap the text to the box
-    std::vector<std::string> lines;
-    std::string line, word;
-    for (size_t i = 0; i <= text.size(); ++i) {
-        if (i == text.size() || text[i] == ' ') {
-            std::string next = line.empty() ? word : line + " " + word;
-            if (font.width(next) > w - 12 && !line.empty()) {
-                lines.push_back(line);
-                line = word;
-            } else {
-                line = next;
-            }
-            word.clear();
-        } else {
-            word += text[i];
-        }
-    }
-    if (!line.empty()) lines.push_back(line);
-    float h = 18.0f + float(lines.size()) * 10.0f + 4.0f;
-    float y = 4.0f - (1.0f - alpha) * 10.0f;
-    C2D_DrawRectSolid(x, y, 0.5f, w, h, C2D_Color32(0x10, 0x10, 0x10, uint8_t(a * 0.75f)));
-    C2D_DrawRectSolid(x, y, 0.5f, w, 1, C2D_Color32(0x80, 0x80, 0x80, uint8_t(a)));
-    C2D_DrawRectSolid(x, y + h - 1, 0.5f, w, 1, C2D_Color32(0x80, 0x80, 0x80, uint8_t(a)));
-    uint32_t al = uint32_t(a) << 24;
-    font.draw(title, x + 6, y + 5, 0xFFFF55 | al);
-    for (size_t i = 0; i < lines.size(); ++i) font.draw(lines[i], x + 6, y + 18 + float(i) * 10.0f, 0xFFFFFF | al);
-}

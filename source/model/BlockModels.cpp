@@ -1,6 +1,5 @@
 #include "BlockModels.h"
 #include "Paths.h"
-#include "render/DynamicLights.h"
 #include "render/ChunkMesh.h"
 #include "world/BlockTable.h"
 #include "world/World.h"
@@ -277,7 +276,6 @@ float lightBrightness(const World& w, int x, int y, int z) {
         l = w.getLightValue(x, y + 1, z);
         for (int i = 1; i < 5; i++) l = std::max(l, w.getLightValue(x + n[i][0], y + n[i][1], z + n[i][2]));
     }
-    if (dynlight::any()) l = std::max(l & 15, dynlight::lightAt(x, y, z)); // a light carried past
     return ChunkMesher::LIGHT_BRIGHTNESS[l & 15];
 }
 

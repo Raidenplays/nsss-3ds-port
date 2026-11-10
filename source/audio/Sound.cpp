@@ -48,7 +48,6 @@ void scan(const std::string& dir, const std::string& rel, const std::string& pre
         if (n == "." || n == "..") continue;
         std::string path = dir + "/" + n, r = rel.empty() ? n : rel + "/" + n;
         if (e->d_type == DT_DIR) {
-            if (effects && r == "music") continue; // Axeolon's boss music is streamed
             scan(path, r, prefix, effects);
         } else if (effects && n.size() > 4 && n.compare(n.size() - 4, 4, ".snd") == 0) {
             effectPool[prefix + poolKey(r)].push_back(path);
@@ -249,26 +248,7 @@ void setTrackVolume(Track& t) {
 
 // SoundManager's music state
 int ticksBeforeMusic = 0;
-std::string forcedName, forcedIntro, forcedLoop;
-bool forcedInLoop = false, fadingOutAll = false;
 int cur = 0, old = -1;
-int notPlayingTicks = 0;
-u64 forcedStarted = 0;
-constexpr int FADE_TICKS = 40;
-
-std::string musicPath(const std::string& name, const char* part) {
-    std::string p = "romfs:/axeolon/sound/music/" + name + part;
-    FILE* f = fopen(p.c_str(), "rb");
-    if (!f) return "";
-    fclose(f);
-    return p;
-}
-
-void startForcedTrack(const std::string& path, bool loop) { // with musicLock held
-    openTrack(tracks[cur], path, loop, tracks[cur].vol);
-    forcedStarted = osGetTime();
-    notPlayingTicks = 0;
-}
 
 } // namespace
 
@@ -280,7 +260,6 @@ bool init() {
     ticksBeforeMusic = rng.nextInt(12000);
     scan("romfs:/sound/newsound", "", "", true);
     scan("romfs:/sound/sound", "", "", true);
-    scan("romfs:/axeolon/sound", "", "axeolon.", true);
     scan("romfs:/sound/music", "", "", false);
     scan("romfs:/sound/newmusic", "", "", false);
     LightLock_Init(&musicLock);
@@ -328,7 +307,7 @@ void setVolumes(float effects, float music) {
     musVol = music;
     if (!ready) return;
     LightLock_Lock(&musicLock);
-    if (musVol <= 0.0f && forcedName.empty()) closeTrack(tracks[cur]); // onSoundOptionsChanged: stop BgMusic
+    if (musVol <= 0.0f) closeTrack(tracks[cur]); // onSoundOptionsChanged: stop BgMusic
     for (Track& t : tracks)
         if (t.v) setTrackVolume(t);
     LightLock_Unlock(&musicLock);
@@ -381,33 +360,6 @@ void update() {
         }
 }
 
-void playMusic(const std::string& name) {
-    if (!ready) return;
-    if (name == forcedName && !fadingOutAll) return;
-    std::string intro = musicPath(name, "_intro.ogg"), loop = musicPath(name, "_loop.ogg");
-    if (intro.empty() && loop.empty()) return;
-    LightLock_Lock(&musicLock);
-    bool crossfade = !forcedName.empty() && tracks[cur].v;
-    forcedName = name;
-    forcedIntro = intro;
-    forcedLoop = loop;
-    forcedInLoop = intro.empty();
-    fadingOutAll = false;
-    if (crossfade) {
-        if (old >= 0) closeTrack(tracks[old]);
-        old = cur;
-        cur ^= 1;
-        tracks[cur].vol = 0.0f;
-    } else {
-        closeTrack(tracks[0]);
-        closeTrack(tracks[1]);
-        old = -1;
-        tracks[cur].vol = 1.0f;
-    }
-    startForcedTrack(intro.empty() ? loop : intro, intro.empty());
-    LightLock_Unlock(&musicLock);
-}
-
 void playRecord(const std::string& name, double x, double y, double z) {
     if (!ready) return;
     LightLock_Lock(&musicLock);
@@ -416,10 +368,8 @@ void playRecord(const std::string& name, double x, double y, double z) {
         std::string path = "romfs:/sound/streaming/" + name + ".ogg";
         if (FILE* f = fopen(path.c_str(), "rb")) {
             fclose(f);
-            if (forcedName.empty()) { // the background music makes way
-                closeTrack(tracks[0]);
-                closeTrack(tracks[1]);
-            }
+            closeTrack(tracks[0]); // the background music makes way
+            closeTrack(tracks[1]);
             recX = x;
             recY = y;
             recZ = z;
@@ -431,50 +381,10 @@ void playRecord(const std::string& name, double x, double y, double z) {
     LightLock_Unlock(&musicLock);
 }
 
-void stopMusic() {
-    if (forcedName.empty()) return;
-    fadingOutAll = true;
-}
-
 void tick() {
     if (!ready) return;
     LightLock_Lock(&musicLock);
-    if (!forcedName.empty()) { // tickForcedMusic
-        float step = 1.0f / FADE_TICKS;
-        if (old >= 0) {
-            tracks[old].vol -= step;
-            if (tracks[old].vol <= 0.0f) {
-                closeTrack(tracks[old]);
-                old = -1;
-            } else {
-                setTrackVolume(tracks[old]);
-            }
-        }
-        if (fadingOutAll) {
-            tracks[cur].vol -= step;
-            if (tracks[cur].vol <= 0.0f) {
-                closeTrack(tracks[0]);
-                closeTrack(tracks[1]);
-                old = -1;
-                forcedName.clear();
-                fadingOutAll = false;
-                LightLock_Unlock(&musicLock);
-                return;
-            }
-        } else if (tracks[cur].vol < 1.0f) {
-            tracks[cur].vol = std::fmin(1.0f, tracks[cur].vol + step);
-        }
-        if (tracks[cur].v) {
-            setTrackVolume(tracks[cur]);
-            if (!forcedInLoop && !forcedLoop.empty() && osGetTime() - forcedStarted > 1000) {
-                notPlayingTicks = trackPlaying(tracks[cur]) ? 0 : notPlayingTicks + 1;
-                if (notPlayingTicks >= 2) {
-                    forcedInLoop = true;
-                    startForcedTrack(forcedLoop, true);
-                }
-            }
-        }
-    } else if (musVol > 0.0f && !musicPool.empty()) { // playRandomMusicIfReady
+    if (musVol > 0.0f && !musicPool.empty()) { // playRandomMusicIfReady    } else if (musVol > 0.0f && !musicPool.empty()) { // playRandomMusicIfReady
         if (!trackPlaying(tracks[0]) && !trackPlaying(tracks[1]) && !trackPlaying(record)) {
             if (ticksBeforeMusic > 0) {
                 --ticksBeforeMusic;

@@ -3,7 +3,6 @@
 #include "world/BlockTable.h"
 #include "world/BlockProps.h"
 #include "model/BlockModels.h"
-#include "DynamicLights.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -819,7 +818,6 @@ void ChunkMesher::buildSection(const World& world, int cx, int sy, int cz, MeshD
         for (int x = 0; x < P; x++) {
             int wx = bx + x - 1;
             const Chunk* c = world.getChunk(wx >> 4, wz >> 4);
-            const bool dyn = dynlight::any();
             for (int y = 0; y < P; y++) {
                 int wy = by + y - 1, i = pidx(x, y, z);
                 if (!c) { pad.id[i] = 0; pad.meta[i] = 0; pad.light[i] = 0xF0; pad.unloaded[i] = 1; continue; }
@@ -836,10 +834,6 @@ void ChunkMesher::buildSection(const World& world, int cx, int sy, int cz, MeshD
                 pad.id[i] = id;
                 pad.meta[i] = uint8_t(c->getMetadata(lx, wy, lz));
                 pad.light[i] = uint8_t(c->getSkyLight(lx, wy, lz) << 4 | c->getBlockLight(lx, wy, lz));
-                if (dyn) { // AxeolonDynamicLights.lightAt: the brighter of the real and the moving light
-                    int d = dynlight::lightAt(wx, wy, wz);
-                    if (d > (pad.light[i] & 15)) pad.light[i] = uint8_t((pad.light[i] & 0xF0) | d);
-                }
                 if (id && x > 0 && x < 17 && y > 0 && y < 17 && z > 0 && z < 17) any = true;
             }
         }

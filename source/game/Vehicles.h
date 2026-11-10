@@ -22,7 +22,6 @@ public:
         double x = 0, y = 0, z = 0, px = 0, py = 0, pz = 0, mx = 0, my = 0, mz = 0;
         float yaw = 0, prevYaw = 0;
         int damage = 0, hurtTime = 0, hurtDir = 1; // field_807_a, field_806_b, field_808_c
-        int wood = 0;                             // AxeolonWood
         bool onGround = false, collidedH = false, dead = false;
         int id = 0;
         AABB box{};
@@ -54,7 +53,7 @@ public:
     void clear();
 
     // ItemBoat.onItemRightClick: a boat on the block looked at (within 5); false if none
-    bool placeBoat(World& w, const Player& p, int wood);
+    bool placeBoat(World& w, const Player& p);
     // the boat on the look line within reach (-1 if none); dist along the line
     int pick(double ox, double oy, double oz, double dx, double dy, double dz, double reach, double& dist) const;
     void hit(int index, int damage, ItemEntities& items);  // EntityBoat.attackEntityFrom
